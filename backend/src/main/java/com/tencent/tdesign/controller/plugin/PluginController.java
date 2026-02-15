@@ -2,6 +2,7 @@ package com.tencent.tdesign.controller.plugin;
 
 import com.tencent.tdesign.plugin.PluginLifecycleService;
 import com.tencent.tdesign.plugin.PluginPackageService;
+import com.tencent.tdesign.util.PermissionUtil;
 import com.tencent.tdesign.vo.ApiResponse;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,12 +26,14 @@ public class PluginController {
 
   @PostMapping("/install")
   public ApiResponse<PluginLifecycleService.PluginStatusResponse> install(@RequestParam("file") MultipartFile file) {
+    PermissionUtil.checkAdmin();
     PluginPackageService.PluginInstallArtifact artifact = packageService.stage(file);
     return ApiResponse.success(lifecycleService.installAndEnable(artifact));
   }
 
   @PostMapping("/{pluginId}/disable")
   public ApiResponse<PluginLifecycleService.PluginStatusResponse> disable(@PathVariable String pluginId) {
+    PermissionUtil.checkAdmin();
     return ApiResponse.success(lifecycleService.disable(pluginId));
   }
 }

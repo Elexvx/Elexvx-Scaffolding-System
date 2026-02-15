@@ -40,7 +40,7 @@ public class SensitiveController {
   @GetMapping("/words")
   public ApiResponse<List<SensitiveWord>> listWords(@RequestParam(required = false) String keyword) {
     requireModule();
-    PermissionUtil.check("system:sensitive:query");
+    PermissionUtil.check("system:SystemSensitive:query");
     return ApiResponse.success(sensitiveService.listWords(keyword));
   }
 
@@ -51,49 +51,49 @@ public class SensitiveController {
     @RequestParam(defaultValue = "10") int size
   ) {
     requireModule();
-    PermissionUtil.check("system:sensitive:query");
+    PermissionUtil.check("system:SystemSensitive:query");
     return ApiResponse.success(sensitiveService.pageWords(keyword, page, size));
   }
 
   @PostMapping("/words")
   public ApiResponse<SensitiveWord> createWord(@RequestBody @Valid SensitiveWordCreateRequest req) {
     requireModule();
-    PermissionUtil.check("system:sensitive:create");
+    PermissionUtil.check("system:SystemSensitive:create");
     return ApiResponse.success(sensitiveService.createWord(req.getWord()));
   }
 
   @DeleteMapping("/words/{id}")
   public ApiResponse<Boolean> deleteWord(@PathVariable long id) {
     requireModule();
-    PermissionUtil.check("system:sensitive:delete");
+    PermissionUtil.check("system:SystemSensitive:delete");
     return ApiResponse.success(sensitiveService.deleteWord(id));
   }
 
   @GetMapping("/words/template")
   public void downloadTemplate(jakarta.servlet.http.HttpServletResponse response) {
     requireModule();
-    PermissionUtil.check("system:sensitive:query");
+    PermissionUtil.check("system:SystemSensitive:query");
     sensitiveService.downloadTemplate(response);
   }
 
   @PostMapping("/words/import")
   public ApiResponse<SensitiveImportResult> importWords(@RequestParam("file") MultipartFile file) {
     requireModule();
-    PermissionUtil.check("system:sensitive:create");
+    PermissionUtil.check("system:SystemSensitive:create");
     return ApiResponse.success(sensitiveService.importWords(file));
   }
 
   @GetMapping("/settings")
   public ApiResponse<SensitiveSettingsResponse> getSettings() {
     requireModule();
-    PermissionUtil.check("system:sensitive:query");
+    PermissionUtil.check("system:SystemSensitive:query");
     return ApiResponse.success(sensitiveService.getSettings());
   }
 
   @PostMapping("/settings")
   public ApiResponse<SensitiveSettingsResponse> saveSettings(@RequestBody SensitiveSettingsRequest req) {
     requireModule();
-    PermissionUtil.check("system:sensitive:update");
+    PermissionUtil.check("system:SystemSensitive:update");
     return ApiResponse.success(sensitiveService.saveSettings(req));
   }
 }

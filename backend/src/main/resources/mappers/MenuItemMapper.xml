@@ -45,6 +45,14 @@
     WHERE id = #{id}
   </select>
 
+  <select id="selectByIds" resultType="com.tencent.tdesign.entity.MenuItemEntity">
+    <include refid="BaseSelect" />
+    WHERE id IN
+    <foreach collection="ids" item="id" open="(" close=")" separator=",">
+      #{id}
+    </foreach>
+  </select>
+
   <select id="selectByRouteName" resultType="com.tencent.tdesign.entity.MenuItemEntity">
     <include refid="BaseSelect" />
     WHERE route_name = #{routeName}

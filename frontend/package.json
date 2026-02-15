@@ -32,16 +32,16 @@
     "nprogress": "^0.2.0",
     "pinia": "2.1.7",
     "pinia-plugin-persistedstate": "^3.2.0",
-    "qs": "^6.13.1",
+    "qs": "^6.15.0",
+    "single-spa": "^6.0.3",
+    "systemjs": "^6.15.1",
     "tdesign-icons-vue-next": "^0.4.1",
     "tdesign-vue-next": "^1.17.7",
     "tvision-color": "^1.6.0",
     "vue": "^3.5.18",
     "vue-cropper": "^1.1.4",
     "vue-i18n": "^9.9.1",
-    "vue-router": "~4.3.0",
-    "single-spa": "^6.0.3",
-    "systemjs": "^6.15.1"
+    "vue-router": "~4.3.0"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^4.10.1",

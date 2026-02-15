@@ -42,34 +42,34 @@ public class SystemDictController {
     @RequestParam(defaultValue = "0") int page,
     @RequestParam(defaultValue = "10") int size
   ) {
-    PermissionUtil.check("system:dict:query");
+    PermissionUtil.check("system:SystemDict:query");
     return ApiResponse.success(dictionaryService.page(keyword, status, page, size));
   }
 
   @GetMapping("/{id}")
   public ApiResponse<SysDict> get(@PathVariable long id) {
-    PermissionUtil.check("system:dict:query");
+    PermissionUtil.check("system:SystemDict:query");
     return ApiResponse.success(dictionaryService.get(id));
   }
 
   @PostMapping
   @RepeatSubmit
   public ApiResponse<SysDict> create(@RequestBody @Valid DictionaryCreateRequest req) {
-    PermissionUtil.check("system:dict:create");
+    PermissionUtil.check("system:SystemDict:create");
     return ApiResponse.success(dictionaryService.create(req));
   }
 
   @PutMapping("/{id}")
   @RepeatSubmit
   public ApiResponse<SysDict> update(@PathVariable long id, @RequestBody DictionaryUpdateRequest req) {
-    PermissionUtil.check("system:dict:update");
+    PermissionUtil.check("system:SystemDict:update");
     return ApiResponse.success(dictionaryService.update(id, req));
   }
 
   @DeleteMapping("/{id}")
   @RepeatSubmit
   public ApiResponse<Boolean> delete(@PathVariable long id) {
-    PermissionUtil.check("system:dict:delete");
+    PermissionUtil.check("system:SystemDict:delete");
     return ApiResponse.success(dictionaryService.delete(id));
   }
 
@@ -81,7 +81,7 @@ public class SystemDictController {
     @RequestParam(defaultValue = "0") int page,
     @RequestParam(defaultValue = "10") int size
   ) {
-    PermissionUtil.check("system:dict:query");
+    PermissionUtil.check("system:SystemDict:query");
     return ApiResponse.success(dictionaryService.pageItems(dictId, keyword, status, page, size));
   }
 
@@ -93,40 +93,40 @@ public class SystemDictController {
   @PostMapping("/{dictId}/items")
   @RepeatSubmit
   public ApiResponse<SysDictItem> createItem(@PathVariable long dictId, @RequestBody @Valid DictionaryItemCreateRequest req) {
-    PermissionUtil.check("system:dict:create");
+    PermissionUtil.check("system:SystemDict:create");
     return ApiResponse.success(dictionaryService.createItem(dictId, req));
   }
 
   @PutMapping("/items/{id}")
   @RepeatSubmit
   public ApiResponse<SysDictItem> updateItem(@PathVariable long id, @RequestBody DictionaryItemUpdateRequest req) {
-    PermissionUtil.check("system:dict:update");
+    PermissionUtil.check("system:SystemDict:update");
     return ApiResponse.success(dictionaryService.updateItem(id, req));
   }
 
   @DeleteMapping("/items/{id}")
   @RepeatSubmit
   public ApiResponse<Boolean> deleteItem(@PathVariable long id) {
-    PermissionUtil.check("system:dict:delete");
+    PermissionUtil.check("system:SystemDict:delete");
     return ApiResponse.success(dictionaryService.deleteItem(id));
   }
 
   @PostMapping("/{dictId}/items/import")
   @RepeatSubmit
   public ApiResponse<DictionaryImportResult> importItems(@PathVariable long dictId, @RequestParam("file") MultipartFile file) {
-    PermissionUtil.check("system:dict:update");
+    PermissionUtil.check("system:SystemDict:update");
     return ApiResponse.success(dictionaryService.importItems(dictId, file));
   }
 
   @GetMapping("/{dictId}/items/export")
   public ResponseEntity<byte[]> exportItems(@PathVariable long dictId) {
-    PermissionUtil.check("system:dict:query");
+    PermissionUtil.check("system:SystemDict:query");
     return dictionaryService.exportItems(dictId);
   }
 
   @GetMapping("/items/template")
   public void downloadTemplate(jakarta.servlet.http.HttpServletResponse response) {
-    PermissionUtil.check("system:dict:query");
+    PermissionUtil.check("system:SystemDict:query");
     dictionaryService.downloadTemplateXlsx(response);
   }
 }

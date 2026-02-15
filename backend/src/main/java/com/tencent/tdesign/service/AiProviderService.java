@@ -130,7 +130,7 @@ public class AiProviderService {
 
   @Transactional
   public AiTestResult test(AiProviderRequest req) {
-    PermissionUtil.check("system:SystemAi:query");
+    PermissionUtil.check("system:SystemAi:update");
     AiProviderSetting tmp = new AiProviderSetting();
     apply(tmp, req);
     return doTest(tmp, "连通性测试");
@@ -138,7 +138,7 @@ public class AiProviderService {
 
     @Transactional
   public AiTestResult testSaved(Long id) {
-    PermissionUtil.check("system:SystemAi:query");
+    PermissionUtil.check("system:SystemAi:update");
     AiProviderSetting saved = java.util.Optional.ofNullable(mapper.selectById(id))
       .orElseThrow(() -> new IllegalArgumentException("AI 配置不存在或已被删除"));
     AiTestResult result = doTest(saved, "已保存配置测试");

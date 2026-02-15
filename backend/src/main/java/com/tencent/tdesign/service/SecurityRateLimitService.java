@@ -15,6 +15,9 @@ public class SecurityRateLimitService {
   private final int loginFailThreshold;
   private final int smsPerMinute;
   private final int smsPerDay;
+  private final int uploadRequestsPerMinute;
+  private final int uploadFilesPerDay;
+  private final long uploadBytesPerDay;
 
   public SecurityRateLimitService(
     RedisTemplate<String, Object> redisTemplate,
@@ -22,7 +25,10 @@ public class SecurityRateLimitService {
     @Value("${tdesign.security.rate-limit.login-per-minute:10}") int loginPerMinute,
     @Value("${tdesign.security.rate-limit.login-fail-threshold:5}") int loginFailThreshold,
     @Value("${tdesign.security.rate-limit.sms-email-per-minute:3}") int smsPerMinute,
-    @Value("${tdesign.security.rate-limit.sms-email-per-day:20}") int smsPerDay
+    @Value("${tdesign.security.rate-limit.sms-email-per-day:20}") int smsPerDay,
+    @Value("${tdesign.security.rate-limit.upload-requests-per-minute:240}") int uploadRequestsPerMinute,
+    @Value("${tdesign.security.rate-limit.upload-files-per-day:200}") int uploadFilesPerDay,
+    @Value("${tdesign.security.rate-limit.upload-bytes-per-day-mb:2048}") long uploadBytesPerDayMb
   ) {
     this.redisTemplate = redisTemplate;
     this.request = request;
@@ -30,6 +36,9 @@ public class SecurityRateLimitService {
     this.loginFailThreshold = loginFailThreshold;
     this.smsPerMinute = smsPerMinute;
     this.smsPerDay = smsPerDay;
+    this.uploadRequestsPerMinute = uploadRequestsPerMinute;
+    this.uploadFilesPerDay = uploadFilesPerDay;
+    this.uploadBytesPerDay = Math.max(0L, uploadBytesPerDayMb) * 1024L * 1024L;
   }
 
   public void checkLoginAttempt(String account) {
@@ -66,7 +75,68 @@ public class SecurityRateLimitService {
     requireQuota("sec:send:" + channel + ":principal:day:" + p + ":" + day, smsPerDay, Duration.ofDays(2), "今日请求次数已达上限");
   }
 
+  public void checkUploadRequestQuota(long userId) {
+    if (uploadRequestsPerMinute <= 0) return;
+    requireQuota(
+      "sec:upload:user:req:min:" + userId,
+      uploadRequestsPerMinute,
+      Duration.ofMinutes(1),
+      "上传请求过于频繁，请稍后重试"
+    );
+  }
+
+  public void checkUploadQuotaPreview(long userId, long bytes) {
+    validateUploadBytes(bytes);
+    String day = LocalDate.now().toString();
+    if (uploadFilesPerDay > 0) {
+      long currentFiles = getCount(uploadDailyFilesKey(userId, day));
+      if (currentFiles + 1 > uploadFilesPerDay) {
+        throw new IllegalArgumentException("今日上传文件数已达上限");
+      }
+    }
+    if (uploadBytesPerDay > 0) {
+      long currentBytes = getCount(uploadDailyBytesKey(userId, day));
+      if (safeAdd(currentBytes, bytes) > uploadBytesPerDay) {
+        throw new IllegalArgumentException("今日上传总流量已达上限");
+      }
+    }
+  }
+
+  public UploadQuotaLease acquireUploadQuota(long userId, long bytes) {
+    validateUploadBytes(bytes);
+    String day = LocalDate.now().toString();
+    String filesKey = uploadDailyFilesKey(userId, day);
+    String bytesKey = uploadDailyBytesKey(userId, day);
+
+    long files = increment(filesKey, Duration.ofDays(2));
+    long totalBytes = increment(bytesKey, bytes, Duration.ofDays(2));
+    UploadQuotaLease lease = new UploadQuotaLease(filesKey, bytesKey, bytes);
+
+    boolean exceedsFiles = uploadFilesPerDay > 0 && files > uploadFilesPerDay;
+    boolean exceedsBytes = uploadBytesPerDay > 0 && totalBytes > uploadBytesPerDay;
+    if (exceedsFiles || exceedsBytes) {
+      releaseUploadQuota(lease);
+      if (exceedsFiles) {
+        throw new IllegalArgumentException("今日上传文件数已达上限");
+      }
+      throw new IllegalArgumentException("今日上传总流量已达上限");
+    }
+    return lease;
+  }
+
+  public void releaseUploadQuota(UploadQuotaLease lease) {
+    if (lease == null || lease.released) return;
+    try {
+      redisTemplate.opsForValue().increment(lease.filesKey, -1L);
+      redisTemplate.opsForValue().increment(lease.bytesKey, -lease.bytes);
+    } catch (Exception ignored) {
+    } finally {
+      lease.released = true;
+    }
+  }
+
   private void requireQuota(String key, int limit, Duration window, String message) {
+    if (limit <= 0) return;
     long count = increment(key, window);
     if (count > limit) {
       throw new IllegalArgumentException(message);
@@ -76,6 +146,14 @@ public class SecurityRateLimitService {
   private long increment(String key, Duration ttl) {
     Long value = redisTemplate.opsForValue().increment(key);
     if (value != null && value == 1L) {
+      redisTemplate.expire(key, ttl);
+    }
+    return value == null ? 0L : value;
+  }
+
+  private long increment(String key, long delta, Duration ttl) {
+    Long value = redisTemplate.opsForValue().increment(key, delta);
+    if (value != null && value == delta) {
       redisTemplate.expire(key, ttl);
     }
     return value == null ? 0L : value;
@@ -103,5 +181,39 @@ public class SecurityRateLimitService {
 
   private String normalize(String value) {
     return value == null ? "" : value.trim().toLowerCase();
+  }
+
+  private void validateUploadBytes(long bytes) {
+    if (bytes <= 0) {
+      throw new IllegalArgumentException("上传文件大小无效");
+    }
+  }
+
+  private long safeAdd(long a, long b) {
+    if (b > 0 && a > Long.MAX_VALUE - b) return Long.MAX_VALUE;
+    if (b < 0 && a < Long.MIN_VALUE - b) return Long.MIN_VALUE;
+    return a + b;
+  }
+
+  private String uploadDailyFilesKey(long userId, String day) {
+    return "sec:upload:user:files:day:" + userId + ":" + day;
+  }
+
+  private String uploadDailyBytesKey(long userId, String day) {
+    return "sec:upload:user:bytes:day:" + userId + ":" + day;
+  }
+
+  public static class UploadQuotaLease {
+    private final String filesKey;
+    private final String bytesKey;
+    private final long bytes;
+    private boolean released;
+
+    private UploadQuotaLease(String filesKey, String bytesKey, long bytes) {
+      this.filesKey = filesKey;
+      this.bytesKey = bytesKey;
+      this.bytes = bytes;
+      this.released = false;
+    }
   }
 }

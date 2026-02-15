@@ -62,7 +62,7 @@ public class ModulePackageController {
 
   @PostMapping("/package/install")
   public ApiResponse<ModuleRegistryResponse> uploadAndInstall(@RequestParam("file") MultipartFile file) {
-    PermissionUtil.check(PERM_UPDATE);
+    PermissionUtil.checkAdmin();
     ModulePackageService.StagedModulePackage staged = modulePackageService.stagePackage(file);
     ModulePackageService.CommitResult commit = modulePackageService.commitStagedPackage(staged);
     String key = staged.manifest().getKey();

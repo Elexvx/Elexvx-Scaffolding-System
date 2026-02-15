@@ -4,6 +4,7 @@ import com.tencent.tdesign.dto.AiProviderRequest;
 import com.tencent.tdesign.service.AiProviderService;
 import com.tencent.tdesign.service.AiService;
 import com.tencent.tdesign.service.ModuleRegistryService;
+import com.tencent.tdesign.util.PermissionUtil;
 import com.tencent.tdesign.vo.AiChatResult;
 import com.tencent.tdesign.vo.AiProviderResponse;
 import com.tencent.tdesign.vo.AiTestResult;
@@ -47,15 +48,21 @@ public class AiController {
     moduleRegistryService.assertModuleAvailable("ai");
   }
 
+  private void requireAiQueryPermission() {
+    PermissionUtil.check("system:SystemAi:query");
+  }
+
   @GetMapping("/tools")
   public ApiResponse<List<Map<String, Object>>> getTools() {
     requireModule();
+    requireAiQueryPermission();
     return ApiResponse.success(aiService.getToolsSchema());
   }
 
   @GetMapping("/providers")
   public ApiResponse<List<AiProviderResponse>> providers() {
     requireModule();
+    requireAiQueryPermission();
     return ApiResponse.success(providerService.list());
   }
 
@@ -87,6 +94,7 @@ public class AiController {
   @PostMapping(value = "/chat/sse", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
   public SseEmitter chatSse(@RequestBody AiChatRequest request) {
     requireModule();
+    requireAiQueryPermission();
     SseEmitter emitter = new SseEmitter(0L);
     executor.execute(() -> {
       try {
@@ -106,6 +114,7 @@ public class AiController {
   @PostMapping("/chat")
   public ApiResponse<AiChatResult> chat(@RequestBody AiChatRequest request) throws Exception {
     requireModule();
+    requireAiQueryPermission();
     var provider = providerService.requireProvider(request.getProviderId());
     String systemPrompt = buildSystemPrompt(request.getSystemPrompt());
     AiChatResult result = providerService.chat(provider, systemPrompt, request.getMessage());
@@ -115,6 +124,7 @@ public class AiController {
   @PostMapping("/execute")
   public ApiResponse<Object> executeTool(@RequestBody AiExecuteRequest request) {
     requireModule();
+    requireAiQueryPermission();
     try {
       Object result = aiService.executeTool(request.getToolName(), request.getArgs());
       return ApiResponse.success(result);

@@ -1,11 +1,11 @@
 package com.tencent.tdesign.controller;
 
 import com.tencent.tdesign.annotation.RepeatSubmit;
+import com.tencent.tdesign.annotation.PagePerm;
 import com.tencent.tdesign.dto.UserCreateRequest;
 import com.tencent.tdesign.dto.UserUpdateRequest;
 import com.tencent.tdesign.security.AuthContext;
 import com.tencent.tdesign.service.UserAdminService;
-import com.tencent.tdesign.util.PermissionUtil;
 import com.tencent.tdesign.vo.ApiResponse;
 import com.tencent.tdesign.vo.PageResult;
 import com.tencent.tdesign.vo.UserListItem;
@@ -40,6 +40,7 @@ public class SystemUserController {
   }
 
   @GetMapping("/page")
+  @PagePerm(routeName = "SystemUser", action = "query")
   public ApiResponse<PageResult<UserListItem>> page(
     @RequestParam(required = false) String keyword,
     @RequestParam(required = false) String mobile,
@@ -51,36 +52,35 @@ public class SystemUserController {
     @RequestParam(defaultValue = "0") int page,
     @RequestParam(defaultValue = "10") int size
   ) {
-    PermissionUtil.check("system:SystemUser:query");
     java.time.LocalDateTime start = parseDateTime(startTime);
     java.time.LocalDateTime end = parseDateTime(endTime);
     return ApiResponse.success(userAdminService.page(keyword, mobile, orgUnitId, departmentId, status, start, end, page, size));
   }
 
   @GetMapping("/{id}")
+  @PagePerm(routeName = "SystemUser", action = "query")
   public ApiResponse<UserListItem> get(@PathVariable long id) {
-    PermissionUtil.check("system:SystemUser:query");
     return ApiResponse.success(userAdminService.get(id));
   }
 
   @PostMapping
   @RepeatSubmit
+  @PagePerm(routeName = "SystemUser", action = "create")
   public ApiResponse<UserListItem> create(@RequestBody @Valid UserCreateRequest req) {
-    PermissionUtil.check("system:SystemUser:create");
     return ApiResponse.success(userAdminService.create(req));
   }
 
   @PutMapping("/{id}")
   @RepeatSubmit
+  @PagePerm(routeName = "SystemUser", action = "update")
   public ApiResponse<UserListItem> update(@PathVariable long id, @RequestBody UserUpdateRequest req) {
-    PermissionUtil.check("system:SystemUser:update");
     return ApiResponse.success(userAdminService.update(id, req));
   }
 
   @DeleteMapping("/{id}")
   @RepeatSubmit
+  @PagePerm(routeName = "SystemUser", action = "delete")
   public ApiResponse<Boolean> delete(@PathVariable long id) {
-    PermissionUtil.check("system:SystemUser:delete");
     long self = authContext.requireUserId();
     if (self == id) throw new IllegalArgumentException("不允许删除当前登录用户");
     return ApiResponse.success(userAdminService.delete(id));
@@ -88,13 +88,13 @@ public class SystemUserController {
 
   @PostMapping("/{id}/reset-password")
   @RepeatSubmit
+  @PagePerm(routeName = "SystemUser", action = "update")
   public ApiResponse<Boolean> resetPassword(
     @PathVariable long id,
     @RequestBody(required = false) Map<String, Object> body,
     @Deprecated(since = "1.0.1", forRemoval = false)
     @RequestParam(required = false) String password
   ) {
-    PermissionUtil.check("system:SystemUser:update");
     if (password != null && !allowPasswordInQuery) {
       throw new IllegalArgumentException("不允许通过 URL 参数传递密码，请改为 JSON body: {\"password\": \"...\"}");
     }

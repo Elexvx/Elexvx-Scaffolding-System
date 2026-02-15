@@ -10,6 +10,7 @@ public interface MenuItemMapper {
   List<MenuItemEntity> selectAll();
   List<MenuItemEntity> selectAllEnabled();
   MenuItemEntity selectById(@Param("id") Long id);
+  List<MenuItemEntity> selectByIds(@Param("ids") Collection<Long> ids);
   MenuItemEntity selectByRouteName(@Param("routeName") String routeName);
   int insert(MenuItemEntity entity);
   int update(MenuItemEntity entity);

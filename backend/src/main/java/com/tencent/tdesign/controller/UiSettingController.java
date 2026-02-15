@@ -11,6 +11,7 @@ import com.tencent.tdesign.security.AuthContext;
 import com.tencent.tdesign.service.EmailSenderService;
 import com.tencent.tdesign.service.ObjectStorageService;
 import com.tencent.tdesign.service.OperationLogService;
+import com.tencent.tdesign.service.SecurityRateLimitService;
 import com.tencent.tdesign.service.SecuritySettingService;
 import com.tencent.tdesign.service.UiSettingService;
 import com.tencent.tdesign.service.VerificationSettingService;
@@ -38,6 +39,7 @@ public class UiSettingController {
   private final ModuleRegistryService moduleRegistryService;
   private final AuthContext authContext;
   private final AccessControlService accessControlService;
+  private final SecurityRateLimitService rateLimitService;
 
   public UiSettingController(
     UiSettingService uiSettingService,
@@ -48,7 +50,8 @@ public class UiSettingController {
     SecuritySettingService securitySettingService,
     ModuleRegistryService moduleRegistryService,
     AuthContext authContext,
-    AccessControlService accessControlService
+    AccessControlService accessControlService,
+    SecurityRateLimitService rateLimitService
   ) {
     this.uiSettingService = uiSettingService;
     this.operationLogService = operationLogService;
@@ -59,6 +62,7 @@ public class UiSettingController {
     this.moduleRegistryService = moduleRegistryService;
     this.authContext = authContext;
     this.accessControlService = accessControlService;
+    this.rateLimitService = rateLimitService;
   }
 
   @GetMapping("/public")
@@ -279,6 +283,7 @@ public class UiSettingController {
   @RepeatSubmit
   public ApiResponse<Boolean> testEmail(@RequestBody @Valid EmailSendRequest req) {
     authContext.requireUserId();
+    PermissionUtil.checkAny("system:SystemVerification:update", "system:SystemPersonalize:update", "system:SystemSecurity:update");
     moduleRegistryService.assertModuleAvailable("email");
     VerificationSetting setting = verificationSettingService.getDecryptedCopy();
     if (setting == null || !Boolean.TRUE.equals(setting.getEmailEnabled())) {
@@ -297,14 +302,28 @@ public class UiSettingController {
     @RequestParam(value = "page", required = false) String page
   ) throws IOException {
     PermissionUtil.checkAdmin();
+    long userId = authContext.requireUserId();
+    rateLimitService.checkUploadRequestQuota(userId);
     if (file == null || file.isEmpty()) {
       return ApiResponse.failure(400, "上传文件不能为空");
     }
-    
+
+    SecurityRateLimitService.UploadQuotaLease lease = null;
     try {
+      lease = rateLimitService.acquireUploadQuota(userId, file.getSize());
       String url = storageService.upload(file, "system", page);
       return ApiResponse.success(Map.of("url", url));
+    } catch (IllegalArgumentException e) {
+      if (lease != null) {
+        rateLimitService.releaseUploadQuota(lease);
+      }
+      String msg = e.getMessage() == null ? "上传请求被拒绝" : e.getMessage();
+      int code = (msg.contains("频繁") || msg.contains("上限")) ? 429 : 400;
+      return ApiResponse.failure(code, msg);
     } catch (Exception e) {
+      if (lease != null) {
+        rateLimitService.releaseUploadQuota(lease);
+      }
       return ApiResponse.failure(500, "系统文件保存失败: " + e.getMessage());
     }
   }

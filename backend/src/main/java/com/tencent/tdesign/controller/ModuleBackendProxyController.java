@@ -2,6 +2,7 @@ package com.tencent.tdesign.controller;
 
 import com.tencent.tdesign.service.ModuleBackendProcessManager;
 import com.tencent.tdesign.service.ModuleRegistryService;
+import com.tencent.tdesign.util.PermissionUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -15,6 +16,7 @@ import java.util.Enumeration;
 import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Pattern;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -32,18 +34,30 @@ public class ModuleBackendProxyController {
 
   private final ModuleRegistryService moduleRegistryService;
   private final ModuleBackendProcessManager processManager;
+  private final boolean forwardAuthToken;
+  private final boolean requireModuleQueryPermission;
   private final HttpClient httpClient = HttpClient.newBuilder()
     .followRedirects(HttpClient.Redirect.NORMAL)
     .connectTimeout(Duration.ofSeconds(10))
     .build();
 
-  public ModuleBackendProxyController(ModuleRegistryService moduleRegistryService, ModuleBackendProcessManager processManager) {
+  public ModuleBackendProxyController(
+    ModuleRegistryService moduleRegistryService,
+    ModuleBackendProcessManager processManager,
+    @Value("${tdesign.modules.backend.forward-auth-token:false}") boolean forwardAuthToken,
+    @Value("${tdesign.modules.backend.require-module-query-permission:true}") boolean requireModuleQueryPermission
+  ) {
     this.moduleRegistryService = moduleRegistryService;
     this.processManager = processManager;
+    this.forwardAuthToken = forwardAuthToken;
+    this.requireModuleQueryPermission = requireModuleQueryPermission;
   }
 
   @RequestMapping("/{moduleKey}/**")
   public void proxy(@PathVariable String moduleKey, HttpServletRequest request, HttpServletResponse response) throws IOException {
+    if (requireModuleQueryPermission) {
+      PermissionUtil.check("system:SystemModule:query");
+    }
     String key = normalizeKey(moduleKey);
     if (!MODULE_KEY_PATTERN.matcher(key).matches()) {
       response.setStatus(400);
@@ -80,6 +94,7 @@ public class ModuleBackendProxyController {
       if (name == null) continue;
       String lower = name.toLowerCase(Locale.ROOT);
       if (BLOCKED_REQUEST_HEADERS.contains(lower)) continue;
+      if (!forwardAuthToken && ("authorization".equals(lower) || "cookie".equals(lower))) continue;
       Enumeration<String> values = request.getHeaders(name);
       while (values.hasMoreElements()) {
         String v = values.nextElement();

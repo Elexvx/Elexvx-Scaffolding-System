@@ -1,9 +1,9 @@
 package com.tencent.tdesign.controller;
 
 import com.tencent.tdesign.dto.RoleUpsertRequest;
+import com.tencent.tdesign.annotation.PagePerm;
 import com.tencent.tdesign.annotation.RepeatSubmit;
 import com.tencent.tdesign.service.RoleAdminService;
-import com.tencent.tdesign.util.PermissionUtil;
 import com.tencent.tdesign.vo.ApiResponse;
 import com.tencent.tdesign.vo.RoleResponse;
 import jakarta.validation.Valid;
@@ -27,35 +27,35 @@ public class SystemRoleController {
   }
 
   @GetMapping("/list")
+  @PagePerm(routeName = "SystemRole", action = "query")
   public ApiResponse<List<RoleResponse>> list() {
-    PermissionUtil.check("system:SystemRole:query");
     return ApiResponse.success(roleAdminService.list());
   }
 
   @GetMapping("/{id}")
+  @PagePerm(routeName = "SystemRole", action = "query")
   public ApiResponse<RoleResponse> get(@PathVariable long id) {
-    PermissionUtil.check("system:SystemRole:query");
     return ApiResponse.success(roleAdminService.get(id));
   }
 
   @PostMapping
   @RepeatSubmit
+  @PagePerm(routeName = "SystemRole", action = "create")
   public ApiResponse<RoleResponse> create(@RequestBody @Valid RoleUpsertRequest req) {
-    PermissionUtil.check("system:SystemRole:create");
     return ApiResponse.success(roleAdminService.create(req));
   }
 
   @PutMapping("/{id}")
   @RepeatSubmit
+  @PagePerm(routeName = "SystemRole", action = "update")
   public ApiResponse<RoleResponse> update(@PathVariable long id, @RequestBody RoleUpsertRequest req) {
-    PermissionUtil.check("system:SystemRole:update");
     return ApiResponse.success(roleAdminService.update(id, req));
   }
 
   @DeleteMapping("/{id}")
   @RepeatSubmit
+  @PagePerm(routeName = "SystemRole", action = "delete")
   public ApiResponse<Boolean> delete(@PathVariable long id) {
-    PermissionUtil.check("system:SystemRole:delete");
     return ApiResponse.success(roleAdminService.delete(id));
   }
 }

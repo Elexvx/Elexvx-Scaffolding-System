@@ -31,13 +31,13 @@
               />
               <div class="user-filter__buttons">
                 <t-space size="small">
-                  <t-button theme="primary" @click="reload">搜索</t-button>
+                  <t-button v-perm:disable="'system:SystemUser:query'" theme="primary" @click="reload">搜索</t-button>
                   <t-button variant="outline" @click="resetFilters">重置</t-button>
                 </t-space>
               </div>
             </div>
             <div class="user-filter__actions">
-              <t-button v-if="canCreate" theme="primary" @click="openCreate">新增</t-button>
+              <t-button v-perm="'system:SystemUser:create'" theme="primary" @click="openCreate">新增</t-button>
             </div>
           </div>
 
@@ -70,16 +70,15 @@
             </template>
             <template #op="{ row }">
               <t-space class="user-table-actions">
-                <t-link v-if="canUpdate" :disabled="isEditDisabled(row)" theme="primary" @click="openEdit(row)"
+                <t-link v-perm:disable="'system:SystemUser:update'" :disabled="isEditDisabled(row)" theme="primary" @click="openEdit(row)"
                   >编辑</t-link
                 >
-                <t-link v-if="canReset" :disabled="isResetDisabled(row)" theme="primary" @click="resetPwd(row)"
+                <t-link v-perm:disable="'system:SystemUser:update'" :disabled="isResetDisabled(row)" theme="primary" @click="resetPwd(row)"
                   >重置密码</t-link
                 >
-                <t-link v-if="canDelete" :disabled="isDeleteDisabled(row)" theme="danger" @click="removeRow(row)"
+                <t-link v-perm:disable="'system:SystemUser:delete'" :disabled="isDeleteDisabled(row)" theme="danger" @click="removeRow(row)"
                   >删除</t-link
                 >
-                <span v-if="!canUpdate && !canReset && !canDelete">--</span>
               </t-space>
             </template>
           </t-table>
@@ -567,6 +566,7 @@ const resetFormRef = ref<FormInstanceFunctions>();
 const resetTarget = ref<UserRow | null>(null);
 const drawerTitle = computed(() => (mode.value === 'create' ? '新增用户' : '编辑用户'));
 const currentUserId = computed(() => userStore.userInfo?.id);
+const canQuery = computed(() => hasPerm('system:SystemUser:query'));
 const canCreate = computed(() => hasPerm('system:SystemUser:create'));
 const canUpdate = computed(() => hasPerm('system:SystemUser:update'));
 const canDelete = computed(() => hasPerm('system:SystemUser:delete'));
@@ -1079,6 +1079,11 @@ const loadPasswordPolicy = async () => {
 };
 
 const reload = async () => {
+  if (!canQuery.value) {
+    rows.value = [];
+    pagination.total = 0;
+    return;
+  }
   loading.value = true;
   try {
     const [startDate, endDate] = filters.createdRange || [];

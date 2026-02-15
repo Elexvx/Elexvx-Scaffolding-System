@@ -21,7 +21,8 @@ class FileChunkUploadServiceTest {
       mock(ObjectStorageService.class),
       new ObjectMapper(),
       mock(AuthContext.class),
-      "abcdefghijklmnopqrstuvwxyz123456"
+      "abcdefghijklmnopqrstuvwxyz123456",
+      100
     );
 
     assertThrows(IllegalArgumentException.class, () -> service.getStatus("../../etc/passwd"));
@@ -33,7 +34,8 @@ class FileChunkUploadServiceTest {
       mock(ObjectStorageService.class),
       new ObjectMapper(),
       mock(AuthContext.class),
-      "abcdefghijklmnopqrstuvwxyz123456"
+      "abcdefghijklmnopqrstuvwxyz123456",
+      100
     );
 
     Path dir = Files.createTempDirectory("chunk-stream-test");

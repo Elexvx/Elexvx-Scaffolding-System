@@ -12,6 +12,7 @@ import App from './App.vue';
 import router from './router';
 import { store } from './store';
 import i18n from './locales';
+import { installPermDirective } from '@/directives/perm';
 
 import 'tdesign-vue-next/es/style/index.css';
 import '@/style/index.less';
@@ -23,5 +24,6 @@ app.use(TDesign);
 app.use(store);
 app.use(router);
 app.use(i18n);
+installPermDirective(app);
 
 app.mount('#app');

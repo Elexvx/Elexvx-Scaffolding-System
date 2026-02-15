@@ -3,10 +3,17 @@
     <t-space direction="vertical" style="width: 100%">
       <t-space class="menu-toolbar">
         <t-input v-model="keyword" clearable placeholder="按名称/路由搜索" style="width: 260px" />
-        <t-button theme="primary" @click="openCreateRoot">添加根节点</t-button>
-        <t-button variant="outline" @click="reload">重置/更新数据</t-button>
+        <t-button v-perm="'system:SystemMenu:create'" theme="primary" @click="openCreateRoot">添加根节点</t-button>
+        <t-button v-perm:disable="'system:SystemMenu:query'" variant="outline" @click="reload">重置/更新数据</t-button>
         <t-button variant="outline" @click="onExpandAllToggle">{{ expandAll ? '收起全部' : '展开全部' }}</t-button>
-        <t-button theme="primary" :disabled="!dirty" :loading="savingOrder" @click="saveOrder">保存排序</t-button>
+        <t-button
+          v-perm:disable="'system:SystemMenu:update'"
+          theme="primary"
+          :disabled="!dirty || !canUpdate"
+          :loading="savingOrder"
+          @click="saveOrder"
+          >保存排序</t-button
+        >
       </t-space>
 
       <div class="menu-table-wrapper">
@@ -136,6 +143,7 @@ import ConfirmDrawer from '@/components/ConfirmDrawer.vue';
 import { useDictionary } from '@/hooks/useDictionary';
 import { getPermissionStore, useUserStore } from '@/store';
 import { buildDictOptions, resolveLabel } from '@/utils/dict';
+import { hasPerm } from '@/utils/permission';
 import { request } from '@/utils/request';
 
 type NodeType = 'DIR' | 'PAGE' | 'BTN';
@@ -184,6 +192,10 @@ const loading = ref(false);
 const savingOrder = ref(false);
 const savingNode = ref(false);
 const dirty = ref(false);
+const canQuery = computed(() => hasPerm('system:SystemMenu:query'));
+const canCreate = computed(() => hasPerm('system:SystemMenu:create'));
+const canUpdate = computed(() => hasPerm('system:SystemMenu:update'));
+const canDelete = computed(() => hasPerm('system:SystemMenu:delete'));
 
 const nodeTypeDict = useDictionary('menu_node_type');
 const actionDict = useDictionary('menu_action');
@@ -446,6 +458,12 @@ const parentOptions = computed(() => {
 });
 
 const reload = async () => {
+  if (!canQuery.value) {
+    data.value = [];
+    expandedTreeNodes.value = [];
+    dirty.value = false;
+    return;
+  }
   loading.value = true;
   try {
     data.value = await request.get<MenuNode[]>({ url: '/system/menu/tree' });
@@ -476,6 +494,10 @@ const buildReorderItems = (tree: MenuNode[]) => {
 };
 
 const saveOrder = async () => {
+  if (!canUpdate.value) {
+    MessagePlugin.warning('无修改权限');
+    return;
+  }
   const tree = tableRef.value?.getTreeNode?.() || data.value;
   savingOrder.value = true;
   try {
@@ -533,6 +555,10 @@ const movePageToDir = async (page: MenuNode, destDirId: number) => {
 };
 
 const openMoveDialog = (row: MenuNode) => {
+  if (!canUpdate.value) {
+    MessagePlugin.warning('无修改权限');
+    return;
+  }
   if (row.nodeType !== 'PAGE') {
     MessagePlugin.warning('当前仅支持移动页面节点');
     return;
@@ -581,6 +607,10 @@ const openMoveDialog = (row: MenuNode) => {
 };
 
 const beforeDragSort = (ctx: any) => {
+  if (!canUpdate.value) {
+    MessagePlugin.warning('无修改权限');
+    return false;
+  }
   const current = ctx?.current as MenuNode | undefined;
   const target = ctx?.target as MenuNode | undefined;
   if (!current || !target) return true;
@@ -644,6 +674,10 @@ const updateTreeData = (list: MenuNode[], id: number, patch: Partial<MenuNode>) 
 };
 
 const updateRow = async (row: MenuNode, patch: Partial<MenuNode>) => {
+  if (!canUpdate.value) {
+    MessagePlugin.warning('无修改权限');
+    return;
+  }
   rowSaving.value[row.id] = true;
   try {
     if (typeof patch.hidden === 'boolean') {
@@ -734,7 +768,7 @@ const columns = computed(() => {
         return (
           <t-switch
             size="small"
-            disabled={!!rowSaving.value[r.id]}
+            disabled={!canUpdate.value || !!rowSaving.value[r.id]}
             modelValue={!!r.hidden}
             onChange={(v: any) => updateRow(r, { hidden: !!v })}
           />
@@ -750,32 +784,44 @@ const columns = computed(() => {
         const r = row as MenuNode;
         return (
           <t-space size="small">
-            <t-link theme="primary" disabled={r.nodeType !== 'DIR'} onClick={() => openCreateChild(r, 'DIR')}>
-              +目录
-            </t-link>
-            <t-link theme="primary" disabled={r.nodeType !== 'DIR'} onClick={() => openCreateChild(r, 'PAGE')}>
-              +页面
-            </t-link>
-            <t-link
-              theme="primary"
-              disabled={r.nodeType !== 'DIR' && r.nodeType !== 'PAGE'}
-              onClick={() => openCreateChild(r, 'BTN')}
-            >
-              +按钮
-            </t-link>
-            <t-link theme="primary" onClick={() => openEdit(r)}>
-              编辑
-            </t-link>
-            <t-link
-              theme="primary"
-              disabled={r.nodeType !== 'PAGE' || r.parentId == null}
-              onClick={() => openMoveDialog(r)}
-            >
-              移动
-            </t-link>
-            <t-link theme="danger" onClick={() => removeNode(r)}>
-              删除
-            </t-link>
+            {canCreate.value ? (
+              <t-link theme="primary" disabled={r.nodeType !== 'DIR'} onClick={() => openCreateChild(r, 'DIR')}>
+                +目录
+              </t-link>
+            ) : null}
+            {canCreate.value ? (
+              <t-link theme="primary" disabled={r.nodeType !== 'DIR'} onClick={() => openCreateChild(r, 'PAGE')}>
+                +页面
+              </t-link>
+            ) : null}
+            {canCreate.value ? (
+              <t-link
+                theme="primary"
+                disabled={r.nodeType !== 'DIR' && r.nodeType !== 'PAGE'}
+                onClick={() => openCreateChild(r, 'BTN')}
+              >
+                +按钮
+              </t-link>
+            ) : null}
+            {canUpdate.value ? (
+              <t-link theme="primary" onClick={() => openEdit(r)}>
+                编辑
+              </t-link>
+            ) : null}
+            {canUpdate.value ? (
+              <t-link
+                theme="primary"
+                disabled={r.nodeType !== 'PAGE' || r.parentId == null}
+                onClick={() => openMoveDialog(r)}
+              >
+                移动
+              </t-link>
+            ) : null}
+            {canDelete.value ? (
+              <t-link theme="danger" onClick={() => removeNode(r)}>
+                删除
+              </t-link>
+            ) : null}
           </t-space>
         );
       },
@@ -855,6 +901,10 @@ const onParentIdClear = () => {
 };
 
 const openCreateRoot = () => {
+  if (!canCreate.value) {
+    MessagePlugin.warning('无新增权限');
+    return;
+  }
   mode.value = 'create';
   resetForm();
   form.parentId = null;
@@ -864,6 +914,10 @@ const openCreateRoot = () => {
 };
 
 const openCreateChild = (parent: MenuNode, nodeType: NodeType) => {
+  if (!canCreate.value) {
+    MessagePlugin.warning('无新增权限');
+    return;
+  }
   mode.value = 'create';
   resetForm();
   form.parentId = parent.id;
@@ -872,6 +926,10 @@ const openCreateChild = (parent: MenuNode, nodeType: NodeType) => {
 };
 
 const openEdit = (node: MenuNode) => {
+  if (!canUpdate.value) {
+    MessagePlugin.warning('无修改权限');
+    return;
+  }
   mode.value = 'edit';
   resetForm();
   form.id = node.id;
@@ -947,6 +1005,14 @@ const ensureRouteFields = () => {
 };
 
 const submitNode = async () => {
+  if (mode.value === 'create' && !canCreate.value) {
+    MessagePlugin.warning('无新增权限');
+    return;
+  }
+  if (mode.value === 'edit' && !canUpdate.value) {
+    MessagePlugin.warning('无修改权限');
+    return;
+  }
   if (!form.titleZhCn.trim()) {
     MessagePlugin.warning('请输入菜单名称');
     return;
@@ -1031,6 +1097,10 @@ const submitNode = async () => {
 };
 
 const removeNode = async (node: MenuNode) => {
+  if (!canDelete.value) {
+    MessagePlugin.warning('无删除权限');
+    return;
+  }
   const confirm = DialogPlugin.confirm({
     header: '\u786E\u8BA4\u5220\u9664',
     body: `\u786E\u5B9A\u5220\u9664\u300C${node.titleZhCn}\u300D\u5417\uFF1F`,

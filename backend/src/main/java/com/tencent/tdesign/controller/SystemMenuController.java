@@ -3,9 +3,9 @@ package com.tencent.tdesign.controller;
 import com.tencent.tdesign.dto.MenuItemCreateRequest;
 import com.tencent.tdesign.dto.MenuItemReorderRequest;
 import com.tencent.tdesign.dto.MenuItemUpdateRequest;
+import com.tencent.tdesign.annotation.PagePerm;
 import com.tencent.tdesign.annotation.RepeatSubmit;
 import com.tencent.tdesign.service.MenuItemService;
-import com.tencent.tdesign.util.PermissionUtil;
 import com.tencent.tdesign.vo.ApiResponse;
 import com.tencent.tdesign.vo.MenuItemTreeNode;
 import jakarta.validation.Valid;
@@ -30,43 +30,43 @@ public class SystemMenuController {
   }
 
   @GetMapping("/tree")
+  @PagePerm(routeName = "SystemMenu", action = "query")
   public ApiResponse<List<MenuItemTreeNode>> tree() {
-    PermissionUtil.check("system:SystemMenu:query");
     return ApiResponse.success(menuItemService.getAdminTree());
   }
 
   @PostMapping
   @RepeatSubmit
+  @PagePerm(routeName = "SystemMenu", action = "create")
   public ApiResponse<MenuItemTreeNode> create(@RequestBody @Valid MenuItemCreateRequest req) {
-    PermissionUtil.check("system:SystemMenu:create");
     return ApiResponse.success(menuItemService.create(req));
   }
 
   @PutMapping("/{id}")
   @RepeatSubmit
+  @PagePerm(routeName = "SystemMenu", action = "update")
   public ApiResponse<MenuItemTreeNode> update(@PathVariable long id, @RequestBody @Valid MenuItemUpdateRequest req) {
-    PermissionUtil.check("system:SystemMenu:update");
     return ApiResponse.success(menuItemService.update(id, req));
   }
 
   @DeleteMapping("/{id}")
   @RepeatSubmit
+  @PagePerm(routeName = "SystemMenu", action = "delete")
   public ApiResponse<Boolean> delete(@PathVariable long id, @RequestParam(defaultValue = "false") boolean cascade) {
-    PermissionUtil.check("system:SystemMenu:delete");
     return ApiResponse.success(menuItemService.delete(id, cascade));
   }
 
   @PutMapping("/reorder")
   @RepeatSubmit
+  @PagePerm(routeName = "SystemMenu", action = "update")
   public ApiResponse<Boolean> reorder(@RequestBody @Valid MenuItemReorderRequest req) {
-    PermissionUtil.check("system:SystemMenu:update");
     return ApiResponse.success(menuItemService.reorder(req));
   }
 
   @PostMapping("/seed-default")
   @RepeatSubmit
+  @PagePerm(routeName = "SystemMenu", action = "create")
   public ApiResponse<Integer> seedDefault(@RequestParam(defaultValue = "false") boolean overwrite) {
-    PermissionUtil.check("system:SystemMenu:create");
     return ApiResponse.success(menuItemService.seedDefaultSidebarMenus(overwrite));
   }
 }

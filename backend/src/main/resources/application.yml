@@ -109,6 +109,12 @@ tdesign:
       sms-email-per-minute: 3
       # 短信/邮件发送每日最大次数
       sms-email-per-day: 20
+      # 每个用户每分钟上传请求上限（0 表示不限制）
+      upload-requests-per-minute: 240
+      # 每个用户每日上传文件数量上限（0 表示不限制）
+      upload-files-per-day: 200
+      # 每个用户每日上传总流量上限（MB，0 表示不限制）
+      upload-bytes-per-day-mb: 2048
   # 插件系统（PF4J）配置
   plugins:
     # 是否启用插件系统（默认关闭）
@@ -123,6 +129,15 @@ tdesign:
       enabled: true # 是否启用邮箱模块
     captcha:
       enabled: true # 是否启用验证码模块
+    backend:
+      # 是否向模块后端透传 Authorization/Cookie（默认关闭，防止凭据泄露）
+      forward-auth-token: false
+      # 访问 /module-api/** 时是否要求 system:SystemModule:query 权限（默认开启）
+      require-module-query-permission: true
+      # 是否将主应用数据库连接信息注入模块进程环境变量（默认关闭）
+      expose-db-credentials: false
+      # 是否允许模块依赖安装执行 npm lifecycle scripts（默认关闭）
+      npm-allow-scripts: false
   # Redis 配置（用于限流/缓存/幂等等能力）
   redis:
     enabled: true # 是否启用 Redis 相关能力
@@ -153,7 +168,7 @@ aj:
     interference-options: 2 # 干扰项强度
 
 # 字段加解密密钥（用于敏感字段脱敏/加密场景；生产建议通过环境变量覆盖）
-tdesign.security.field-secret: ${TDESIGN_SECURITY_FIELD_SECRET:YSKBHJF1DASDGRFUHGDSAUOFIIAO1234567890AB}
+tdesign.security.field-secret: ${TDESIGN_SECURITY_FIELD_SECRET:sdfghjh533gfdc8768vgcchg6fgvhbjhgf}
 
 
 # 接口文档（SpringDoc OpenAPI/Swagger UI）配置
@@ -162,4 +177,3 @@ springdoc:
     enabled: true # 是否启用 OpenAPI JSON 文档
   swagger-ui:
     enabled: true # 是否启用 Swagger UI 页面
-

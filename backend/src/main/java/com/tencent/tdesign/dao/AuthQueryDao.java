@@ -4,7 +4,7 @@ import com.tencent.tdesign.dto.UserIdStringValue;
 import com.tencent.tdesign.entity.MenuItemEntity;
 import com.tencent.tdesign.mapper.AuthQueryMapper;
 import com.tencent.tdesign.mapper.MenuItemMapper;
-import org.springframework.transaction.annotation.Transactional;
+import com.tencent.tdesign.service.PermissionCodeService;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -12,15 +12,18 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 @Repository
 public class AuthQueryDao {
   private final AuthQueryMapper mapper;
   private final MenuItemMapper menuItemMapper;
+  private final PermissionCodeService permissionCodeService;
 
-  public AuthQueryDao(AuthQueryMapper mapper, MenuItemMapper menuItemMapper) {
+  public AuthQueryDao(AuthQueryMapper mapper, MenuItemMapper menuItemMapper, PermissionCodeService permissionCodeService) {
     this.mapper = mapper;
     this.menuItemMapper = menuItemMapper;
+    this.permissionCodeService = permissionCodeService;
   }
 
   @Transactional
@@ -110,10 +113,13 @@ public class AuthQueryDao {
     for (MenuItemEntity menu : menus) {
       String resource = resolveResource(menu);
       if (resource == null || resource.isBlank()) continue;
-      List<String> actions = parseActions(menu.getActions());
+      List<String> actions = permissionCodeService.parseActions(menu.getActions());
       if (actions.isEmpty()) actions = List.of("create", "update", "delete", "query");
       for (String action : actions) {
-        permissions.add("system:" + resource + ":" + action);
+        String permissionCode = permissionCodeService.buildPermissionCode(resource, action);
+        if (permissionCode != null) {
+          permissions.add(permissionCode);
+        }
       }
     }
 
@@ -122,17 +128,6 @@ public class AuthQueryDao {
         mapper.insertRolePermission(roleId, perm);
       }
     }
-  }
-
-  private List<String> parseActions(String actions) {
-    if (actions == null || actions.isBlank()) return List.of();
-    String[] arr = actions.split(",");
-    List<String> list = new ArrayList<>();
-    for (String a : arr) {
-      String v = a.trim();
-      if (!v.isEmpty()) list.add(v);
-    }
-    return list;
   }
 
   private List<String> filterStrings(List<String> values) {

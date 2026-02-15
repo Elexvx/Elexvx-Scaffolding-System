@@ -19,7 +19,10 @@ public class SensitiveEndpointHeaderFilter extends OncePerRequestFilter {
     filterChain.doFilter(request, response);
     String uri = request.getRequestURI();
     if (uri == null) return;
-    if (uri.startsWith("/api/files/") || uri.startsWith("/api/auth") || uri.startsWith("/api/system/file")) {
+    String contextPath = request.getContextPath() == null ? "" : request.getContextPath();
+    String path = uri.startsWith(contextPath) ? uri.substring(contextPath.length()) : uri;
+    if (!path.startsWith("/")) path = "/" + path;
+    if (path.startsWith("/files/") || path.startsWith("/auth") || path.startsWith("/system/file")) {
       response.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
       response.setHeader("Pragma", "no-cache");
       response.setHeader("Expires", "0");

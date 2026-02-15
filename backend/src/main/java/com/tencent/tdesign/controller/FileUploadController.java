@@ -3,8 +3,10 @@ package com.tencent.tdesign.controller;
 import com.tencent.tdesign.annotation.RepeatSubmit;
 import com.tencent.tdesign.dto.FileUploadCompleteRequest;
 import com.tencent.tdesign.dto.FileUploadInitRequest;
+import com.tencent.tdesign.security.AuthContext;
 import com.tencent.tdesign.service.FileChunkUploadService;
 import com.tencent.tdesign.service.ObjectStorageService;
+import com.tencent.tdesign.service.SecurityRateLimitService;
 import com.tencent.tdesign.vo.ApiResponse;
 import com.tencent.tdesign.vo.FileUploadSessionResponse;
 import java.io.IOException;
@@ -44,15 +46,21 @@ public class FileUploadController {
   );
   private final ObjectStorageService storageService;
   private final FileChunkUploadService chunkUploadService;
+  private final SecurityRateLimitService rateLimitService;
+  private final AuthContext authContext;
   private final long maxFileSizeBytes;
 
   public FileUploadController(
     ObjectStorageService storageService,
     FileChunkUploadService chunkUploadService,
+    SecurityRateLimitService rateLimitService,
+    AuthContext authContext,
     @Value("${tdesign.file.upload.max-file-size-mb:100}") long maxFileSizeMb
   ) {
     this.storageService = storageService;
     this.chunkUploadService = chunkUploadService;
+    this.rateLimitService = rateLimitService;
+    this.authContext = authContext;
     this.maxFileSizeBytes = Math.max(1, maxFileSizeMb) * 1024 * 1024;
   }
 
@@ -62,10 +70,13 @@ public class FileUploadController {
     @RequestParam("file") MultipartFile file,
     @RequestParam(value = "page", required = false) String page
   ) throws IOException {
+    long userId = authContext.requireUserId();
+    rateLimitService.checkUploadRequestQuota(userId);
     if (file == null || file.isEmpty()) {
       return ApiResponse.failure(400, "上传文件不能为空");
     }
 
+    SecurityRateLimitService.UploadQuotaLease lease = null;
     try {
       String original = file.getOriginalFilename();
       if (file.getSize() > maxFileSizeBytes) {
@@ -75,11 +86,22 @@ public class FileUploadController {
       if (ext == null || !ALLOWED_EXTENSIONS.contains(ext)) {
         return ApiResponse.failure(400, "文件格式不支持");
       }
+      lease = rateLimitService.acquireUploadQuota(userId, file.getSize());
       log.info("开始处理文件上传: {}, size: {} bytes", original, file.getSize());
       String url = storageService.upload(file, "business", page);
       log.info("文件上传成功: {}, url: {}", original, url);
       return ApiResponse.success(Map.of("url", url));
+    } catch (IllegalArgumentException e) {
+      if (lease != null) {
+        rateLimitService.releaseUploadQuota(lease);
+      }
+      String msg = e.getMessage() == null ? "上传请求被拒绝" : e.getMessage();
+      int code = (msg.contains("频繁") || msg.contains("上限")) ? 429 : 400;
+      return ApiResponse.failure(code, msg);
     } catch (Exception e) {
+      if (lease != null) {
+        rateLimitService.releaseUploadQuota(lease);
+      }
       log.error("文件上传过程中发生错误", e);
       return ApiResponse.failure(500, "文件保存失败，请稍后重试");
     }
@@ -88,10 +110,13 @@ public class FileUploadController {
   @PostMapping("/upload/init")
   @RepeatSubmit
   public ApiResponse<FileUploadSessionResponse> initUpload(@RequestBody @Valid FileUploadInitRequest request) {
+    long userId = authContext.requireUserId();
+    rateLimitService.checkUploadRequestQuota(userId);
     String ext = fileExtension(request.getFileName());
     if (ext == null || !ALLOWED_EXTENSIONS.contains(ext)) {
       return ApiResponse.failure(400, "文件格式不支持");
     }
+    rateLimitService.checkUploadQuotaPreview(userId, request.getFileSize());
     return ApiResponse.success(chunkUploadService.initSession(request));
   }
 
@@ -107,6 +132,8 @@ public class FileUploadController {
     @RequestParam int chunkIndex,
     @RequestParam("chunk") MultipartFile chunk
   ) {
+    long userId = authContext.requireUserId();
+    rateLimitService.checkUploadRequestQuota(userId);
     chunkUploadService.saveChunk(uploadId, chunkIndex, chunk);
     return ApiResponse.success(true);
   }
@@ -114,8 +141,18 @@ public class FileUploadController {
   @PostMapping("/upload/complete")
   @RepeatSubmit
   public ApiResponse<Map<String, String>> completeUpload(@RequestBody @Valid FileUploadCompleteRequest request) {
-    String url = chunkUploadService.finalizeUpload(request.getUploadId(), request.getFolder(), request.getPage());
-    return ApiResponse.success(Map.of("url", url));
+    long userId = authContext.requireUserId();
+    rateLimitService.checkUploadRequestQuota(userId);
+    FileUploadSessionResponse session = chunkUploadService.getStatus(request.getUploadId());
+    long fileSize = session.getFileSize() == null ? 0L : session.getFileSize();
+    SecurityRateLimitService.UploadQuotaLease lease = rateLimitService.acquireUploadQuota(userId, fileSize);
+    try {
+      String url = chunkUploadService.finalizeUpload(request.getUploadId(), request.getFolder(), request.getPage());
+      return ApiResponse.success(Map.of("url", url));
+    } catch (RuntimeException e) {
+      rateLimitService.releaseUploadQuota(lease);
+      throw e;
+    }
   }
 
   @PostMapping("/upload/cancel")
@@ -124,6 +161,8 @@ public class FileUploadController {
     @RequestParam(required = false) String uploadId,
     @RequestBody(required = false) Map<String, Object> body
   ) {
+    long userId = authContext.requireUserId();
+    rateLimitService.checkUploadRequestQuota(userId);
     if (uploadId == null && body != null) {
       Object raw = body.get("uploadId");
       if (raw != null) uploadId = String.valueOf(raw);

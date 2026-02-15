@@ -9,6 +9,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -117,11 +119,14 @@ public class ModuleBackendProcessManager {
     Map<String, String> env = pb.environment();
     env.put("PORT", String.valueOf(port));
     env.put("MODULE_KEY", key);
-    env.put("TDESIGN_DB_URL", getEnv("spring.datasource.url", ""));
-    env.put("TDESIGN_DB_USER", getEnv("spring.datasource.username", ""));
-    env.put("TDESIGN_DB_PASSWORD", getEnv("spring.datasource.password", ""));
-    env.put("TDESIGN_DB_DRIVER", getEnv("spring.datasource.driver-class-name", ""));
-    env.put("TDESIGN_DB_TYPE", getEnv("tdesign.db.type", "mysql"));
+    boolean exposeDbCredentials = Boolean.parseBoolean(getEnv("tdesign.modules.backend.expose-db-credentials", "false"));
+    if (exposeDbCredentials) {
+      env.put("TDESIGN_DB_URL", getEnv("spring.datasource.url", ""));
+      env.put("TDESIGN_DB_USER", getEnv("spring.datasource.username", ""));
+      env.put("TDESIGN_DB_PASSWORD", getEnv("spring.datasource.password", ""));
+      env.put("TDESIGN_DB_DRIVER", getEnv("spring.datasource.driver-class-name", ""));
+      env.put("TDESIGN_DB_TYPE", getEnv("tdesign.db.type", "mysql"));
+    }
     String contextPath = getEnv("server.servlet.context-path", "/api");
     if (!contextPath.startsWith("/")) contextPath = "/" + contextPath;
     int serverPort = parsePort(getEnv("server.port", "8080"), 8080);
@@ -138,9 +143,16 @@ public class ModuleBackendProcessManager {
 
   private void installNodeDependencies(Path dir) {
     boolean useCi = Files.exists(dir.resolve("package-lock.json"));
-    ProcessBuilder pb = useCi
-      ? new ProcessBuilder("npm", "ci", "--no-audit", "--no-fund")
-      : new ProcessBuilder("npm", "install", "--no-audit", "--no-fund");
+    boolean allowNpmScripts = Boolean.parseBoolean(getEnv("tdesign.modules.backend.npm-allow-scripts", "false"));
+    List<String> command = new ArrayList<>();
+    command.add("npm");
+    command.add(useCi ? "ci" : "install");
+    command.add("--no-audit");
+    command.add("--no-fund");
+    if (!allowNpmScripts) {
+      command.add("--ignore-scripts");
+    }
+    ProcessBuilder pb = new ProcessBuilder(command);
     pb.directory(dir.toFile());
     pb.redirectErrorStream(true);
     File log = dir.resolve("npm-install.log").toFile();

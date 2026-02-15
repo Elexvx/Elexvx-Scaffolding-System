@@ -7,6 +7,8 @@ import com.tencent.tdesign.dto.FileUploadInitRequest;
 import com.tencent.tdesign.security.AuthContext;
 import com.tencent.tdesign.vo.FileUploadSessionResponse;
 import jakarta.annotation.PreDestroy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -21,6 +23,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -39,9 +42,11 @@ import java.util.regex.Pattern;
 
 @Service
 public class FileChunkUploadService {
+  private static final Logger log = LoggerFactory.getLogger(FileChunkUploadService.class);
   private static final int DEFAULT_CHUNK_SIZE = 5 * 1024 * 1024;
   private static final int MIN_CHUNK_SIZE = 1 * 1024;
   private static final int MAX_CHUNK_SIZE = 20 * 1024 * 1024;
+  private static final int UPLOAD_ID_SALT_BYTES = 32;
   private static final String DEFAULT_FOLDER = "business";
   private static final String META_FILE = "session.json";
   private static final int MAX_FINGERPRINT_LENGTH = 512;
@@ -54,6 +59,7 @@ public class FileChunkUploadService {
   private final ConcurrentMap<String, Object> sessionLocks = new ConcurrentHashMap<>();
   private final AuthContext authContext;
   private final byte[] uploadIdSalt;
+  private final long maxFileSizeBytes;
   private final ScheduledExecutorService cleanupExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
     Thread thread = new Thread(r, "chunk-upload-cleaner");
     thread.setDaemon(true);
@@ -64,16 +70,22 @@ public class FileChunkUploadService {
     ObjectStorageService storageService,
     ObjectMapper objectMapper,
     AuthContext authContext,
-    @Value("${tdesign.file.token-secret:}") String secret
+    @Value("${tdesign.file.token-secret:}") String secret,
+    @Value("${tdesign.file.upload.max-file-size-mb:100}") long maxFileSizeMb
   ) {
     this.storageService = storageService;
     this.objectMapper = objectMapper;
     this.authContext = authContext;
+    this.maxFileSizeBytes = Math.max(1, maxFileSizeMb) * 1024 * 1024;
     String effective = secret == null ? "" : secret.trim();
     if (effective.isEmpty()) {
-      effective = "tdesign-file-token-secret";
+      byte[] generated = new byte[UPLOAD_ID_SALT_BYTES];
+      new SecureRandom().nextBytes(generated);
+      this.uploadIdSalt = generated;
+      log.warn("tdesign.file.token-secret 未配置，分片 uploadId 使用进程级随机盐。建议在生产环境配置固定高强度密钥。");
+    } else {
+      this.uploadIdSalt = effective.getBytes(StandardCharsets.UTF_8);
     }
-    this.uploadIdSalt = effective.getBytes(StandardCharsets.UTF_8);
     this.chunkRoot = Paths.get(System.getProperty("user.dir"), "runtime", "upload-chunks").toAbsolutePath().normalize();
     try {
       Files.createDirectories(chunkRoot);
@@ -103,7 +115,8 @@ public class FileChunkUploadService {
   }
 
   public FileUploadSessionResponse getStatus(String uploadId) {
-    UploadSession session = loadSession(uploadId);
+    long userId = authContext.requireUserId();
+    UploadSession session = loadSession(uploadId, userId);
     return FileUploadSessionResponse.from(
       session.getUploadId(),
       session.getFileName(),
@@ -116,10 +129,15 @@ public class FileChunkUploadService {
 
   public void saveChunk(String uploadId, int chunkIndex, MultipartFile chunk) {
     Objects.requireNonNull(chunk, "chunk 不能为空");
-    UploadSession session = loadSession(uploadId);
+    long userId = authContext.requireUserId();
+    UploadSession session = loadSession(uploadId, userId);
     validateChunkIndex(session, chunkIndex);
     if (chunk.isEmpty()) {
       throw new IllegalArgumentException("分片数据不能为空");
+    }
+    long expectedSize = expectedChunkSize(session, chunkIndex);
+    if (chunk.getSize() != expectedSize) {
+      throw new IllegalArgumentException("分片大小不匹配，期望 " + expectedSize + " 字节，实际 " + chunk.getSize() + " 字节");
     }
     Path dir = sessionDir(uploadId);
     Path chunkFile = dir.resolve(chunkFileName(chunkIndex));
@@ -136,7 +154,8 @@ public class FileChunkUploadService {
   }
 
   public String finalizeUpload(String uploadId, String folder, String page) {
-    UploadSession session = loadSession(uploadId);
+    long userId = authContext.requireUserId();
+    UploadSession session = loadSession(uploadId, userId);
     if (!session.isComplete()) {
       throw new IllegalStateException("还有未上传的分片");
     }
@@ -155,6 +174,8 @@ public class FileChunkUploadService {
   }
 
   public boolean cancel(String uploadId) {
+    long userId = authContext.requireUserId();
+    loadSession(uploadId, userId);
     Path dir = sessionDir(uploadId);
     boolean deleted = deleteSessionDir(dir);
     sessionLocks.remove(uploadId);
@@ -172,9 +193,18 @@ public class FileChunkUploadService {
     String uploadId = buildUploadId(userId, fingerprint);
     Path dir = sessionDir(uploadId);
     synchronized (lockFor(uploadId)) {
-    UploadSession existing = loadSessionIfExists(dir);
-    int chunkSize = normalizeChunkSize(request.getChunkSize());
+      UploadSession existing = loadSessionIfExists(dir);
+      int chunkSize = normalizeChunkSize(request.getChunkSize());
       long fileSize = request.getFileSize();
+      if (fileSize <= 0) {
+        throw new IllegalArgumentException("文件大小必须大于 0");
+      }
+      if (fileSize > maxFileSizeBytes) {
+        throw new IllegalArgumentException("上传文件过大");
+      }
+      if (existing != null && existing.getOwnerUserId() != userId) {
+        throw new IllegalArgumentException("上传会话无权限访问: " + uploadId);
+      }
       if (existing != null && (!existing.matches(request.getFileName(), fileSize, chunkSize))) {
         deleteSessionDir(dir);
         existing = null;
@@ -185,7 +215,7 @@ public class FileChunkUploadService {
         } catch (IOException e) {
           throw new IllegalStateException("无法创建分片目录", e);
         }
-        existing = new UploadSession(uploadId, request.getFingerprint(), request.getFileName(), fileSize, chunkSize);
+        existing = new UploadSession(uploadId, userId, request.getFingerprint(), request.getFileName(), fileSize, chunkSize);
         persistSession(existing, dir);
       } else {
         existing.setFileName(request.getFileName());
@@ -199,7 +229,7 @@ public class FileChunkUploadService {
     }
   }
 
-  private UploadSession loadSession(String uploadId) {
+  private UploadSession loadSession(String uploadId, long userId) {
     Path dir = sessionDir(uploadId);
     UploadSession session = loadSessionIfExists(dir);
     if (session == null) {
@@ -211,6 +241,9 @@ public class FileChunkUploadService {
         sessionLocks.remove(uploadId);
       }
       throw new IllegalArgumentException("上传会话已过期: " + uploadId);
+    }
+    if (session.getOwnerUserId() != userId) {
+      throw new IllegalArgumentException("上传会话无权限访问: " + uploadId);
     }
     return session;
   }
@@ -334,6 +367,15 @@ public class FileChunkUploadService {
     }
   }
 
+  private long expectedChunkSize(UploadSession session, int chunkIndex) {
+    long start = (long) chunkIndex * session.getChunkSize();
+    long remaining = session.getFileSize() - start;
+    if (remaining <= 0) {
+      throw new IllegalArgumentException("分片索引越界: " + chunkIndex);
+    }
+    return Math.min(session.getChunkSize(), remaining);
+  }
+
   private int normalizeChunkSize(Integer requested) {
     if (requested == null) {
       return DEFAULT_CHUNK_SIZE;
@@ -408,6 +450,7 @@ public class FileChunkUploadService {
   @SuppressWarnings("unused")
   private static class UploadSession {
     private String uploadId;
+    private long ownerUserId;
     private String fingerprint;
     private String fileName;
     private long fileSize;
@@ -418,8 +461,9 @@ public class FileChunkUploadService {
 
     public UploadSession() {}
 
-    public UploadSession(String uploadId, String fingerprint, String fileName, long fileSize, int chunkSize) {
+    public UploadSession(String uploadId, long ownerUserId, String fingerprint, String fileName, long fileSize, int chunkSize) {
       this.uploadId = uploadId;
+      this.ownerUserId = ownerUserId;
       this.fingerprint = fingerprint;
       this.fileName = fileName;
       this.fileSize = fileSize;
@@ -441,6 +485,10 @@ public class FileChunkUploadService {
 
     public String getUploadId() {
       return uploadId;
+    }
+
+    public long getOwnerUserId() {
+      return ownerUserId;
     }
 
     public String getFileName() {

@@ -1,14 +1,6 @@
 <template>
   <div class="user-page">
     <t-layout class="profile-shell">
-      <t-header class="profile-shell__header">
-        <div class="profile-shell__header-top">
-          <div class="profile-shell__header-left">
-            <div class="profile-shell__title">个人中心</div>
-          </div>
-        </div>
-      </t-header>
-
       <t-layout class="profile-shell__body">
         <t-content class="profile-shell__content">
           <div class="profile-main" :class="{ 'profile-main--wide': isWideDesktop }">
@@ -42,20 +34,24 @@
               <div class="sections-shell">
                 <div class="sections-detail">
                   <t-collapse v-model="activePanels" class="info-sections">
-                    <InfoSectionCard value="basic" title="基本信息" :percent="basicInfoScore" @action="openBasicEditDrawer">
+                    <InfoSectionCard
+                      value="basic"
+                      title="基本信息"
+                      :percent="basicInfoScore"
+                      action-text="编辑信息"
+                      :sensitive-toggle="true"
+                      :sensitive-visible="!basicMasked"
+                      @toggle-sensitive="toggleBasicMasked"
+                      @action="openBasicEditDrawer"
+                    >
                       <div id="user-block-basic" class="section-body">
-                        <div class="section-body__meta-action">
-                          <t-button size="small" variant="text" @click="toggleBasicMasked">
-                            {{ basicMasked ? '显示敏感信息' : '隐藏敏感信息' }}
-                          </t-button>
-                        </div>
                         <FieldStatusItem
                           v-for="item in basicStatusItems"
                           :key="item.key"
                           :label="item.label"
                           :value="item.value"
                           :done="item.done"
-                          action-text="去完善"
+                          :action-text="item.done ? '' : '去完善'"
                           @action="openBasicEditDrawer"
                         />
                       </div>
@@ -65,27 +61,34 @@
                       value="document"
                       title="证件信息"
                       :percent="documentInfoScore"
+                      action-text="编辑信息"
+                      :sensitive-toggle="true"
+                      :sensitive-visible="!documentMasked"
+                      @toggle-sensitive="toggleDocumentMasked"
                       @action="openDocumentEditDrawer"
                     >
                       <div id="user-block-document" class="section-body">
-                        <div class="section-body__meta-action">
-                          <t-button size="small" variant="text" @click="toggleDocumentMasked">
-                            {{ documentMasked ? '显示敏感信息' : '隐藏敏感信息' }}
-                          </t-button>
-                        </div>
                         <FieldStatusItem
                           v-for="item in documentStatusItems"
                           :key="item.key"
                           :label="item.label"
                           :value="item.value"
                           :done="item.done"
-                          action-text="去完善"
+                          :action-text="item.done ? '' : '去完善'"
                           @action="openDocumentEditDrawer"
                         />
                       </div>
                     </InfoSectionCard>
 
-                    <InfoSectionCard value="security" title="安全设置" :percent="securityInfoScore" @action="openBasicEditDrawer">
+                    <InfoSectionCard
+                      value="security"
+                      title="安全设置"
+                      :percent="securityInfoScore"
+                      :sensitive-toggle="true"
+                      :sensitive-visible="!securityMasked"
+                      :show-action="false"
+                      @toggle-sensitive="toggleSecurityMasked"
+                    >
                       <div id="user-block-security" class="section-body">
                         <FieldStatusItem
                           v-for="item in securityStatusItems"
@@ -93,7 +96,7 @@
                           :label="item.label"
                           :value="item.value"
                           :done="item.done"
-                          action-text="去完善"
+                          :action-text="item.done ? '' : '去完善'"
                           @action="openBasicEditDrawer"
                         />
 
@@ -353,6 +356,7 @@ const profile = ref<UserProfile>({} as UserProfile);
 
 const basicMasked = ref(true);
 const documentMasked = ref(true);
+const securityMasked = ref(true);
 
 const basicEditVisible = ref(false);
 const documentEditVisible = ref(false);
@@ -446,6 +450,10 @@ const toggleBasicMasked = () => {
 
 const toggleDocumentMasked = () => {
   documentMasked.value = !documentMasked.value;
+};
+
+const toggleSecurityMasked = () => {
+  securityMasked.value = !securityMasked.value;
 };
 
 const basicProfileFormRef = ref<FormInstanceFunctions>();
@@ -770,17 +778,35 @@ const fullAddress = computed(() => {
 const displayBasic = computed(() => {
   if (!basicMasked.value) {
     return {
-      account: (profile.value.account || '').trim(),
       mobile: (profile.value.mobile || '').trim(),
       email: (profile.value.email || '').trim(),
       address: fullAddress.value,
     };
   }
   return {
-    account: maskAccount(profile.value.account),
     mobile: maskPhone(profile.value.mobile),
     email: maskEmail(profile.value.email),
     address: maskAddress(fullAddress.value),
+  };
+});
+
+const displayProfile = computed(() => ({
+  account: maskAccount(profile.value.account),
+  mobile: maskPhone(profile.value.mobile),
+  email: maskEmail(profile.value.email),
+  address: maskAddress(fullAddress.value),
+}));
+
+const displaySecurity = computed(() => {
+  if (!securityMasked.value) {
+    return {
+      mobile: (profile.value.mobile || '').trim(),
+      email: (profile.value.email || '').trim(),
+    };
+  }
+  return {
+    mobile: maskPhone(profile.value.mobile),
+    email: maskEmail(profile.value.email),
   };
 });
 
@@ -797,11 +823,11 @@ const displayDocument = computed(() => {
 
 const profileContacts = computed(() => {
   const contacts = [
-    `账号：${displayBasic.value.account || '-'}`,
-    `邮箱：${displayBasic.value.email || '待补充'}`,
-    `手机：${displayBasic.value.mobile || '待补充'}`,
+    `账号：${displayProfile.value.account || '-'}`,
+    `邮箱：${displayProfile.value.email || '待补充'}`,
+    `手机：${displayProfile.value.mobile || '待补充'}`,
   ];
-  if (displayBasic.value.address) contacts.push(`地址：${displayBasic.value.address}`);
+  if (displayProfile.value.address) contacts.push(`地址：${displayProfile.value.address}`);
   return contacts;
 });
 
@@ -877,13 +903,13 @@ const securityStatusItems = computed(() => [
   {
     key: 'security-mobile',
     label: '手机验证',
-    value: displayBasic.value.mobile || '待补充',
+    value: displaySecurity.value.mobile || '待补充',
     done: !isMissing('mobile'),
   },
   {
     key: 'security-email',
     label: '邮箱验证',
-    value: displayBasic.value.email || '待补充',
+    value: displaySecurity.value.email || '待补充',
     done: !isMissing('email'),
   },
 ]);
@@ -1175,31 +1201,6 @@ onUnmounted(() => {
     background: transparent;
   }
 
-  .profile-shell__header {
-    padding: 0;
-    margin-bottom: var(--user-page-gap);
-    background: transparent;
-  }
-
-  .profile-shell__header-top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-  }
-
-  .profile-shell__header-left {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .profile-shell__title {
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--td-text-color-primary);
-  }
-
   .profile-shell__body {
     background: transparent;
   }
@@ -1232,27 +1233,33 @@ onUnmounted(() => {
   }
 
   .info-sections {
+    border: 1px solid var(--td-border-level-1-color);
+    border-radius: var(--td-radius-large);
+    background: var(--td-bg-color-container);
+    overflow: hidden;
+
     :deep(.t-collapse-panel) {
-      margin-bottom: 12px;
-      border-radius: var(--td-radius-large);
-      border: 1px solid var(--td-border-level-1-color);
-      background: var(--td-bg-color-container);
+      margin: 0;
+      border: none;
+      border-bottom: 1px solid var(--td-border-level-1-color);
+      border-radius: 0;
+      background: transparent;
       padding: 0;
-      overflow: hidden;
     }
 
     :deep(.t-collapse-panel:last-child) {
-      margin-bottom: 0;
+      border-bottom: none;
     }
 
     :deep(.t-collapse-panel__header) {
-      padding: 16px;
-      border-bottom: 1px solid var(--td-border-level-1-color);
+      min-height: 72px;
+      padding: 0 20px;
+      border-bottom: none;
       background: var(--td-bg-color-container);
     }
 
     :deep(.t-collapse-panel__body) {
-      border-bottom: none;
+      border-top: 1px solid var(--td-border-level-1-color);
       background: var(--td-bg-color-container);
       overflow: hidden;
     }
@@ -1262,18 +1269,12 @@ onUnmounted(() => {
     }
 
     :deep(.t-collapse-panel__content) {
-      padding: 0 16px 16px;
+      padding: 0 20px 20px;
     }
   }
 
   .section-body {
     padding-top: 10px;
-  }
-
-  .section-body__meta-action {
-    display: flex;
-    justify-content: flex-end;
-    margin-bottom: 4px;
   }
 
   .section-block-title {
@@ -1311,24 +1312,21 @@ onUnmounted(() => {
       grid-template-columns: minmax(0, 1fr);
     }
   }
-
-  @media (max-width: 767px) {
-    .profile-shell__header {
-      margin-bottom: 12px;
+  @media (max-width: 1200px) {
+    .summary-grid {
+      grid-template-columns: 1fr;
     }
+  }
 
-    .profile-shell__header-top {
-      flex-wrap: wrap;
-      align-items: flex-start;
-    }
-
+  @media (max-width: 900px) {
     .info-sections {
       :deep(.t-collapse-panel) {
         padding: 0;
       }
 
       :deep(.t-collapse-panel__header) {
-        padding: 14px;
+        min-height: 64px;
+        padding: 0 14px;
       }
 
       :deep(.t-collapse-panel__content) {

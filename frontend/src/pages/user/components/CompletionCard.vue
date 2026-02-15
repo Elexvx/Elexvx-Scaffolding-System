@@ -1,8 +1,7 @@
 <template>
   <t-card :bordered="false" class="completion-card" :loading="loading">
     <div class="completion-card__head">
-      <div class="completion-card__title">信息完整度 {{ percent }}%</div>
-      <t-button variant="text" theme="primary" @click="$emit('cta-click')">{{ ctaText }}</t-button>
+      <div class="completion-card__title">信息完整度</div>
     </div>
 
     <t-progress :percentage="percent" theme="line" :status="percent >= 100 ? 'success' : 'active'" />

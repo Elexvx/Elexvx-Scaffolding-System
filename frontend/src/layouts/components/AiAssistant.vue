@@ -8,7 +8,12 @@
         type="compact"
         @click="handleToolClick"
       >
-        <t-sticky-item label="二维码" :popup="renderPopup" :popup-props="{ overlayInnerStyle: { padding: '8px' } }">
+        <t-sticky-item
+          v-if="!isMobile"
+          label="二维码"
+          :popup="renderPopup"
+          :popup-props="{ overlayInnerStyle: { padding: '8px' } }"
+        >
           <template #icon><qrcode-icon /></template>
         </t-sticky-item>
         <t-sticky-item label="回到顶部">
@@ -20,11 +25,19 @@
 </template>
 <script setup lang="tsx">
 import { ArrowUpIcon, QrcodeIcon } from 'tdesign-icons-vue-next';
+import { onMounted, onUnmounted, ref } from 'vue';
 
 import { prefix } from '@/config/global';
 import { useSettingStore } from '@/store';
 
 const settingStore = useSettingStore();
+const isMobile = ref(false);
+const COMPACT_BREAKPOINT = 900;
+
+const updateIsMobile = () => {
+  if (typeof window === 'undefined') return;
+  isMobile.value = window.innerWidth <= COMPACT_BREAKPOINT;
+};
 
 const renderPopup = () => (
   <div class="ai-qr-popup" style={{ width: '140px', padding: '4px' }}>
@@ -78,6 +91,15 @@ const handleScrollTop = () => {
   // 3. 回退到window滚动
   window.scrollTo({ top: 0, behavior: 'smooth' });
 };
+
+onMounted(() => {
+  updateIsMobile();
+  window.addEventListener('resize', updateIsMobile);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('resize', updateIsMobile);
+});
 </script>
 <style lang="less" scoped>
 .ai-assistant-container {
@@ -146,5 +168,35 @@ const handleScrollTop = () => {
 .ai-qr-popup__desc {
   font-size: 12px;
   line-height: 1.4;
+}
+
+@media (max-width: 900px) {
+  .ai-assistant-container {
+    right: -6px;
+    bottom: max(12px, env(safe-area-inset-bottom));
+  }
+
+  .ai-assistant-tool {
+    :deep(.t-sticky-tool__item) {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      margin: 6px 0;
+    }
+
+    :deep(.t-sticky-tool__item__icon) {
+      font-size: 18px;
+    }
+  }
+}
+
+@media (max-width: 640px) {
+  .ai-assistant-tool {
+    :deep(.t-sticky-tool__item) {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+    }
+  }
 }
 </style>

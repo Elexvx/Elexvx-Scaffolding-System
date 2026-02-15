@@ -1,322 +1,285 @@
 <template>
-  <div class="user-center-container">
-    <div class="user-center-grid">
-      <div class="user-center-right">
-        <div class="summary-grid">
-          <t-card :bordered="false" class="user-info-card user-info-card--inline" :loading="profileLoading">
-            <div class="user-inline-left">
-              <t-upload
-                action="/api/system/file/upload?page=user-profile"
-                name="file"
-                :show-file-list="false"
-                :headers="uploadHeaders"
-                theme="custom"
-                @success="handleAvatarSuccess"
-                @fail="handleAvatarFail"
-              >
-                <t-avatar size="72px" :image="profile.avatar" class="user-avatar">
-                  <template v-if="!profile.avatar" #icon>
-                    <t-icon name="user" />
-                  </template>
-                  <div class="avatar-edit-overlay"><t-icon name="edit" /></div>
-                </t-avatar>
-              </t-upload>
-              <div class="user-inline-name">{{ profile.name || '-' }}</div>
-              <div class="user-inline-left-meta">
-                <div class="user-inline-row">角色：{{ formatList(displayedRoles) }}</div>
-                <div class="user-inline-row">所属部门：{{ formatList(displayedOrgUnits) }}</div>
-                <div class="user-inline-row">团队：{{ profile.team || '待补充' }}</div>
-              </div>
-            </div>
-            <div class="user-inline-right">
-              <div class="user-inline-row">
-                账号：<span>{{ displayBasic.account || '-' }}</span>
-              </div>
-              <div class="user-inline-row">
-                <t-icon name="mail" /><span>{{ displayBasic.email || '待补充' }}</span>
-              </div>
-              <div class="user-inline-row">
-                <t-icon name="call" /><span>{{ displayBasic.mobile || '待补充' }}</span>
-              </div>
-              <div class="user-inline-row user-inline-row--full">
-                <t-icon name="location" /><span>{{ displayBasic.address || '待补充' }}</span>
-              </div>
-            </div>
-          </t-card>
-
-          <t-card :bordered="false" class="summary-card" :loading="profileLoading">
-            <div class="score-layout">
-              <div class="score-ring" :style="scoreRingStyle">
-                <div class="score-ring-inner">
-                  <div class="score-value">{{ completenessScore }}%</div>
-                  <div class="score-label">信息完整度</div>
-                </div>
-              </div>
-              <div class="score-list">
-                <div class="score-column">
-                  <div class="score-subtotal">
-                    <span>基本信息</span>
-                    <strong>{{ basicInfoScore }}%</strong>
-                  </div>
-                  <div
-                    v-for="item in basicCompletenessItems"
-                    :key="item.key"
-                    class="score-list-item"
-                    :class="{ done: item.done }"
-                  >
-                    <t-icon :name="item.done ? 'check-circle-filled' : 'add-circle'" />
-                    <span>{{ item.label }}</span>
-                  </div>
-                </div>
-                <div class="score-column">
-                  <div class="score-subtotal">
-                    <span>证件信息</span>
-                    <strong>{{ documentInfoScore }}%</strong>
-                  </div>
-                  <div
-                    v-for="item in documentCompletenessItems"
-                    :key="item.key"
-                    class="score-list-item"
-                    :class="{ done: item.done }"
-                  >
-                    <t-icon :name="item.done ? 'check-circle-filled' : 'add-circle'" />
-                    <span>{{ item.label }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </t-card>
+  <div class="user-page">
+    <t-layout class="profile-shell">
+      <t-header class="profile-shell__header">
+        <div class="profile-shell__header-top">
+          <div class="profile-shell__header-left">
+            <div class="profile-shell__title">个人中心</div>
+          </div>
         </div>
+      </t-header>
 
-        <t-card :bordered="false" class="user-setting-card" :loading="profileLoading">
-          <template #title>
-            <div class="sensitive-title">
-              <span>基本信息</span>
-              <span
-                class="sensitive-toggle"
-                role="button"
-                tabindex="0"
-                @click.stop="toggleBasicMasked"
-                @keydown.enter.stop.prevent="toggleBasicMasked"
-              >
-                <t-icon :name="basicMasked ? 'browse-off' : 'browse'" />
-              </span>
+      <t-layout class="profile-shell__body">
+        <t-content class="profile-shell__content">
+          <div class="profile-main" :class="{ 'profile-main--wide': isWideDesktop }">
+            <div class="profile-main__left">
+              <div id="user-block-profile">
+                <ProfileSummaryCard
+                  :loading="profileLoading"
+                  :avatar="profile.avatar"
+                  :name="profile.name"
+                  :role-tag="roleTag"
+                  :contacts="profileContacts"
+                  :upload-headers="uploadHeaders"
+                  @avatar-success="handleAvatarSuccess"
+                  @avatar-fail="handleAvatarFail"
+                />
+              </div>
+
+              <div id="user-block-completion">
+                <CompletionCard
+                  :loading="profileLoading"
+                  :percent="completenessScore"
+                  :todos="completionTodos"
+                  cta-text="一键去补全"
+                  @item-click="handleTodoClick"
+                  @cta-click="handleCompletionCta"
+                />
+              </div>
             </div>
-          </template>
-          <template #actions>
-            <t-button theme="primary" variant="text" @click="openBasicEditDrawer"><t-icon name="edit" />编辑</t-button>
-          </template>
-          <t-descriptions :column="2" layout="horizontal" class="user-profile-descriptions">
-            <t-descriptions-item label="姓名">{{ profile.name || '待补充' }}</t-descriptions-item>
-            <t-descriptions-item label="昵称">{{ profile.nickname || '待补充' }}</t-descriptions-item>
-            <t-descriptions-item label="性别">{{ genderLabel || '待补充' }}</t-descriptions-item>
-            <t-descriptions-item label="手机号码">{{ displayBasic.mobile || '待补充' }}</t-descriptions-item>
-            <t-descriptions-item label="电子邮箱">{{ displayBasic.email || '待补充' }}</t-descriptions-item>
-            <t-descriptions-item label="邮编">{{ profile.zipCode || '待补充' }}</t-descriptions-item>
-            <t-descriptions-item label="地址" :span="2">{{ displayBasic.address || '待补充' }}</t-descriptions-item>
-          </t-descriptions>
-        </t-card>
 
-        <t-card :bordered="false" class="user-setting-card" :loading="profileLoading">
-          <template #title>
-            <div class="sensitive-title">
-              <span>证件信息</span>
-              <span
-                class="sensitive-toggle"
-                role="button"
-                tabindex="0"
-                @click.stop="toggleDocumentMasked"
-                @keydown.enter.stop.prevent="toggleDocumentMasked"
-              >
-                <t-icon :name="documentMasked ? 'browse-off' : 'browse'" />
-              </span>
+            <div class="profile-main__right">
+              <div class="sections-shell">
+                <div class="sections-detail">
+                  <t-collapse v-model="activePanels" class="info-sections">
+                    <InfoSectionCard value="basic" title="基本信息" :percent="basicInfoScore" @action="openBasicEditDrawer">
+                      <div id="user-block-basic" class="section-body">
+                        <div class="section-body__meta-action">
+                          <t-button size="small" variant="text" @click="toggleBasicMasked">
+                            {{ basicMasked ? '显示敏感信息' : '隐藏敏感信息' }}
+                          </t-button>
+                        </div>
+                        <FieldStatusItem
+                          v-for="item in basicStatusItems"
+                          :key="item.key"
+                          :label="item.label"
+                          :value="item.value"
+                          :done="item.done"
+                          action-text="去完善"
+                          @action="openBasicEditDrawer"
+                        />
+                      </div>
+                    </InfoSectionCard>
+
+                    <InfoSectionCard
+                      value="document"
+                      title="证件信息"
+                      :percent="documentInfoScore"
+                      @action="openDocumentEditDrawer"
+                    >
+                      <div id="user-block-document" class="section-body">
+                        <div class="section-body__meta-action">
+                          <t-button size="small" variant="text" @click="toggleDocumentMasked">
+                            {{ documentMasked ? '显示敏感信息' : '隐藏敏感信息' }}
+                          </t-button>
+                        </div>
+                        <FieldStatusItem
+                          v-for="item in documentStatusItems"
+                          :key="item.key"
+                          :label="item.label"
+                          :value="item.value"
+                          :done="item.done"
+                          action-text="去完善"
+                          @action="openDocumentEditDrawer"
+                        />
+                      </div>
+                    </InfoSectionCard>
+
+                    <InfoSectionCard value="security" title="安全设置" :percent="securityInfoScore" @action="openBasicEditDrawer">
+                      <div id="user-block-security" class="section-body">
+                        <FieldStatusItem
+                          v-for="item in securityStatusItems"
+                          :key="item.key"
+                          :label="item.label"
+                          :value="item.value"
+                          :done="item.done"
+                          action-text="去完善"
+                          @action="openBasicEditDrawer"
+                        />
+
+                        <div class="section-block-title">修改密码</div>
+                        <t-form
+                          ref="passwordFormRef"
+                          class="password-form"
+                          :data="passwordForm"
+                          :rules="passwordRules"
+                          label-align="right"
+                          label-width="120px"
+                          @submit="handleSubmitPassword"
+                        >
+                          <t-form-item label="当前密码" name="oldPassword"
+                            ><t-input v-model="passwordForm.oldPassword" type="password" placeholder="请输入当前密码"
+                          /></t-form-item>
+                          <t-form-item label="新密码" name="newPassword"
+                            ><t-input v-model="passwordForm.newPassword" type="password" placeholder="请输入新密码"
+                          /></t-form-item>
+                          <t-form-item label="确认新密码" name="confirmPassword"
+                            ><t-input
+                              v-model="passwordForm.confirmPassword"
+                              type="password"
+                              placeholder="请再次输入新密码"
+                          /></t-form-item>
+                          <t-form-item class="form-submit" label-width="0"
+                            ><t-button theme="primary" type="submit" :loading="changingPassword">修改密码</t-button></t-form-item
+                          >
+                        </t-form>
+
+                        <div class="section-block-title">最近登录日志</div>
+                        <t-table
+                          row-key="id"
+                          class="login-log-table"
+                          :data="loginLogs"
+                          :columns="loginLogColumns"
+                          :loading="loginLogLoading"
+                          :pagination="null"
+                        />
+                      </div>
+                    </InfoSectionCard>
+                  </t-collapse>
+                </div>
+              </div>
             </div>
-          </template>
-          <template #actions>
-            <t-button theme="primary" variant="text" @click="openDocumentEditDrawer"
-              ><t-icon name="edit" />编辑</t-button
-            >
-          </template>
-          <t-descriptions :column="2" layout="horizontal" class="user-profile-descriptions">
-            <t-descriptions-item label="证件类型">{{ documentTypeLabel || '待补充' }}</t-descriptions-item>
-            <t-descriptions-item label="证件号码">{{ displayDocument.idCard || '待补充' }}</t-descriptions-item>
-            <t-descriptions-item label="证件有效期起">{{ profile.idValidFrom || '待补充' }}</t-descriptions-item>
-            <t-descriptions-item label="证件有效期止">{{ profile.idValidTo || '待补充' }}</t-descriptions-item>
-          </t-descriptions>
-        </t-card>
+          </div>
+        </t-content>
+      </t-layout>
+    </t-layout>
 
-        <confirm-drawer v-model:visible="basicEditVisible" header="编辑基本信息" :size="drawerSize">
-          <t-form
-            ref="basicProfileFormRef"
-            class="drawer-form--single"
-            :data="profileForm"
-            :rules="basicProfileRules"
-            label-align="right"
-            label-width="120px"
-            layout="vertical"
-            @submit="handleUpdateBasicProfile"
-          >
-            <t-row :gutter="[24, 24]">
-              <t-col :xs="24" :sm="12"
-                ><t-form-item label="姓名" name="name"
-                  ><t-input v-model="profileForm.name" placeholder="请输入姓名" /></t-form-item
-              ></t-col>
-              <t-col :xs="24" :sm="12"
-                ><t-form-item label="性别" name="gender"
-                  ><t-select
-                    v-model="profileForm.gender"
-                    :options="genderOptions"
-                    placeholder="请选择性别"
-                    clearable /></t-form-item
-              ></t-col>
-              <t-col :xs="24" :sm="12"
-                ><t-form-item label="昵称" name="nickname"
-                  ><t-input v-model="profileForm.nickname" placeholder="请输入昵称" /></t-form-item
-              ></t-col>
-              <t-col :xs="24" :sm="12"
-                ><t-form-item label="手机号码" name="mobile"
-                  ><t-input v-model="profileForm.mobile" placeholder="请输入手机号码" /></t-form-item
-              ></t-col>
-              <t-col :xs="24" :sm="12"
-                ><t-form-item label="电子邮箱" name="email"
-                  ><t-input v-model="profileForm.email" placeholder="请输入邮箱" /></t-form-item
-              ></t-col>
-              <t-col :xs="24" :sm="12">
-                <t-form-item label="省/市/区县" name="provinceId">
-                  <t-cascader
-                    v-model="areaValue"
-                    :options="areaOptions"
-                    :loading="areaLoading"
-                    value-type="full"
-                    :show-all-levels="true"
-                    clearable
-                    placeholder="请选择省/市/区县"
-                    @change="handleAreaChange"
-                  />
-                </t-form-item>
-              </t-col>
-              <t-col :xs="24" :sm="12"
-                ><t-form-item label="邮编" name="zipCode"
-                  ><t-input v-model="profileForm.zipCode" placeholder="请输入邮编" /></t-form-item
-              ></t-col>
-              <t-col :xs="24" :sm="12"
-                ><t-form-item label="详细地址" name="address"
-                  ><t-input v-model="profileForm.address" placeholder="请输入详细地址" /></t-form-item
-              ></t-col>
-            </t-row>
-          </t-form>
-          <template #footer>
-            <t-space class="tdesign-starter-action-bar">
-              <t-button variant="outline" @click="basicEditVisible = false">取消</t-button>
-              <t-button theme="primary" :loading="updatingProfile" @click="basicProfileFormRef?.submit()"
-                >保存</t-button
-              >
-            </t-space>
-          </template>
-        </confirm-drawer>
+    <confirm-drawer v-model:visible="basicEditVisible" header="编辑基本信息" :size="drawerSize">
+      <t-form
+        ref="basicProfileFormRef"
+        class="drawer-form--single"
+        :data="profileForm"
+        :rules="basicProfileRules"
+        label-align="right"
+        label-width="120px"
+        layout="vertical"
+        @submit="handleUpdateBasicProfile"
+      >
+        <t-row :gutter="[24, 24]">
+          <t-col :xs="24" :sm="12"
+            ><t-form-item label="姓名" name="name"><t-input v-model="profileForm.name" placeholder="请输入姓名" /></t-form-item
+          ></t-col>
+          <t-col :xs="24" :sm="12"
+            ><t-form-item label="性别" name="gender"
+              ><t-select
+                v-model="profileForm.gender"
+                :options="genderOptions"
+                placeholder="请选择性别"
+                clearable /></t-form-item
+          ></t-col>
+          <t-col :xs="24" :sm="12"
+            ><t-form-item label="昵称" name="nickname"
+              ><t-input v-model="profileForm.nickname" placeholder="请输入昵称" /></t-form-item
+          ></t-col>
+          <t-col :xs="24" :sm="12"
+            ><t-form-item label="手机号码" name="mobile"
+              ><t-input v-model="profileForm.mobile" placeholder="请输入手机号码" /></t-form-item
+          ></t-col>
+          <t-col :xs="24" :sm="12"
+            ><t-form-item label="电子邮箱" name="email"
+              ><t-input v-model="profileForm.email" placeholder="请输入邮箱" /></t-form-item
+          ></t-col>
+          <t-col :xs="24" :sm="12">
+            <t-form-item label="省/市/区县" name="provinceId">
+              <t-cascader
+                v-model="areaValue"
+                :options="areaOptions"
+                :loading="areaLoading"
+                value-type="full"
+                :show-all-levels="true"
+                clearable
+                placeholder="请选择省/市/区县"
+                @change="handleAreaChange"
+              />
+            </t-form-item>
+          </t-col>
+          <t-col :xs="24" :sm="12"
+            ><t-form-item label="邮编" name="zipCode"
+              ><t-input v-model="profileForm.zipCode" placeholder="请输入邮编" /></t-form-item
+          ></t-col>
+          <t-col :xs="24" :sm="12"
+            ><t-form-item label="详细地址" name="address"
+              ><t-input v-model="profileForm.address" placeholder="请输入详细地址" /></t-form-item
+          ></t-col>
+        </t-row>
+      </t-form>
+      <template #footer>
+        <t-space class="tdesign-starter-action-bar">
+          <t-button variant="outline" @click="basicEditVisible = false">取消</t-button>
+          <t-button theme="primary" :loading="updatingProfile" @click="basicProfileFormRef?.submit()">保存</t-button>
+        </t-space>
+      </template>
+    </confirm-drawer>
 
-        <confirm-drawer v-model:visible="documentEditVisible" header="编辑证件信息" :size="drawerSize">
-          <t-form
-            ref="documentProfileFormRef"
-            class="drawer-form--single"
-            :data="profileForm"
-            :rules="documentProfileRules"
-            label-align="right"
-            label-width="120px"
-            layout="vertical"
-            @submit="handleUpdateDocumentProfile"
-          >
-            <t-row :gutter="[24, 24]">
-              <t-col :xs="24" :sm="12"
-                ><t-form-item label="证件类型" name="idType"
-                  ><t-select
-                    v-model="profileForm.idType"
-                    :options="documentTypeOptions"
-                    clearable
-                    filterable
-                    placeholder="请选择证件类型" /></t-form-item
-              ></t-col>
-              <t-col :xs="24" :sm="12"
-                ><t-form-item label="证件号码" name="idCard"
-                  ><t-input v-model="profileForm.idCard" :placeholder="documentNoPlaceholder" /></t-form-item
-              ></t-col>
-              <t-col :xs="24" :sm="12">
-                <t-form-item label="证件有效期起" name="idValidFrom">
-                  <t-date-picker
-                    v-model="profileForm.idValidFrom"
-                    clearable
-                    format="YYYY-MM-DD"
-                    value-type="YYYY-MM-DD"
-                    style="width: 100%"
-                  />
-                </t-form-item>
-              </t-col>
-              <t-col :xs="24" :sm="12">
-                <t-form-item label="证件有效期止" name="idValidTo">
-                  <t-date-picker
-                    v-model="profileForm.idValidTo"
-                    clearable
-                    format="YYYY-MM-DD"
-                    value-type="YYYY-MM-DD"
-                    style="width: 100%"
-                  />
-                </t-form-item>
-              </t-col>
-            </t-row>
-          </t-form>
-          <template #footer>
-            <t-space class="tdesign-starter-action-bar">
-              <t-button variant="outline" @click="documentEditVisible = false">取消</t-button>
-              <t-button theme="primary" :loading="updatingProfile" @click="documentProfileFormRef?.submit()"
-                >保存</t-button
-              >
-            </t-space>
-          </template>
-        </confirm-drawer>
-
-        <t-card title="更改密码" :bordered="false" class="user-setting-card" style="margin-top: 24px">
-          <t-form
-            ref="passwordFormRef"
-            class="password-form"
-            :data="passwordForm"
-            :rules="passwordRules"
-            label-align="right"
-            label-width="140px"
-            colon
-            @submit="handleSubmitPassword"
-          >
-            <t-form-item label="当前密码" name="oldPassword"
-              ><t-input v-model="passwordForm.oldPassword" type="password" placeholder="请输入当前密码"
-            /></t-form-item>
-            <t-form-item label="新密码" name="newPassword"
-              ><t-input v-model="passwordForm.newPassword" type="password" placeholder="请输入新密码"
-            /></t-form-item>
-            <t-form-item label="确认新密码" name="confirmPassword"
-              ><t-input v-model="passwordForm.confirmPassword" type="password" placeholder="请再次输入新密码"
-            /></t-form-item>
-            <t-form-item class="form-submit" label-width="0"
-              ><t-button theme="primary" type="submit" :loading="changingPassword">修改密码</t-button></t-form-item
-            >
-          </t-form>
-        </t-card>
-
-        <t-card title="登录日志" :bordered="false" class="user-setting-card" style="margin-top: 24px">
-          <t-table
-            row-key="id"
-            :data="loginLogs"
-            :columns="loginLogColumns"
-            :loading="loginLogLoading"
-            :pagination="null"
-          />
-        </t-card>
-      </div>
-    </div>
+    <confirm-drawer v-model:visible="documentEditVisible" header="编辑证件信息" :size="drawerSize">
+      <t-form
+        ref="documentProfileFormRef"
+        class="drawer-form--single"
+        :data="profileForm"
+        :rules="documentProfileRules"
+        label-align="right"
+        label-width="120px"
+        layout="vertical"
+        @submit="handleUpdateDocumentProfile"
+      >
+        <t-row :gutter="[24, 24]">
+          <t-col :xs="24" :sm="12"
+            ><t-form-item label="证件类型" name="idType"
+              ><t-select
+                v-model="profileForm.idType"
+                :options="documentTypeOptions"
+                clearable
+                filterable
+                placeholder="请选择证件类型" /></t-form-item
+          ></t-col>
+          <t-col :xs="24" :sm="12"
+            ><t-form-item label="证件号码" name="idCard"
+              ><t-input v-model="profileForm.idCard" :placeholder="documentNoPlaceholder" /></t-form-item
+          ></t-col>
+          <t-col :xs="24" :sm="12">
+            <t-form-item label="证件有效期起" name="idValidFrom">
+              <t-date-picker
+                v-model="profileForm.idValidFrom"
+                clearable
+                format="YYYY-MM-DD"
+                value-type="YYYY-MM-DD"
+                style="width: 100%"
+              />
+            </t-form-item>
+          </t-col>
+          <t-col :xs="24" :sm="12">
+            <t-form-item label="证件有效期止" name="idValidTo">
+              <t-date-picker
+                v-model="profileForm.idValidTo"
+                clearable
+                format="YYYY-MM-DD"
+                value-type="YYYY-MM-DD"
+                style="width: 100%"
+              />
+            </t-form-item>
+          </t-col>
+        </t-row>
+      </t-form>
+      <template #footer>
+        <t-space class="tdesign-starter-action-bar">
+          <t-button variant="outline" @click="documentEditVisible = false">取消</t-button>
+          <t-button theme="primary" :loading="updatingProfile" @click="documentProfileFormRef?.submit()">保存</t-button>
+        </t-space>
+      </template>
+    </confirm-drawer>
   </div>
 </template>
+
 <script setup lang="ts">
-import type { FormInstanceFunctions, FormRule, PrimaryTableCol, SelectOption, SubmitContext } from 'tdesign-vue-next';
+import type {
+  FormInstanceFunctions,
+  FormRule,
+  PrimaryTableCol,
+  SelectOption,
+  SubmitContext,
+} from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
-import { computed, onMounted, onUnmounted, reactive, ref } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
 
 import type { ChangePasswordRequest, UserProfile, UserProfileUpdate } from '@/api/user';
 import { changePassword, getMyProfile, updateMyProfile } from '@/api/user';
@@ -325,6 +288,11 @@ import { useDictionary } from '@/hooks/useDictionary';
 import { useUserStore } from '@/store';
 import { buildDictOptions, parseDictValue, resolveLabel } from '@/utils/dict';
 import { request } from '@/utils/request';
+
+import CompletionCard from './components/CompletionCard.vue';
+import FieldStatusItem from './components/FieldStatusItem.vue';
+import InfoSectionCard from './components/InfoSectionCard.vue';
+import ProfileSummaryCard from './components/ProfileSummaryCard.vue';
 
 interface AreaOption {
   label: string;
@@ -348,6 +316,21 @@ interface PageResult<T> {
   total: number;
 }
 
+interface CompletionTodoItem {
+  key: string;
+  title: string;
+  gain: string;
+  section: string;
+  actionText?: string;
+}
+
+interface CompletionTodoConfig extends CompletionTodoItem {
+  priority: number;
+}
+
+const MOBILE_BREAKPOINT = 768;
+const DESKTOP_BREAKPOINT = 1200;
+
 const DOC_TYPE_RESIDENT_ID_CARD = 'resident_id_card';
 const DOC_TYPE_PASSPORT = 'passport';
 const RESIDENT_ID_CARD_WEIGHTS = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2];
@@ -358,13 +341,52 @@ const documentTypeFallbackOptions: SelectOption[] = [
 ];
 
 const userStore = useUserStore();
+
+const viewportWidth = ref(typeof window === 'undefined' ? DESKTOP_BREAKPOINT : window.innerWidth);
+const isMobile = computed(() => viewportWidth.value < MOBILE_BREAKPOINT);
+const isWideDesktop = computed(() => viewportWidth.value > DESKTOP_BREAKPOINT);
+
 const profileLoading = ref(false);
 const updatingProfile = ref(false);
-
 const uploadHeaders = computed(() => ({ Authorization: userStore.token }));
 const profile = ref<UserProfile>({} as UserProfile);
+
 const basicMasked = ref(true);
 const documentMasked = ref(true);
+
+const basicEditVisible = ref(false);
+const documentEditVisible = ref(false);
+const drawerSize = computed(() => (isMobile.value ? '100%' : '760px'));
+
+const sectionTargetMap: Record<string, string> = {
+  basic: 'user-block-basic',
+  document: 'user-block-document',
+  security: 'user-block-security',
+};
+
+const scrollToBlock = async (key: string) => {
+  const targetId = sectionTargetMap[key] || key;
+  await nextTick();
+  const dom = document.getElementById(targetId);
+  if (!dom) return;
+  dom.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
+const activePanels = ref<string[]>([]);
+const ensurePanelOpen = (panel: string) => {
+  if (isMobile.value) {
+    activePanels.value = [panel];
+    return;
+  }
+  if (!activePanels.value.includes(panel)) {
+    activePanels.value = [...activePanels.value, panel];
+  }
+};
+
+const focusSection = async (key: 'basic' | 'document' | 'security') => {
+  ensurePanelOpen(key);
+  await scrollToBlock(key);
+};
 
 const maskMiddle = (value: string, prefixKeep: number, suffixKeep: number, maskChar = '*') => {
   const text = (value || '').trim();
@@ -503,136 +525,6 @@ const validateDocumentNumber = (docType?: string, docNo?: string) => {
 };
 const validateDocumentDateRange = (from?: string, to?: string) => !from || !to || from <= to;
 
-const formatList = (items?: string[]) => (!items || items.length === 0 ? '-' : items.join(' / '));
-
-const displayedRoles = computed(() =>
-  profile.value?.roles?.length ? profile.value.roles : userStore.userInfo?.roles || [],
-);
-const displayedOrgUnits = computed(() =>
-  profile.value?.orgUnitNames?.length ? profile.value.orgUnitNames : userStore.userInfo?.orgUnitNames || [],
-);
-
-const genderLabel = computed(() => resolveLabel(profile.value.gender, genderDict.items.value, { unknown: '未知' }));
-const documentTypeLabel = computed(() =>
-  resolveLabel(profile.value.idType, documentTypeDict.items.value, {
-    resident_id_card: '居民身份证',
-    passport: '护照',
-  }),
-);
-const fullAddress = computed(() => {
-  const province = (profile.value.province || '').trim();
-  const city = (profile.value.city || '').trim();
-  const district = (profile.value.district || '').trim();
-  const address = (profile.value.address || '').trim();
-  const parts = [province, city, district, address].filter(Boolean);
-  return parts.filter((part, idx) => idx === 0 || part !== parts[idx - 1]).join('');
-});
-
-const displayBasic = computed(() => {
-  if (!basicMasked.value) {
-    return {
-      account: (profile.value.account || '').trim(),
-      mobile: (profile.value.mobile || '').trim(),
-      email: (profile.value.email || '').trim(),
-      address: fullAddress.value,
-    };
-  }
-  return {
-    account: maskAccount(profile.value.account),
-    mobile: maskPhone(profile.value.mobile),
-    email: maskEmail(profile.value.email),
-    address: maskAddress(fullAddress.value),
-  };
-});
-
-const displayDocument = computed(() => {
-  if (!documentMasked.value) {
-    return {
-      idCard: (profile.value.idCard || '').trim(),
-    };
-  }
-  return {
-    idCard: maskIdCard(profile.value.idCard),
-  };
-});
-const fallbackCompleteness = computed(() => {
-  const missing = new Set<string>();
-  const hasText = (value?: string) => Boolean(value && value.trim());
-  if (!hasText(profile.value.name)) missing.add('name');
-  if (!hasText(profile.value.gender)) missing.add('gender');
-  if (!hasText(profile.value.mobile)) missing.add('mobile');
-  if (!hasText(profile.value.email)) missing.add('email');
-  const hasAddress = [profile.value.province, profile.value.city, profile.value.district, profile.value.address]
-    .map((item) => (item || '').trim())
-    .some(Boolean);
-  if (!hasAddress) missing.add('address');
-  if (!hasText(profile.value.idType)) missing.add('idType');
-  if (!hasText(profile.value.idCard)) missing.add('idCard');
-  if (!hasText(profile.value.idValidFrom)) missing.add('idValidFrom');
-  if (!hasText(profile.value.idValidTo)) missing.add('idValidTo');
-
-  const basicComplete = 5 - ['name', 'gender', 'mobile', 'email', 'address'].filter((key) => missing.has(key)).length;
-  const documentComplete =
-    4 - ['idType', 'idCard', 'idValidFrom', 'idValidTo'].filter((key) => missing.has(key)).length;
-  return {
-    missing,
-    basicScore: Math.round((basicComplete * 100) / 5),
-    documentScore: Math.round((documentComplete * 100) / 4),
-    score: Math.round(((basicComplete + documentComplete) * 100) / 9),
-  };
-});
-
-const completenessScore = computed(() =>
-  typeof profile.value.completenessScore === 'number'
-    ? profile.value.completenessScore
-    : fallbackCompleteness.value.score,
-);
-const basicInfoScore = computed(() =>
-  typeof profile.value.basicInfoScore === 'number'
-    ? profile.value.basicInfoScore
-    : fallbackCompleteness.value.basicScore,
-);
-const documentInfoScore = computed(() =>
-  typeof profile.value.documentInfoScore === 'number'
-    ? profile.value.documentInfoScore
-    : fallbackCompleteness.value.documentScore,
-);
-const incompleteItems = computed(() =>
-  Array.isArray(profile.value.incompleteItems) && profile.value.incompleteItems.length > 0
-    ? profile.value.incompleteItems
-    : Array.from(fallbackCompleteness.value.missing),
-);
-
-const scoreRingStyle = computed(() => {
-  const safe = Math.max(0, Math.min(100, completenessScore.value || 0));
-  return { background: `conic-gradient(var(--td-brand-color) ${safe * 3.6}deg, var(--td-bg-color-component) 0deg)` };
-});
-
-const buildCompletenessItem = (key: string, label: string, missing: Set<string>) => ({
-  key,
-  label,
-  done: !missing.has(key),
-});
-
-const basicCompletenessItems = computed(() => {
-  const missing = new Set(incompleteItems.value);
-  return [
-    buildCompletenessItem('mobile', '手机号码已填写', missing),
-    buildCompletenessItem('email', '邮箱地址已填写', missing),
-    buildCompletenessItem('address', '个人住址已填写', missing),
-  ];
-});
-
-const documentCompletenessItems = computed(() => {
-  const missing = new Set(incompleteItems.value);
-  return [
-    buildCompletenessItem('idType', '证件类型已填写', missing),
-    buildCompletenessItem('idCard', '证件号码已填写', missing),
-    buildCompletenessItem('idValidFrom', '证件有效期起已填写', missing),
-    buildCompletenessItem('idValidTo', '证件有效期止已填写', missing),
-  ];
-});
-
 const documentNoPlaceholder = computed(() => {
   const type = normalizeDocumentType(profileForm.idType);
   if (type === DOC_TYPE_RESIDENT_ID_CARD) return '请输入18位居民身份证号码';
@@ -697,6 +589,7 @@ const createDictAreaOptions = (): AreaOption[] => {
     };
   });
 };
+
 const areaDictReady = computed(() => {
   const options = createDictAreaOptions();
   if (options.length === 0) return false;
@@ -758,9 +651,7 @@ const syncAreaFromProfile = async (data: UserProfile) => {
   const districtFromCity = districts.find(
     (item) => item.label === data.district || String(item.value) === data.district,
   );
-  const districtFromProvince = cities.find(
-    (item) => item.label === data.district || String(item.value) === data.district,
-  );
+  const districtFromProvince = cities.find((item) => item.label === data.district || String(item.value) === data.district);
   const path = (districtFromCity ? [province, city, districtFromCity] : [province, districtFromProvince]).filter(
     Boolean,
   ) as AreaOption[];
@@ -856,51 +747,240 @@ const loginLogColumns: PrimaryTableCol[] = [
   { colKey: 'detail', title: '备注', minWidth: 200, ellipsis: true },
 ];
 
+const hasText = (value?: string) => Boolean(value && value.trim());
+
+const displayedRoles = computed(() =>
+  profile.value?.roles?.length ? profile.value.roles : userStore.userInfo?.roles || [],
+);
+
+const roleTag = computed(() => {
+  const admin = displayedRoles.value.find((item) => String(item || '').toLowerCase() === 'admin');
+  return admin || displayedRoles.value[0] || 'user';
+});
+
+const fullAddress = computed(() => {
+  const province = (profile.value.province || '').trim();
+  const city = (profile.value.city || '').trim();
+  const district = (profile.value.district || '').trim();
+  const address = (profile.value.address || '').trim();
+  const parts = [province, city, district, address].filter(Boolean);
+  return parts.filter((part, idx) => idx === 0 || part !== parts[idx - 1]).join('');
+});
+
+const displayBasic = computed(() => {
+  if (!basicMasked.value) {
+    return {
+      account: (profile.value.account || '').trim(),
+      mobile: (profile.value.mobile || '').trim(),
+      email: (profile.value.email || '').trim(),
+      address: fullAddress.value,
+    };
+  }
+  return {
+    account: maskAccount(profile.value.account),
+    mobile: maskPhone(profile.value.mobile),
+    email: maskEmail(profile.value.email),
+    address: maskAddress(fullAddress.value),
+  };
+});
+
+const displayDocument = computed(() => {
+  if (!documentMasked.value) {
+    return {
+      idCard: (profile.value.idCard || '').trim(),
+    };
+  }
+  return {
+    idCard: maskIdCard(profile.value.idCard),
+  };
+});
+
+const profileContacts = computed(() => {
+  const contacts = [
+    `账号：${displayBasic.value.account || '-'}`,
+    `邮箱：${displayBasic.value.email || '待补充'}`,
+    `手机：${displayBasic.value.mobile || '待补充'}`,
+  ];
+  if (displayBasic.value.address) contacts.push(`地址：${displayBasic.value.address}`);
+  return contacts;
+});
+
+const fallbackCompleteness = computed(() => {
+  const missing = new Set<string>();
+  if (!hasText(profile.value.name)) missing.add('name');
+  if (!hasText(profile.value.gender)) missing.add('gender');
+  if (!hasText(profile.value.mobile)) missing.add('mobile');
+  if (!hasText(profile.value.email)) missing.add('email');
+  const hasAddress = [profile.value.province, profile.value.city, profile.value.district, profile.value.address]
+    .map((item) => (item || '').trim())
+    .some(Boolean);
+  if (!hasAddress) missing.add('address');
+  if (!hasText(profile.value.idType)) missing.add('idType');
+  if (!hasText(profile.value.idCard)) missing.add('idCard');
+  if (!hasText(profile.value.idValidFrom)) missing.add('idValidFrom');
+  if (!hasText(profile.value.idValidTo)) missing.add('idValidTo');
+
+  const basicComplete = 5 - ['name', 'gender', 'mobile', 'email', 'address'].filter((key) => missing.has(key)).length;
+  const documentComplete = 4 - ['idType', 'idCard', 'idValidFrom', 'idValidTo'].filter((key) => missing.has(key)).length;
+  return {
+    missing,
+    basicScore: Math.round((basicComplete * 100) / 5),
+    documentScore: Math.round((documentComplete * 100) / 4),
+    score: Math.round(((basicComplete + documentComplete) * 100) / 9),
+  };
+});
+
+const completenessScore = computed(() =>
+  typeof profile.value.completenessScore === 'number' ? profile.value.completenessScore : fallbackCompleteness.value.score,
+);
+const basicInfoScore = computed(() =>
+  typeof profile.value.basicInfoScore === 'number' ? profile.value.basicInfoScore : fallbackCompleteness.value.basicScore,
+);
+const documentInfoScore = computed(() =>
+  typeof profile.value.documentInfoScore === 'number'
+    ? profile.value.documentInfoScore
+    : fallbackCompleteness.value.documentScore,
+);
+const incompleteItems = computed(() =>
+  Array.isArray(profile.value.incompleteItems) && profile.value.incompleteItems.length > 0
+    ? profile.value.incompleteItems
+    : Array.from(fallbackCompleteness.value.missing),
+);
+
+const incompleteSet = computed(() => new Set(incompleteItems.value.map((item) => String(item))));
+const isMissing = (key: string) => incompleteSet.value.has(key);
+
+const genderLabel = computed(() => resolveLabel(profile.value.gender, genderDict.items.value, { unknown: '未知' }));
+const documentTypeLabel = computed(() =>
+  resolveLabel(profile.value.idType, documentTypeDict.items.value, {
+    resident_id_card: '居民身份证',
+    passport: '护照',
+  }),
+);
+
+const basicStatusItems = computed(() => [
+  { key: 'name', label: '姓名', value: profile.value.name || '待补充', done: !isMissing('name') },
+  { key: 'gender', label: '性别', value: genderLabel.value || '待补充', done: !isMissing('gender') },
+  { key: 'mobile', label: '手机号码', value: displayBasic.value.mobile || '待补充', done: !isMissing('mobile') },
+  { key: 'email', label: '电子邮箱', value: displayBasic.value.email || '待补充', done: !isMissing('email') },
+  { key: 'address', label: '地址', value: displayBasic.value.address || '待补充', done: !isMissing('address') },
+]);
+
+const documentStatusItems = computed(() => [
+  { key: 'idType', label: '证件类型', value: documentTypeLabel.value || '待补充', done: !isMissing('idType') },
+  { key: 'idCard', label: '证件号码', value: displayDocument.value.idCard || '待补充', done: !isMissing('idCard') },
+  { key: 'idValidFrom', label: '证件有效期起', value: profile.value.idValidFrom || '待补充', done: !isMissing('idValidFrom') },
+  { key: 'idValidTo', label: '证件有效期止', value: profile.value.idValidTo || '待补充', done: !isMissing('idValidTo') },
+]);
+
+const securityStatusItems = computed(() => [
+  {
+    key: 'security-mobile',
+    label: '手机验证',
+    value: displayBasic.value.mobile || '待补充',
+    done: !isMissing('mobile'),
+  },
+  {
+    key: 'security-email',
+    label: '邮箱验证',
+    value: displayBasic.value.email || '待补充',
+    done: !isMissing('email'),
+  },
+]);
+
+const securityInfoScore = computed(() => {
+  const done = securityStatusItems.value.filter((item) => item.done).length;
+  return Math.round((done * 100) / Math.max(1, securityStatusItems.value.length));
+});
+
+const sectionMissingStats = computed(() => {
+  const basic = ['name', 'gender', 'mobile', 'email', 'address'].filter((key) => isMissing(key)).length;
+  const document = ['idType', 'idCard', 'idValidFrom', 'idValidTo'].filter((key) => isMissing(key)).length;
+  const security = ['mobile', 'email'].filter((key) => isMissing(key)).length;
+  return { basic, document, security };
+});
+
+const sectionWeights: Record<'basic' | 'document' | 'security', number> = {
+  basic: 1,
+  document: 3,
+  security: 2,
+};
+
+const targetSectionKey = computed<'basic' | 'document' | 'security'>(() => {
+  const entries: Array<{ key: 'basic' | 'document' | 'security'; missing: number; score: number }> = [
+    {
+      key: 'basic',
+      missing: sectionMissingStats.value.basic,
+      score: sectionMissingStats.value.basic * sectionWeights.basic,
+    },
+    {
+      key: 'document',
+      missing: sectionMissingStats.value.document,
+      score: sectionMissingStats.value.document * sectionWeights.document,
+    },
+    {
+      key: 'security',
+      missing: sectionMissingStats.value.security,
+      score: sectionMissingStats.value.security * sectionWeights.security,
+    },
+  ];
+
+  entries.sort((a, b) => b.score - a.score || b.missing - a.missing);
+  return entries[0]?.key || 'basic';
+});
+
+const todoConfigs: CompletionTodoConfig[] = [
+  { key: 'idCard', title: '完善证件号码', gain: '+15%', section: 'document', actionText: '去填写', priority: 100 },
+  { key: 'idType', title: '选择证件类型', gain: '+12%', section: 'document', actionText: '去填写', priority: 95 },
+  { key: 'idValidFrom', title: '补全证件有效期起', gain: '+10%', section: 'document', actionText: '去填写', priority: 90 },
+  { key: 'idValidTo', title: '补全证件有效期止', gain: '+10%', section: 'document', actionText: '去填写', priority: 88 },
+  { key: 'mobile', title: '补全手机号码', gain: '+8%', section: 'security', actionText: '去填写', priority: 80 },
+  { key: 'email', title: '补全电子邮箱', gain: '+8%', section: 'security', actionText: '去填写', priority: 78 },
+  { key: 'address', title: '补全联系地址', gain: '+6%', section: 'basic', actionText: '去填写', priority: 60 },
+  { key: 'name', title: '补全姓名信息', gain: '+5%', section: 'basic', actionText: '去填写', priority: 55 },
+  { key: 'gender', title: '补全性别信息', gain: '+4%', section: 'basic', actionText: '去填写', priority: 50 },
+];
+
+const completionTodos = computed(() => {
+  const matched = todoConfigs.filter((item) => isMissing(item.key)).sort((a, b) => b.priority - a.priority);
+  return matched.slice(0, 4).map(({ priority, ...item }) => item);
+});
+
+const handleTodoClick = async (item: CompletionTodoItem) => {
+  const allowedSections = new Set(['basic', 'document', 'security']);
+  const section = (allowedSections.has(item.section) ? item.section : targetSectionKey.value) as
+    | 'basic'
+    | 'document'
+    | 'security';
+  await focusSection(section);
+  if (section === 'basic' || section === 'security') {
+    await openBasicEditDrawer();
+  } else if (section === 'document') {
+    await openDocumentEditDrawer();
+  }
+};
+
+const handleCompletionCta = async () => {
+  await focusSection(targetSectionKey.value);
+};
+
 const loadDictionaries = async (force = false) =>
   Promise.all([genderDict.load(force), areaDict.load(force), documentTypeDict.load(force)]);
+
 const normalizeGender = (value?: string) =>
   value === 'secret' && genderDict.items.value.some((item) => item.value === 'unknown') ? 'unknown' : value || '';
 
-const fetchProfile = async () => {
-  profileLoading.value = true;
-  try {
-    await loadDictionaries();
-    const res = await getMyProfile();
-    profile.value = res;
-    userStore.userInfo = { ...userStore.userInfo, name: res.name || '', avatar: res.avatar || '' };
-    Object.assign(profileForm, {
-      name: res.name || '',
-      nickname: res.nickname || '',
-      gender: normalizeGender(res.gender),
-      mobile: res.mobile || '',
-
-      email: res.email || '',
-      idType: normalizeDocumentType(res.idType),
-      idCard: res.idCard || '',
-      idValidFrom: res.idValidFrom || '',
-
-      idValidTo: res.idValidTo || '',
-      seat: res.seat || '',
-      provinceId: res.provinceId ?? null,
-      province: res.province || '',
-
-      cityId: res.cityId ?? null,
-      city: res.city || '',
-      districtId: res.districtId ?? null,
-      district: res.district || '',
-      zipCode: res.zipCode || '',
-
-      address: res.address || '',
-      tags: res.tags || '',
-    });
-    await syncAreaFromProfile(res);
-  } catch {
-    MessagePlugin.error('加载个人信息失败');
-  } finally {
-    fetchLoginLogs(profile.value.account || profile.value.email);
-    profileLoading.value = false;
-  }
+const applyDefaultPanels = () => {
+  activePanels.value = isMobile.value ? [targetSectionKey.value] : ['basic', 'document', 'security'];
 };
+
+watch(
+  () => isMobile.value,
+  () => {
+    applyDefaultPanels();
+  },
+);
+
 const fetchLoginLogs = async (account?: string) => {
   loginLogLoading.value = true;
   try {
@@ -916,13 +996,42 @@ const fetchLoginLogs = async (account?: string) => {
   }
 };
 
-const basicEditVisible = ref(false);
-const documentEditVisible = ref(false);
-const isMobile = ref(false);
-const drawerSize = computed(() => (isMobile.value ? '100%' : '760px'));
-const updateIsMobile = () => {
-  if (typeof window === 'undefined') return;
-  isMobile.value = window.innerWidth <= 768;
+const fetchProfile = async () => {
+  profileLoading.value = true;
+  try {
+    await loadDictionaries();
+    const res = await getMyProfile();
+    profile.value = res;
+    userStore.userInfo = { ...userStore.userInfo, name: res.name || '', avatar: res.avatar || '' };
+    Object.assign(profileForm, {
+      name: res.name || '',
+      nickname: res.nickname || '',
+      gender: normalizeGender(res.gender),
+      mobile: res.mobile || '',
+      email: res.email || '',
+      idType: normalizeDocumentType(res.idType),
+      idCard: res.idCard || '',
+      idValidFrom: res.idValidFrom || '',
+      idValidTo: res.idValidTo || '',
+      seat: res.seat || '',
+      provinceId: res.provinceId ?? null,
+      province: res.province || '',
+      cityId: res.cityId ?? null,
+      city: res.city || '',
+      districtId: res.districtId ?? null,
+      district: res.district || '',
+      zipCode: res.zipCode || '',
+      address: res.address || '',
+      tags: res.tags || '',
+    });
+    await syncAreaFromProfile(res);
+    applyDefaultPanels();
+  } catch {
+    MessagePlugin.error('加载个人信息失败');
+  } finally {
+    fetchLoginLogs(profile.value.account || profile.value.email);
+    profileLoading.value = false;
+  }
 };
 
 const openBasicEditDrawer = async () => {
@@ -1042,318 +1151,195 @@ const handleAvatarFail = (context: any) => {
   MessagePlugin.error(`头像上传失败: ${msg}`);
 };
 
+const updateViewport = () => {
+  if (typeof window === 'undefined') return;
+  viewportWidth.value = window.innerWidth;
+};
+
 onMounted(() => {
   fetchProfile();
-  updateIsMobile();
-  if (typeof window !== 'undefined') window.addEventListener('resize', updateIsMobile);
+  updateViewport();
+  if (typeof window !== 'undefined') window.addEventListener('resize', updateViewport);
 });
 
 onUnmounted(() => {
-  if (typeof window !== 'undefined') window.removeEventListener('resize', updateIsMobile);
+  if (typeof window !== 'undefined') window.removeEventListener('resize', updateViewport);
 });
 </script>
-<style lang="less" scoped>
-.user-center-container {
-  --user-center-gap: var(--td-starter-gap-lg);
 
-  .user-center-grid {
+<style lang="less" scoped>
+.user-page {
+  --user-page-gap: 16px;
+
+  .profile-shell {
+    background: transparent;
+  }
+
+  .profile-shell__header {
+    padding: 0;
+    margin-bottom: var(--user-page-gap);
+    background: transparent;
+  }
+
+  .profile-shell__header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .profile-shell__header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .profile-shell__title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--td-text-color-primary);
+  }
+
+  .profile-shell__body {
+    background: transparent;
+  }
+
+  .profile-shell__content {
+    overflow: visible;
+  }
+
+  .profile-main {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    gap: var(--user-center-gap);
+    gap: var(--user-page-gap);
+  }
+
+  .profile-main--wide {
+    grid-template-columns: 340px minmax(0, 1fr);
     align-items: start;
-    width: 100%;
   }
 
-  .user-center-right {
-    display: flex;
-    flex-direction: column;
-    gap: var(--user-center-gap);
-    min-width: 0;
-  }
-
-  .summary-grid {
+  .profile-main__left,
+  .profile-main__right {
     display: grid;
-    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-    gap: var(--user-center-gap);
-    align-items: stretch;
+    gap: var(--user-page-gap);
   }
 
-  .summary-card,
-  .user-info-card,
-  .user-setting-card {
-    width: 100%;
+  .sections-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--user-page-gap);
   }
 
-  .summary-card,
-  .user-info-card {
-    height: 100%;
-  }
-
-  .summary-card {
-    .summary-user-name {
-      font: var(--td-font-title-large);
-      font-weight: 600;
-      color: var(--td-text-color-primary);
-    }
-    .summary-row {
-      margin-top: 8px;
-      color: var(--td-text-color-secondary);
-    }
-    .score-layout {
-      display: grid;
-      grid-template-columns: 150px minmax(0, 1fr);
-      gap: 24px;
-      align-items: center;
-    }
-    .score-ring {
-      width: 132px;
-      height: 132px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-    .score-ring-inner {
-      width: 106px;
-      height: 106px;
-      border-radius: 50%;
+  .info-sections {
+    :deep(.t-collapse-panel) {
+      margin-bottom: 12px;
+      border-radius: var(--td-radius-large);
+      border: 1px solid var(--td-border-level-1-color);
       background: var(--td-bg-color-container);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-    }
-    .score-value {
-      font: var(--td-font-title-large);
-      color: var(--td-brand-color);
-      font-weight: 600;
-    }
-    .score-label {
-      margin-top: 4px;
-      font: var(--td-font-body-small);
-      color: var(--td-text-color-secondary);
-    }
-    .score-list {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 16px;
-      align-items: start;
-    }
-    .score-column {
-      display: grid;
-      gap: 10px;
-      min-width: 0;
-    }
-    .score-subtotal {
-      display: flex;
-      justify-content: space-between;
-      color: var(--td-text-color-primary);
-      font-weight: 600;
-    }
-    .score-list-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      min-width: 0;
-      color: var(--td-text-color-secondary);
-    }
-    .score-list-item .t-icon {
-      color: var(--td-warning-color);
-    }
-    .score-list-item.done .t-icon {
-      color: var(--td-success-color);
-    }
-  }
-  .user-info-card {
-    overflow: hidden;
-    .user-avatar {
-      border: 4px solid var(--td-bg-color-container);
-      box-shadow: 0 4px 12px rgb(0 0 0 / 8%);
-      position: relative;
-      cursor: pointer;
-    }
-    .avatar-edit-overlay {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-      color: #fff;
-      background: rgb(0 0 0 / 40%);
-      opacity: 0;
-    }
-    .user-avatar:hover .avatar-edit-overlay {
-      opacity: 1;
-    }
-  }
-
-  .user-info-card--inline {
-    :deep(.t-card__body) {
-      display: grid;
-      grid-template-columns: minmax(320px, 1.15fr) minmax(0, 1fr);
-      align-items: stretch;
-      gap: 24px;
-    }
-    .user-inline-left {
-      display: grid;
-      grid-template-columns: 80px minmax(0, 1fr);
-      grid-template-rows: auto auto;
-      column-gap: 16px;
-      row-gap: 8px;
-      align-items: center;
-      text-align: left;
-    }
-    .user-inline-left > :first-child {
-      grid-row: 1 / span 2;
-    }
-    .user-inline-name {
-      margin-top: 0;
-      font: var(--td-font-title-large);
-      font-weight: 600;
-      color: var(--td-text-color-primary);
-    }
-    .user-inline-left-meta {
-      margin-top: 0;
-      display: grid;
-      gap: 6px;
-      color: var(--td-text-color-secondary);
-    }
-    .user-inline-left-meta .user-inline-row {
-      justify-content: flex-start;
-    }
-    .user-inline-right {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      min-width: 0;
-      padding-top: 6px;
-      padding-left: 24px;
-      border-left: 1px solid var(--td-border-level-1-color);
-      color: var(--td-text-color-secondary);
-    }
-    .user-inline-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      min-width: 0;
-    }
-    .user-inline-row--full {
-      grid-column: 1 / -1;
-    }
-    .user-inline-row > span {
+      padding: 0;
       overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+    }
+
+    :deep(.t-collapse-panel:last-child) {
+      margin-bottom: 0;
+    }
+
+    :deep(.t-collapse-panel__header) {
+      padding: 16px;
+      border-bottom: 1px solid var(--td-border-level-1-color);
+      background: var(--td-bg-color-container);
+    }
+
+    :deep(.t-collapse-panel__body) {
+      border-bottom: none;
+      background: var(--td-bg-color-container);
+      overflow: hidden;
+    }
+
+    :deep(.t-collapse-panel__body--collapsed) {
+      display: none;
+    }
+
+    :deep(.t-collapse-panel__content) {
+      padding: 0 16px 16px;
     }
   }
 
-  .user-setting-card {
-    :deep(.t-card__header) {
-      border-bottom: 1px solid var(--td-border-level-1-color);
+  .section-body {
+    padding-top: 10px;
+  }
+
+  .section-body__meta-action {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 4px;
+  }
+
+  .section-block-title {
+    margin-top: 12px;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--td-text-color-primary);
+  }
+
+  .password-form {
+    :deep(.t-form__controls) {
+      min-width: 0;
+      flex: 1;
     }
-    .sensitive-title {
+
+    :deep(.t-input) {
+      width: 100%;
+    }
+  }
+
+  .form-submit {
+    :deep(.t-form__controls-content) {
       display: flex;
-      align-items: center;
-      gap: 8px;
+      justify-content: flex-end;
     }
-    .sensitive-toggle {
-      cursor: pointer;
-      color: var(--td-text-color-secondary);
-      line-height: 0;
-      display: inline-flex;
-    }
-    .sensitive-toggle:hover {
-      color: var(--td-text-color-primary);
-    }
-    .form-submit {
-      padding-top: 16px;
-      :deep(.t-form__controls-content) {
-        display: flex;
-        justify-content: flex-end;
-      }
-    }
-    .password-form {
-      :deep(.t-form__controls) {
-        flex: 1;
-        min-width: 0;
-      }
-      :deep(.t-input) {
-        width: 100%;
-      }
-    }
-    .user-profile-descriptions {
-      :deep(.t-descriptions__row) td {
-        padding: 10px 0;
-      }
-      :deep(.t-descriptions__row) td:nth-child(odd) {
-        width: 108px;
-        padding-right: 12px;
-        color: var(--td-text-color-secondary);
-        text-align: right;
-      }
-      :deep(.t-descriptions__row) td:nth-child(even) {
-        padding-right: 40px;
-        color: var(--td-text-color-primary);
-      }
-    }
+  }
+
+  .login-log-table {
+    margin-top: 4px;
   }
 
   @media (max-width: 1200px) {
-    .summary-grid {
-      grid-template-columns: 1fr;
+    .profile-main--wide {
+      grid-template-columns: minmax(0, 1fr);
     }
   }
 
-  @media (max-width: 768px) {
-    --user-center-gap: var(--td-starter-gap-md);
+  @media (max-width: 767px) {
+    .profile-shell__header {
+      margin-bottom: 12px;
+    }
 
-    .user-center-grid {
-      grid-template-columns: 1fr;
-    }
-    .summary-card .score-layout {
-      grid-template-columns: 1fr;
+    .profile-shell__header-top {
+      flex-wrap: wrap;
       align-items: flex-start;
     }
-    .summary-card .score-list {
-      grid-template-columns: 1fr;
+
+    .info-sections {
+      :deep(.t-collapse-panel) {
+        padding: 0;
+      }
+
+      :deep(.t-collapse-panel__header) {
+        padding: 14px;
+      }
+
+      :deep(.t-collapse-panel__content) {
+        padding: 0 14px 14px;
+      }
     }
-    .user-info-card--inline :deep(.t-card__body) {
-      grid-template-columns: 1fr;
-    }
-    .user-info-card--inline .user-inline-left {
-      grid-template-columns: 1fr;
-      grid-template-rows: auto;
-      justify-items: center;
-      text-align: center;
-    }
-    .user-info-card--inline .user-inline-left > :first-child {
-      grid-row: auto;
-    }
-    .user-info-card--inline .user-inline-left-meta {
-      justify-items: center;
-    }
-    .user-info-card--inline .user-inline-left-meta .user-inline-row {
-      justify-content: center;
-    }
-    .user-info-card--inline .user-inline-right {
-      min-width: 0;
-      padding-top: 0;
-      padding-left: 0;
-      border-left: none;
-      text-align: left;
-    }
-    .user-info-card--inline .user-inline-row--full {
-      grid-column: auto;
-    }
-    .user-info-card--inline .user-inline-row {
-      align-items: flex-start;
-    }
-    .user-info-card--inline .user-inline-row > span {
-      white-space: normal;
-      overflow-wrap: anywhere;
-      word-break: break-word;
+
+    .login-log-table {
+      :deep(.t-table__content) {
+        overflow-x: auto;
+      }
     }
   }
 }

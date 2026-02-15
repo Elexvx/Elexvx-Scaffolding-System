@@ -2,9 +2,11 @@
   <t-layout :class="layoutCls">
     <t-tabs
       v-if="settingStore.isUseTabsRouter"
+      ref="tabsNavRef"
       drag-sort
       theme="card"
       :class="`${prefix}-layout-tabs-nav`"
+      :style="tabsNavStyle"
       :value="currentTabValue"
       @change="(value) => handleChangeCurrentTab(value as string)"
       @remove="handleRemove"
@@ -70,7 +72,7 @@
 </template>
 <script setup lang="ts">
 import type { PopupVisibleChangeContext } from 'tdesign-vue-next';
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { prefix } from '@/config/global';
@@ -94,13 +96,42 @@ const activeTabPath = ref<string | null>(null);
 const routeChanging = ref(false);
 const suppressTabChange = ref(false);
 const tabNavigating = ref(false);
+const tabsNavRef = ref<any>(null);
+let tabsHeightObserver: ResizeObserver | null = null;
 
 const { locale } = useLocale();
 
 const layoutCls = computed(() => [
   `${prefix}-layout`,
   { [`${prefix}-layout-with-fixed-header`]: settingStore.isHeaderFixed && settingStore.showHeader },
+  { [`${prefix}-layout-with-tabs`]: settingStore.isUseTabsRouter },
 ]);
+
+const tabsNavStyle = computed(() => {
+  const top = settingStore.isHeaderFixed && settingStore.showHeader ? 'var(--td-starter-header-height)' : '0px';
+  let left = '0px';
+  if (settingStore.layout === 'side' && settingStore.showSidebar) {
+    left = settingStore.isSidebarCompact ? 'var(--td-starter-side-compact-width)' : 'var(--td-starter-side-width)';
+  }
+  return {
+    top,
+    left,
+    width: `calc(100% - ${left})`,
+  };
+});
+
+const getTabsNavDom = () => {
+  const raw = tabsNavRef.value as any;
+  if (!raw) return null;
+  return (raw.$el || raw) as HTMLElement;
+};
+
+const syncTabsHeightVar = () => {
+  const dom = getTabsNavDom();
+  const measured = settingStore.isUseTabsRouter && dom ? Math.ceil(dom.getBoundingClientRect().height) : 0;
+  const fallback = 56;
+  document.documentElement.style.setProperty('--td-starter-tabs-height', `${measured > 0 ? measured : fallback}px`);
+};
 
 const normalizeTabValue = (path: string) => String(path || '').split(/[?#]/)[0];
 const getTabValue = (tab: TRouterInfo) => normalizeTabValue(tab.path);
@@ -271,4 +302,36 @@ const handleTabMenuClick = (visible: boolean, ctx: PopupVisibleChangeContext, pa
 const handleDragend = (options: { currentIndex: number; targetIndex: number }) => {
   tabsRouterStore.reorderTabRouters(options.currentIndex, options.targetIndex);
 };
+
+watch(
+  () => [settingStore.isUseTabsRouter, settingStore.isSidebarCompact, settingStore.showHeader, settingStore.isHeaderFixed],
+  async () => {
+    await nextTick();
+    syncTabsHeightVar();
+  },
+  { immediate: true, deep: true },
+);
+
+watch(
+  () => tabRouters.value.length,
+  async () => {
+    await nextTick();
+    syncTabsHeightVar();
+  },
+);
+
+onMounted(async () => {
+  await nextTick();
+  syncTabsHeightVar();
+  const dom = getTabsNavDom();
+  if (typeof ResizeObserver !== 'undefined' && dom) {
+    tabsHeightObserver = new ResizeObserver(() => syncTabsHeightVar());
+    tabsHeightObserver.observe(dom);
+  }
+});
+
+onUnmounted(() => {
+  tabsHeightObserver?.disconnect();
+  tabsHeightObserver = null;
+});
 </script>

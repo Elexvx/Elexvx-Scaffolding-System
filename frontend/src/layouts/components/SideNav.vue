@@ -17,7 +17,7 @@
       </template>
       <menu-content :nav-data="menu" />
       <template #operations>
-        <span :class="versionCls"> {{ versionText }} </span>
+        <span v-if="showVersion" :class="versionCls" :title="versionText">{{ versionText }}</span>
       </template>
     </t-menu>
     <div :class="`${prefix}-side-nav-placeholder${collapsed ? '-hidden' : ''}`"></div>
@@ -139,12 +139,29 @@ const settingStore = useSettingStore();
 
 const lastAutoCollapsed = ref<boolean | null>(null);
 const autoCollapsed = () => {
-  if (!menuAutoCollapsed.value) return;
-  const isCompact = window.innerWidth <= MIN_POINT;
+  const forceCompact = window.innerWidth <= MIN_POINT;
+  if (forceCompact) {
+    if (!settingStore.isSidebarCompact) {
+      settingStore.updateConfig({ isSidebarCompact: true });
+    }
+    lastAutoCollapsed.value = true;
+    return;
+  }
+
+  if (!menuAutoCollapsed.value) {
+    lastAutoCollapsed.value = null;
+    return;
+  }
+
+  const isCompact = false;
   if (lastAutoCollapsed.value === isCompact) return;
   lastAutoCollapsed.value = isCompact;
   settingStore.updateConfig({ isSidebarCompact: isCompact });
 };
+
+watch(menuAutoCollapsed, () => {
+  autoCollapsed();
+});
 
 onMounted(() => {
   getExpanded();
@@ -169,5 +186,6 @@ const logoText = computed(() => {
 
 const customLogoUrl = computed(() => (collapsed.value ? settingStore.logoCollapsedUrl : settingStore.logoExpandedUrl));
 const versionText = computed(() => settingStore.appVersion || pgk.version);
+const showVersion = computed(() => !collapsed.value);
 </script>
 <style lang="less" scoped></style>

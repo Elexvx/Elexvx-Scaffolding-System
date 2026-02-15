@@ -4,7 +4,7 @@
   --td-starter-header-height: var(--td-comp-size-xxxl);
   --td-starter-side-width: 232px;
   --td-starter-side-compact-width: 64px;
-  --td-starter-layout-min-width: 1200px;
+  --td-starter-layout-min-width: 0px;
   --td-starter-content-padding-x: 24px;
   --td-starter-content-padding-y: 24px;
   --td-starter-card-padding-x: var(--td-comp-paddingLR-xl);
@@ -13,10 +13,17 @@
 @media (max-width: @screen-md-max) {
   :root {
     --td-starter-side-width: 200px;
-    --td-starter-layout-min-width: 0px;
     --td-starter-content-padding-x: 16px;
     --td-starter-content-padding-y: 16px;
     --td-starter-card-padding-x: var(--td-comp-paddingLR-m);
+  }
+
+  .@{starter-prefix}-content-layout .t-table__content {
+    overflow-x: auto;
+  }
+
+  .@{starter-prefix}-content-layout .t-space {
+    flex-wrap: wrap;
   }
 }
 

@@ -35,7 +35,8 @@
 .t-layout.t-layout--with-sider {
   > .t-layout {
     flex: 1;
-    min-width: var(--td-starter-layout-min-width);
+    min-width: 0;
+    width: 0;
   }
 }
 
@@ -87,6 +88,8 @@
 }
 
 .@{starter-prefix} {
+  --td-starter-tabs-height: 56px;
+
   // 布局元素调整
   &-wrapper {
     height: 100vh;
@@ -102,6 +105,7 @@
   &-main-wrapper {
     height: 100%;
     overflow: auto;
+    min-width: 0;
   }
 
   &-side-nav-layout {
@@ -112,24 +116,28 @@
 
   &-content-layout {
     padding: var(--td-starter-content-padding-y) var(--td-starter-content-padding-x);
+    min-width: 0;
   }
 
   &-layout {
     height: 100%;
     overflow-y: auto;
     min-height: 0;
+    min-width: 0;
 
     &-tabs-nav {
       max-width: 100%;
-      position: sticky;
+      position: fixed;
       top: 0;
+      left: 0;
       width: 100%;
       overflow: visible;
-      z-index: 100;
+      z-index: 1000;
       flex-shrink: 0;
       background-color: var(--td-bg-color-container);
       margin-top: 0;
       padding-top: 0;
+      border-bottom: 1px solid var(--td-border-level-1-color);
 
       .t-tabs__content {
         display: none;
@@ -160,8 +168,12 @@
     padding-top: var(--td-starter-header-height);
   }
 
+  &-layout-with-tabs &-content-layout {
+    padding-top: calc(var(--td-starter-content-padding-y) + var(--td-starter-tabs-height));
+  }
+
   &-layout-with-fixed-header &-layout-tabs-nav {
-    top: 0;
+    top: var(--td-starter-header-height);
   }
 
   &-layout-header-fixed {
@@ -289,6 +301,13 @@
 }
 
 .version-container {
+  display: block;
+  width: 100%;
+  padding: 0 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
   color: var(--td-text-color-primary);
   opacity: 0.4;
 }

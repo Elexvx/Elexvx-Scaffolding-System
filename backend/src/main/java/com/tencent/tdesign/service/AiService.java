@@ -3,12 +3,12 @@ package com.tencent.tdesign.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tencent.tdesign.annotation.AiFunction;
 import com.tencent.tdesign.util.PermissionUtil;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ReflectionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import jakarta.annotation.PostConstruct;
 import java.lang.reflect.Method;
@@ -24,8 +24,8 @@ import java.util.Objects;
  * 负责扫描 @AiFunction 注解，管理工具，并模拟/处理 AI 调用
  */
 @Service
-@Slf4j
 public class AiService {
+    private static final Logger log = LoggerFactory.getLogger(AiService.class);
 
     @Autowired
     private ApplicationContext applicationContext;
@@ -165,7 +165,6 @@ public class AiService {
     }
 
     // 内部类定义
-    @Data
     public static class AiToolDefinition {
         private String name;
         private String description;
@@ -174,11 +173,82 @@ public class AiService {
         private List<AiToolParameter> parameters;
         private List<String> requiredPermissions;
         private boolean dangerous;
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        public void setDescription(String description) {
+            this.description = description;
+        }
+
+        public Object getBean() {
+            return bean;
+        }
+
+        public void setBean(Object bean) {
+            this.bean = bean;
+        }
+
+        public Method getMethod() {
+            return method;
+        }
+
+        public void setMethod(Method method) {
+            this.method = method;
+        }
+
+        public List<AiToolParameter> getParameters() {
+            return parameters;
+        }
+
+        public void setParameters(List<AiToolParameter> parameters) {
+            this.parameters = parameters;
+        }
+
+        public List<String> getRequiredPermissions() {
+            return requiredPermissions;
+        }
+
+        public void setRequiredPermissions(List<String> requiredPermissions) {
+            this.requiredPermissions = requiredPermissions;
+        }
+
+        public boolean isDangerous() {
+            return dangerous;
+        }
+
+        public void setDangerous(boolean dangerous) {
+            this.dangerous = dangerous;
+        }
     }
 
-    @Data
     public static class AiToolParameter {
         private String name;
         private String type;
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getType() {
+            return type;
+        }
+
+        public void setType(String type) {
+            this.type = type;
+        }
     }
 }

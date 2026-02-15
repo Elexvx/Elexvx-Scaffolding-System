@@ -996,8 +996,9 @@ const loadDictionaries = async (force = false) =>
 const normalizeGender = (value?: string) =>
   value === 'secret' && genderDict.items.value.some((item) => item.value === 'unknown') ? 'unknown' : value || '';
 
-const applyDefaultPanels = () => {
-  activePanels.value = isMobile.value ? [targetSectionKey.value] : ['basic', 'document', 'security'];
+const applyDefaultPanels = (force = false) => {
+  if (!force && activePanels.value.length > 0) return;
+  activePanels.value = ['basic'];
 };
 
 watch(
@@ -1051,7 +1052,7 @@ const fetchProfile = async () => {
       tags: res.tags || '',
     });
     await syncAreaFromProfile(res);
-    applyDefaultPanels();
+    applyDefaultPanels(true);
   } catch {
     MessagePlugin.error('加载个人信息失败');
   } finally {

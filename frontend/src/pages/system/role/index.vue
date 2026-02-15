@@ -77,7 +77,7 @@
                 />
                 <div class="menu-action-container">
                   <template v-if="activeActionCatalog">
-                    <div class="menu-action-title">{{ activeActionCatalog.title }}（{{ activeActionCatalog.routeName }}）</div>
+                    <div class="menu-action-title">{{ activeActionCatalog.title }}</div>
                     <t-checkbox-group
                       :model-value="getMenuActions(activeActionCatalog.menuId)"
                       :disabled="form.name === 'admin'"
@@ -206,7 +206,7 @@ const actionMenuOptions = computed<ActionMenuOption[]>(() => {
     .map((menuId) => catalogByMenuId.value.get(menuId))
     .filter(Boolean)
     .map((item) => ({
-      label: `${item!.title} (${item!.routeName})`,
+      label: item!.title,
       value: item!.menuId,
     }));
 });

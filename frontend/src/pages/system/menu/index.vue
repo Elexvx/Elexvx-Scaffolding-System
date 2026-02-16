@@ -709,7 +709,7 @@ const columns = computed(() => {
     {
       colKey: 'titleZhCn',
       title: '名称',
-      width: 260,
+      width: 240,
       ellipsis: true,
       cell: (_h: any, { row }: any) => {
         const r = row as MenuNode;
@@ -735,14 +735,14 @@ const columns = computed(() => {
     {
       colKey: 'fullPath',
       title: '路由Path',
-      width: 220,
+      width: 200,
       ellipsis: true,
       cell: (_h: any, { row }: any) => <span style={{ fontFamily: 'monospace' }}>{computeFullPath(row)}</span>,
     },
     {
       colKey: 'component',
       title: '打开/组件/链接',
-      width: 260,
+      width: 220,
       ellipsis: true,
       cell: (_h: any, { row }: any) => {
         const r = row as MenuNode;
@@ -778,12 +778,12 @@ const columns = computed(() => {
     {
       colKey: 'operate',
       title: '操作',
-      width: 310,
-      fixed: 'right' as const,
+      width: 280,
+      className: 'menu-table__operate-cell',
       cell: (_h: any, { row }: any) => {
         const r = row as MenuNode;
         return (
-          <t-space size="small">
+          <div class="menu-table__operate-links">
             {canCreate.value ? (
               <t-link theme="primary" disabled={r.nodeType !== 'DIR'} onClick={() => openCreateChild(r, 'DIR')}>
                 +目录
@@ -822,7 +822,7 @@ const columns = computed(() => {
                 删除
               </t-link>
             ) : null}
-          </t-space>
+          </div>
         );
       },
     },
@@ -1195,6 +1195,22 @@ onMounted(async () => {
 
 .menu-table-wrapper {
   width: 100%;
+  overflow-x: auto;
+}
+
+.menu-table-wrapper :deep(.t-enhanced-table) {
+  min-width: 1080px;
+}
+
+.menu-table-wrapper :deep(.menu-table__operate-cell) {
+  white-space: normal;
+}
+
+.menu-table-wrapper :deep(.menu-table__operate-links) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
 }
 
 @media (width <= 768px) {
@@ -1215,7 +1231,7 @@ onMounted(async () => {
   }
 
   .menu-table-wrapper :deep(.t-enhanced-table) {
-    min-width: 720px;
+    min-width: 880px;
   }
 }
 </style>

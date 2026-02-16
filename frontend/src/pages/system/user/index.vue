@@ -1473,14 +1473,41 @@ onMounted(async () => {
 }
 
 .user-filter {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(160px, 1fr)) auto;
+  display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   align-items: center;
 }
 
+.user-filter > * {
+  min-width: 0;
+}
+
+.user-filter > *:not(.user-filter__buttons) {
+  flex: 1 1 180px;
+}
+
+.user-filter :deep(.t-input),
+.user-filter :deep(.t-select),
+.user-filter :deep(.t-date-range-picker) {
+  width: 100%;
+  min-width: 0;
+}
+
+.user-filter :deep(.t-date-range-picker) {
+  max-width: 320px;
+}
+
 .user-filter__buttons {
   display: flex;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.user-filter__buttons :deep(.t-space) {
+  display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
 }
 
@@ -1511,14 +1538,26 @@ onMounted(async () => {
     padding-bottom: 16px;
   }
 
-  .user-filter {
-    grid-template-columns: repeat(2, minmax(140px, 1fr)) auto;
+  .user-filter > *:not(.user-filter__buttons) {
+    flex-basis: calc(50% - 6px);
+  }
+
+  .user-filter__buttons {
+    margin-left: 0;
   }
 }
 
 @media (max-width: 768px) {
-  .user-filter {
-    grid-template-columns: 1fr;
+  .user-filter > * {
+    flex-basis: 100%;
+  }
+
+  .user-filter__buttons {
+    justify-content: flex-start;
+  }
+
+  .user-filter__buttons :deep(.t-space) {
+    justify-content: flex-start;
   }
 }
 </style>

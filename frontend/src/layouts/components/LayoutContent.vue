@@ -1,66 +1,65 @@
 <template>
   <t-layout :class="layoutCls">
-    <t-tabs
-      v-if="settingStore.isUseTabsRouter"
-      ref="tabsNavRef"
-      drag-sort
-      theme="card"
-      :class="`${prefix}-layout-tabs-nav`"
-      :style="tabsNavStyle"
-      :value="currentTabValue"
-      @change="(value) => handleChangeCurrentTab(value as string)"
-      @remove="handleRemove"
-      @drag-sort="handleDragend"
-    >
-      <t-tab-panel
-        v-for="(routeItem, index) in tabRouters"
-        :key="getTabValue(routeItem)"
-        :value="getTabValue(routeItem)"
-        :removable="!routeItem.isHome"
-        :draggable="!routeItem.isHome"
+    <div v-if="settingStore.isUseTabsRouter" :class="`${prefix}-layout-tabs`">
+      <t-tabs
+        drag-sort
+        theme="card"
+        :class="`${prefix}-layout-tabs-nav`"
+        :value="currentTabValue"
+        @change="(value) => handleChangeCurrentTab(value as string)"
+        @remove="handleRemove"
+        @drag-sort="handleDragend"
       >
-        <template #label>
-          <t-dropdown
-            trigger="context-menu"
-            :min-column-width="128"
-            :popup-props="{
-              overlayClassName: 'route-tabs-dropdown',
-              onVisibleChange: (visible: boolean, ctx: PopupVisibleChangeContext) =>
-                handleTabMenuClick(visible, ctx, routeItem.path),
-            }"
-            :visible="activeTabPath === getTabValue(routeItem)"
-          >
-            <template v-if="!routeItem.isHome">
-              {{ renderTitle(routeItem.title) }}
-            </template>
-            <t-icon v-else name="home" />
-            <template #dropdown>
-              <t-dropdown-menu>
-                <t-dropdown-item @click="() => handleRefresh(routeItem, index)">
-                  <t-icon name="refresh" />
-                  {{ t('layout.tagTabs.refresh') }}
-                </t-dropdown-item>
-                <t-dropdown-item v-if="index > 1" @click="() => handleCloseAhead(routeItem.path, index)">
-                  <t-icon name="arrow-left" />
-                  {{ t('layout.tagTabs.closeLeft') }}
-                </t-dropdown-item>
-                <t-dropdown-item
-                  v-if="index < tabRouters.length - 1"
-                  @click="() => handleCloseBehind(routeItem.path, index)"
-                >
-                  <t-icon name="arrow-right" />
-                  {{ t('layout.tagTabs.closeRight') }}
-                </t-dropdown-item>
-                <t-dropdown-item v-if="tabRouters.length > 2" @click="() => handleCloseOther(routeItem.path, index)">
-                  <t-icon name="close-circle" />
-                  {{ t('layout.tagTabs.closeOther') }}
-                </t-dropdown-item>
-              </t-dropdown-menu>
-            </template>
-          </t-dropdown>
-        </template>
-      </t-tab-panel>
-    </t-tabs>
+        <t-tab-panel
+          v-for="(routeItem, index) in tabRouters"
+          :key="getTabValue(routeItem)"
+          :value="getTabValue(routeItem)"
+          :removable="!routeItem.isHome"
+          :draggable="!routeItem.isHome"
+        >
+          <template #label>
+            <t-dropdown
+              trigger="context-menu"
+              :min-column-width="128"
+              :popup-props="{
+                overlayClassName: 'route-tabs-dropdown',
+                onVisibleChange: (visible: boolean, ctx: PopupVisibleChangeContext) =>
+                  handleTabMenuClick(visible, ctx, routeItem.path),
+              }"
+              :visible="activeTabPath === getTabValue(routeItem)"
+            >
+              <template v-if="!routeItem.isHome">
+                {{ renderTitle(routeItem.title) }}
+              </template>
+              <t-icon v-else name="home" />
+              <template #dropdown>
+                <t-dropdown-menu>
+                  <t-dropdown-item @click="() => handleRefresh(routeItem, index)">
+                    <t-icon name="refresh" />
+                    {{ t('layout.tagTabs.refresh') }}
+                  </t-dropdown-item>
+                  <t-dropdown-item v-if="index > 1" @click="() => handleCloseAhead(routeItem.path, index)">
+                    <t-icon name="arrow-left" />
+                    {{ t('layout.tagTabs.closeLeft') }}
+                  </t-dropdown-item>
+                  <t-dropdown-item
+                    v-if="index < tabRouters.length - 1"
+                    @click="() => handleCloseBehind(routeItem.path, index)"
+                  >
+                    <t-icon name="arrow-right" />
+                    {{ t('layout.tagTabs.closeRight') }}
+                  </t-dropdown-item>
+                  <t-dropdown-item v-if="tabRouters.length > 2" @click="() => handleCloseOther(routeItem.path, index)">
+                    <t-icon name="close-circle" />
+                    {{ t('layout.tagTabs.closeOther') }}
+                  </t-dropdown-item>
+                </t-dropdown-menu>
+              </template>
+            </t-dropdown>
+          </template>
+        </t-tab-panel>
+      </t-tabs>
+    </div>
     <t-content :class="`${prefix}-content-layout`">
       <l-breadcrumb v-if="settingStore.showBreadcrumb" />
       <l-content />
@@ -72,13 +71,14 @@
 </template>
 <script setup lang="ts">
 import type { PopupVisibleChangeContext } from 'tdesign-vue-next';
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { prefix } from '@/config/global';
 import { t } from '@/locales';
 import { useLocale } from '@/locales/useLocale';
 import { useSettingStore, useTabsRouterStore } from '@/store';
+import { normalizeTabPath } from '@/store/modules/tabs-router';
 import type { TRouterInfo, TTabRemoveOptions } from '@/types/interface';
 import { resolveRouteTitle } from '@/utils/routeTitle';
 
@@ -96,44 +96,15 @@ const activeTabPath = ref<string | null>(null);
 const routeChanging = ref(false);
 const suppressTabChange = ref(false);
 const tabNavigating = ref(false);
-const tabsNavRef = ref<any>(null);
-let tabsHeightObserver: ResizeObserver | null = null;
 
 const { locale } = useLocale();
 
 const layoutCls = computed(() => [
   `${prefix}-layout`,
   { [`${prefix}-layout-with-fixed-header`]: settingStore.isHeaderFixed && settingStore.showHeader },
-  { [`${prefix}-layout-with-tabs`]: settingStore.isUseTabsRouter },
 ]);
 
-const tabsNavStyle = computed(() => {
-  const top = settingStore.isHeaderFixed && settingStore.showHeader ? 'var(--td-starter-header-height)' : '0px';
-  let left = '0px';
-  if (settingStore.layout === 'side' && settingStore.showSidebar) {
-    left = settingStore.isSidebarCompact ? 'var(--td-starter-side-compact-width)' : 'var(--td-starter-side-width)';
-  }
-  return {
-    top,
-    left,
-    width: `calc(100% - ${left})`,
-  };
-});
-
-const getTabsNavDom = () => {
-  const raw = tabsNavRef.value as any;
-  if (!raw) return null;
-  return (raw.$el || raw) as HTMLElement;
-};
-
-const syncTabsHeightVar = () => {
-  const dom = getTabsNavDom();
-  const measured = settingStore.isUseTabsRouter && dom ? Math.ceil(dom.getBoundingClientRect().height) : 0;
-  const fallback = 56;
-  document.documentElement.style.setProperty('--td-starter-tabs-height', `${measured > 0 ? measured : fallback}px`);
-};
-
-const normalizeTabValue = (path: string) => String(path || '').split(/[?#]/)[0];
+const normalizeTabValue = (path: string) => normalizeTabPath(path);
 const getTabValue = (tab: TRouterInfo) => normalizeTabValue(tab.path);
 
 // 缓存上次有效的 tab 值，防止同步期间 computed 返回不稳定的值
@@ -241,7 +212,7 @@ const handleRemove = (options: TTabRemoveOptions) => {
   const nextRouter = tabRouters[options.index + 1] || tabRouters[options.index - 1];
 
   tabsRouterStore.subtractCurrentTabRouter({ path: options.value as string, routeIdx: options.index });
-  if (normalizeTabValue(options.value as string) === route.path) {
+  if (normalizeTabValue(options.value as string) === normalizeTabValue(route.path)) {
     router.push({ path: getTabValue(nextRouter), query: nextRouter.query });
   }
 };
@@ -302,36 +273,4 @@ const handleTabMenuClick = (visible: boolean, ctx: PopupVisibleChangeContext, pa
 const handleDragend = (options: { currentIndex: number; targetIndex: number }) => {
   tabsRouterStore.reorderTabRouters(options.currentIndex, options.targetIndex);
 };
-
-watch(
-  () => [settingStore.isUseTabsRouter, settingStore.isSidebarCompact, settingStore.showHeader, settingStore.isHeaderFixed],
-  async () => {
-    await nextTick();
-    syncTabsHeightVar();
-  },
-  { immediate: true, deep: true },
-);
-
-watch(
-  () => tabRouters.value.length,
-  async () => {
-    await nextTick();
-    syncTabsHeightVar();
-  },
-);
-
-onMounted(async () => {
-  await nextTick();
-  syncTabsHeightVar();
-  const dom = getTabsNavDom();
-  if (typeof ResizeObserver !== 'undefined' && dom) {
-    tabsHeightObserver = new ResizeObserver(() => syncTabsHeightVar());
-    tabsHeightObserver.observe(dom);
-  }
-});
-
-onUnmounted(() => {
-  tabsHeightObserver?.disconnect();
-  tabsHeightObserver = null;
-});
 </script>

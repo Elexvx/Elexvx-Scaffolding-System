@@ -26,14 +26,9 @@ const { routers: menuRouters } = storeToRefs(permissionStore);
 
 const sideMenu = computed(() => {
   const { layout, splitMenu } = settingStore;
-  let newMenuRouters = menuRouters.value as Array<MenuRoute>;
-  if (layout === 'mix' && splitMenu) {
-    newMenuRouters.forEach((menu) => {
-      if (route.path.indexOf(menu.path) === 0) {
-        newMenuRouters = menu.children.map((subMenu) => ({ ...subMenu, path: `${menu.path}/${subMenu.path}` }));
-      }
-    });
-  }
-  return newMenuRouters;
+  if (layout !== 'mix' || !splitMenu) return menuRouters.value as Array<MenuRoute>;
+  const targetMenu = (menuRouters.value as Array<MenuRoute>).find((menu) => route.path.indexOf(menu.path) === 0);
+  if (!targetMenu) return [];
+  return targetMenu.children.map((subMenu) => ({ ...subMenu, path: `${targetMenu.path}/${subMenu.path}` }));
 });
 </script>

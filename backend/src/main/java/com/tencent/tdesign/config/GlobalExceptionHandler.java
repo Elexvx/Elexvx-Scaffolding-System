@@ -27,6 +27,7 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.io.EOFException;
@@ -34,6 +35,7 @@ import java.io.IOException;
 import java.net.SocketException;
 import java.time.format.DateTimeParseException;
 import java.util.Locale;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
@@ -281,6 +283,14 @@ public class GlobalExceptionHandler {
     String accept = request.getHeader("Accept");
     if (accept != null && accept.contains(MediaType.TEXT_EVENT_STREAM_VALUE)) {
       return true;
+    }
+    Object producible = request.getAttribute(HandlerMapping.PRODUCIBLE_MEDIA_TYPES_ATTRIBUTE);
+    if (producible instanceof Set<?> mediaTypes) {
+      for (Object mediaType : mediaTypes) {
+        if (mediaType instanceof MediaType type && type.isCompatibleWith(SSE_MEDIA_TYPE)) {
+          return true;
+        }
+      }
     }
     String uri = request.getRequestURI();
     if (uri == null || uri.isBlank()) {

@@ -1,5 +1,5 @@
 <template>
-  <div v-if="!isRefreshing">
+  <div v-if="!isRefreshing" :class="`${prefix}-view-content`">
     <router-view v-if="!isFramePage" v-slot="{ Component }">
       <transition name="fade" mode="out-in">
         <keep-alive :include="aliveViews">
@@ -19,6 +19,7 @@ import type { ComputedRef } from 'vue';
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 
+import { prefix } from '@/config/global';
 import FramePage from '@/layouts/frame/index.vue';
 import { useTabsRouterStore } from '@/store';
 
@@ -58,6 +59,10 @@ const isFramePage = computed(() => {
 });
 </script>
 <style lang="less" scoped>
+.@{starter-prefix}-view-content {
+  min-height: 0;
+}
+
 .fade-leave-active,
 .fade-enter-active {
   transition: opacity @anim-duration-slow @anim-time-fn-easing;

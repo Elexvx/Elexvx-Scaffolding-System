@@ -70,7 +70,8 @@ export type TStateKey = keyof typeof state;
 export const useSettingStore = defineStore('setting', {
   state: () => state,
   getters: {
-    showSidebar: (state) => state.layout !== 'top',
+    isSideLayout: (state) => state.layout === 'side',
+    showSidebar: (state) => state.layout === 'side' || state.layout === 'mix',
     showSidebarLogo: (state) => state.layout === 'side',
     showHeaderLogo: (state) => state.layout !== 'side',
     displayMode: (state): ModeType => {

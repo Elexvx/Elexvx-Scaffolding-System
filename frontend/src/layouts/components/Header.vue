@@ -276,7 +276,7 @@ const toggleThemeMode = async () => {
       right: 0;
       z-index: 10;
       width: auto;
-      transition: all 0.3s;
+      transition: left 0.3s ease;
 
       &-compact {
         left: var(--td-starter-side-compact-width);

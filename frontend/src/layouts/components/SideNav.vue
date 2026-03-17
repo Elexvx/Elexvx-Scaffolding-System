@@ -71,9 +71,10 @@ const props = defineProps({
 const { menu, showLogo, isFixed, layout, theme, isCompact } = toRefs(props);
 
 const MIN_POINT = 1200 - 1;
+const settingStore = useSettingStore();
 
-const collapsed = computed(() => useSettingStore().isSidebarCompact);
-const menuAutoCollapsed = computed(() => useSettingStore().menuAutoCollapsed);
+const collapsed = computed(() => settingStore.isSidebarCompact);
+const menuAutoCollapsed = computed(() => settingStore.menuAutoCollapsed);
 
 const active = computed(() => getActive());
 
@@ -135,7 +136,6 @@ const menuCls = computed(() => {
 });
 
 const router = useRouter();
-const settingStore = useSettingStore();
 
 const lastAutoCollapsed = ref<boolean | null>(null);
 const autoCollapsed = () => {

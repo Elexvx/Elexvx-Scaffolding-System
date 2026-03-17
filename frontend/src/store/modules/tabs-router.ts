@@ -3,7 +3,7 @@ import { defineStore } from 'pinia';
 import { store } from '@/store';
 import type { TRouterInfo, TTabRouterType } from '@/types/interface';
 
-const normalizeTabPath = (path: string) => String(path || '').split(/[?#]/)[0];
+export const normalizeTabPath = (path: string) => String(path || '').split(/[?#]/)[0];
 
 type TabsRouterState = TTabRouterType & { isSyncing: boolean; isLocked: boolean };
 

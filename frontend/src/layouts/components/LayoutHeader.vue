@@ -1,6 +1,5 @@
 <template>
   <l-header
-    v-if="settingStore.showHeader"
     :show-logo="settingStore.showHeaderLogo"
     :theme="settingStore.displayMode"
     :layout="settingStore.layout"

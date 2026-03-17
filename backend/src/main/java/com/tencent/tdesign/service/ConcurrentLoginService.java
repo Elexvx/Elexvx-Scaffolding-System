@@ -44,6 +44,7 @@ public class ConcurrentLoginService {
   private final Map<Long, CopyOnWriteArrayList<SseEmitter>> loginEmitters = new ConcurrentHashMap<>();
   private final Map<SseEmitter, ScheduledFuture<?>> loginHeartbeatTasks = new ConcurrentHashMap<>();
   private final Cache<String, PendingLogin> pendingLogins;
+  private final Cache<String, String> concurrentStreamTickets;
   private final ScheduledExecutorService heartbeatExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
     Thread thread = new Thread(r, "concurrent-login-sse-heartbeat");
     thread.setDaemon(true);
@@ -53,6 +54,7 @@ public class ConcurrentLoginService {
 
   public ConcurrentLoginService(VerificationCacheService verificationCacheService) {
     this.pendingLogins = verificationCacheService.pendingLoginCache();
+    this.concurrentStreamTickets = verificationCacheService.concurrentStreamTicketCache();
   }
 
   private static BusinessException badRequest(String message) {
@@ -217,6 +219,27 @@ public class ConcurrentLoginService {
     }
     pendingLogins.invalidate(requestId);
     return pending;
+  }
+
+  public String issueConcurrentStreamTicket(String token) {
+    if (token == null || token.isBlank()) {
+      throw badRequest("登录态已失效，请重新登录");
+    }
+    String ticket = UUID.randomUUID().toString().replace("-", "");
+    concurrentStreamTickets.put(ticket, token);
+    return ticket;
+  }
+
+  public String consumeConcurrentStreamToken(String ticket) {
+    if (ticket == null || ticket.isBlank()) {
+      return null;
+    }
+    String token = concurrentStreamTickets.getIfPresent(ticket);
+    if (token == null) {
+      return null;
+    }
+    concurrentStreamTickets.invalidate(ticket);
+    return token;
   }
 
   private void publishLoginNotice(long loginId, PendingLogin pending) {

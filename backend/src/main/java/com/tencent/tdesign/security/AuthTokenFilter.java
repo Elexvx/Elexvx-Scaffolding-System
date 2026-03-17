@@ -1,6 +1,7 @@
 package com.tencent.tdesign.security;
 
 import com.tencent.tdesign.service.AuthTokenService;
+import com.tencent.tdesign.service.ConcurrentLoginService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,14 +29,14 @@ import org.springframework.web.filter.OncePerRequestFilter;
  */
 public class AuthTokenFilter extends OncePerRequestFilter {
   private final AuthTokenService tokenService;
-  private final com.tencent.tdesign.service.SecuritySettingService securitySettingService;
+  private final ConcurrentLoginService concurrentLoginService;
 
   public AuthTokenFilter(
     AuthTokenService tokenService,
-    com.tencent.tdesign.service.SecuritySettingService securitySettingService
+    ConcurrentLoginService concurrentLoginService
   ) {
     this.tokenService = tokenService;
-    this.securitySettingService = securitySettingService;
+    this.concurrentLoginService = concurrentLoginService;
   }
 
   @Override
@@ -89,24 +90,17 @@ public class AuthTokenFilter extends OncePerRequestFilter {
     if (StringUtils.hasText(header)) {
       return header.startsWith("Bearer ") ? header.substring(7) : header;
     }
-    String token = request.getParameter("token");
-    if (!StringUtils.hasText(token)) {
-      token = request.getParameter(HttpHeaders.AUTHORIZATION);
-    }
     String uri = request.getRequestURI();
     boolean isConcurrentStream = uri != null && uri.endsWith("/auth/concurrent/stream");
-    if (!StringUtils.hasText(token) && !isConcurrentStream) {
-      return null;
-    }
-    if (!isConcurrentStream) {
-      boolean allowUrlTokenParam = Boolean.TRUE.equals(securitySettingService.getOrCreate().getAllowUrlTokenParam());
-      if (!allowUrlTokenParam) {
-        return null;
+    if (isConcurrentStream) {
+      String ticket = request.getParameter("ticket");
+      String token = concurrentLoginService.consumeConcurrentStreamToken(ticket);
+      if (StringUtils.hasText(token) && token.startsWith("Bearer ")) {
+        token = token.substring(7);
       }
+      return StringUtils.hasText(token) ? token : null;
     }
-    if (StringUtils.hasText(token) && token.startsWith("Bearer ")) {
-      token = token.substring(7);
-    }
-    return StringUtils.hasText(token) ? token : null;
+    // 仅保留并发登录 SSE 短期 ticket 场景，其他接口不再接受 URL query token。
+    return null;
   }
 }

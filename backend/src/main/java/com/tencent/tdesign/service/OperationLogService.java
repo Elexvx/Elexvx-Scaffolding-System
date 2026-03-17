@@ -7,6 +7,7 @@ import com.tencent.tdesign.security.AuthContext;
 import com.tencent.tdesign.security.AuthSession;
 import com.tencent.tdesign.vo.OperationLogVO;
 import com.tencent.tdesign.vo.PageResult;
+import jakarta.annotation.PreDestroy;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -14,20 +15,32 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import org.springframework.stereotype.Service;
 
 @Service
 public class OperationLogService {
   private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-  private static final long CLEANUP_INTERVAL_MS = 60 * 60 * 1000L;
+  private static final long CLEANUP_INTERVAL_SECONDS = 60 * 60L;
+  private static final long CLEANUP_INITIAL_DELAY_SECONDS = 300L;
 
   private final OperationLogMapper mapper;
   private final UiSettingService uiSettingService;
   private final HttpServletRequest request;
   private final AuthContext authContext;
   private final AuthTokenService authTokenService;
-  private final AtomicLong lastCleanupTime = new AtomicLong(0);
+  private final ExecutorService writeExecutor = Executors.newSingleThreadExecutor(r -> {
+    Thread thread = new Thread(r, "operation-log-writer");
+    thread.setDaemon(true);
+    return thread;
+  });
+  private final java.util.concurrent.ScheduledExecutorService cleanupExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
+    Thread thread = new Thread(r, "operation-log-cleaner");
+    thread.setDaemon(true);
+    return thread;
+  });
 
   public OperationLogService(
     OperationLogMapper mapper,
@@ -41,6 +54,7 @@ public class OperationLogService {
     this.request = request;
     this.authContext = authContext;
     this.authTokenService = authTokenService;
+    cleanupExecutor.scheduleAtFixedRate(this::cleanupExpiredLogs, CLEANUP_INITIAL_DELAY_SECONDS, CLEANUP_INTERVAL_SECONDS, TimeUnit.SECONDS);
   }
 
   public void logLogin(UserEntity user, String deviceModel, String os, String browser, String ipAddress) {
@@ -56,8 +70,7 @@ public class OperationLogService {
     e.setOs(os);
     e.setBrowser(browser);
     e.setCreatedAt(LocalDateTime.now());
-    mapper.insert(e);
-    cleanupIfNeeded();
+    asyncInsert(e);
   }
 
   public void log(String action, String module, String detail) {
@@ -88,8 +101,7 @@ public class OperationLogService {
 
     e.setIpAddress(resolveClientIp());
     e.setCreatedAt(LocalDateTime.now());
-    mapper.insert(e);
-    cleanupIfNeeded();
+    asyncInsert(e);
   }
 
   public PageResult<OperationLogVO> page(
@@ -178,20 +190,33 @@ public class OperationLogService {
     return ip;
   }
 
-  private void cleanupIfNeeded() {
-    long now = System.currentTimeMillis();
-    long last = lastCleanupTime.get();
-    if (now - last < CLEANUP_INTERVAL_MS) return;
-    if (!lastCleanupTime.compareAndSet(last, now)) return;
-
+  private void cleanupExpiredLogs() {
     int retentionDays = getRetentionDays();
     if (retentionDays <= 0) return;
     LocalDateTime threshold = LocalDate.now().minusDays(retentionDays).atStartOfDay();
-    mapper.deleteBefore(threshold);
+    try {
+      mapper.deleteBefore(threshold);
+    } catch (Exception ignored) {
+    }
   }
 
   private int getRetentionDays() {
     Integer value = uiSettingService.getLogRetentionDays();
     return value == null || value <= 0 ? 90 : value;
+  }
+
+  private void asyncInsert(OperationLogEntity logEntity) {
+    writeExecutor.execute(() -> {
+      try {
+        mapper.insert(logEntity);
+      } catch (Exception ignored) {
+      }
+    });
+  }
+
+  @PreDestroy
+  public void shutdownExecutors() {
+    writeExecutor.shutdown();
+    cleanupExecutor.shutdownNow();
   }
 }

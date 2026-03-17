@@ -210,9 +210,10 @@ const handleChangeCurrentTab = async (rawValue: string) => {
 const handleRemove = (options: TTabRemoveOptions) => {
   const { tabRouters } = tabsRouterStore;
   const nextRouter = tabRouters[options.index + 1] || tabRouters[options.index - 1];
+  const currentRouteValue = normalizeTabValue(route.fullPath);
 
   tabsRouterStore.subtractCurrentTabRouter({ path: options.value as string, routeIdx: options.index });
-  if (normalizeTabValue(options.value as string) === normalizeTabValue(route.path)) {
+  if (normalizeTabValue(options.value as string) === currentRouteValue) {
     router.push({ path: getTabValue(nextRouter), query: nextRouter.query });
   }
 };

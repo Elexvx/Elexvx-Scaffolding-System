@@ -1,5 +1,6 @@
 package com.tencent.tdesign.mapper;
 
+import com.tencent.tdesign.dto.UserGuidPair;
 import com.tencent.tdesign.entity.UserEntity;
 import java.util.Collection;
 import java.util.List;
@@ -14,6 +15,8 @@ public interface UserMapper {
   List<UserEntity> selectAll();
   List<UserEntity> selectByIds(@Param("ids") Collection<Long> ids);
   List<Long> selectAllIds();
+  List<UserEntity> selectMissingGuidUsers(@Param("offset") int offset, @Param("limit") int limit);
+  int updateGuidBatch(@Param("pairs") List<UserGuidPair> pairs);
   List<UserEntity> selectPage(
     @Param("keyword") String keyword,
     @Param("mobile") String mobile,

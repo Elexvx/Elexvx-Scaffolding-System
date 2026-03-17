@@ -5,7 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tencent.tdesign.security.AuthSession;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -107,6 +110,64 @@ public class AuthTokenService {
       }
     }
     return list;
+  }
+
+  public long countActiveTokens() {
+    long now = System.currentTimeMillis();
+    lazyMigrateLegacyTokens(now);
+    pruneExpired(now);
+    Long total = redisTemplate.opsForZSet().zCard(ALL_TOKENS_ZSET_KEY);
+    return total == null ? 0L : total;
+  }
+
+  public List<String> listActiveTokensByPage(int offset, int limit) {
+    int safeOffset = Math.max(offset, 0);
+    int safeLimit = Math.max(limit, 1);
+    long now = System.currentTimeMillis();
+    lazyMigrateLegacyTokens(now);
+    pruneExpired(now);
+    Set<Object> tokens = redisTemplate.opsForZSet().reverseRange(ALL_TOKENS_ZSET_KEY, safeOffset, safeOffset + safeLimit - 1L);
+    List<String> list = new ArrayList<>();
+    if (tokens == null) {
+      return list;
+    }
+    for (Object tokenObj : tokens) {
+      if (tokenObj == null) continue;
+      list.add(String.valueOf(tokenObj));
+    }
+    return list;
+  }
+
+  public Map<String, AuthSession> getSessions(Collection<String> tokens) {
+    Map<String, AuthSession> sessions = new LinkedHashMap<>();
+    if (tokens == null || tokens.isEmpty()) {
+      return sessions;
+    }
+    List<String> keys = new ArrayList<>();
+    List<String> tokenList = new ArrayList<>();
+    for (String token : tokens) {
+      if (!StringUtils.hasText(token)) continue;
+      tokenList.add(token);
+      keys.add(tokenKey(token));
+    }
+    if (keys.isEmpty()) {
+      return sessions;
+    }
+    List<Object> payloads = redisTemplate.opsForValue().multiGet(keys);
+    for (int i = 0; i < tokenList.size(); i++) {
+      String token = tokenList.get(i);
+      Object payload = payloads == null || i >= payloads.size() ? null : payloads.get(i);
+      if (payload == null) {
+        sessions.put(token, null);
+        continue;
+      }
+      try {
+        sessions.put(token, objectMapper.readValue(String.valueOf(payload), AuthSession.class));
+      } catch (JsonProcessingException e) {
+        sessions.put(token, null);
+      }
+    }
+    return sessions;
   }
 
   public List<String> listUserTokens(long userId) {

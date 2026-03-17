@@ -30,6 +30,20 @@
     WHERE id = #{id}
   </select>
 
+  <select id="selectUserIdsByPage" resultType="long">
+    SELECT id
+    FROM users
+    ORDER BY id ASC
+    <choose>
+      <when test="_databaseId == 'oracle' or _databaseId == 'sqlserver'">
+        OFFSET #{offset} ROWS FETCH NEXT #{limit} ROWS ONLY
+      </when>
+      <otherwise>
+        LIMIT #{limit} OFFSET #{offset}
+      </otherwise>
+    </choose>
+  </select>
+
   <insert id="insert" parameterType="com.tencent.tdesign.entity.MessageEntity">
     INSERT INTO messages (
       id,
@@ -90,6 +104,13 @@
       quality = #{quality},
       created_at = #{createdAt}
     WHERE id = #{id}
+  </update>
+
+  <update id="markAllReadByUserId">
+    UPDATE messages
+    SET status = 0
+    WHERE to_user_id = #{userId}
+      AND status = 1
   </update>
 
   <delete id="deleteById">

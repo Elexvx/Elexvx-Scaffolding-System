@@ -8,6 +8,7 @@ import com.tencent.tdesign.security.AuthContext;
 import com.tencent.tdesign.service.FileChunkUploadService;
 import com.tencent.tdesign.service.ObjectStorageService;
 import com.tencent.tdesign.service.SecurityRateLimitService;
+import com.tencent.tdesign.service.UploadFileValidationService;
 import com.tencent.tdesign.vo.ApiResponse;
 import com.tencent.tdesign.vo.FileUploadSessionResponse;
 import java.io.IOException;
@@ -48,6 +49,7 @@ public class FileUploadController {
   private final ObjectStorageService storageService;
   private final FileChunkUploadService chunkUploadService;
   private final SecurityRateLimitService rateLimitService;
+  private final UploadFileValidationService uploadFileValidationService;
   private final AuthContext authContext;
   private final long maxFileSizeBytes;
 
@@ -55,12 +57,14 @@ public class FileUploadController {
     ObjectStorageService storageService,
     FileChunkUploadService chunkUploadService,
     SecurityRateLimitService rateLimitService,
+    UploadFileValidationService uploadFileValidationService,
     AuthContext authContext,
     @Value("${tdesign.file.upload.max-file-size-mb:100}") long maxFileSizeMb
   ) {
     this.storageService = storageService;
     this.chunkUploadService = chunkUploadService;
     this.rateLimitService = rateLimitService;
+    this.uploadFileValidationService = uploadFileValidationService;
     this.authContext = authContext;
     this.maxFileSizeBytes = Math.max(1, maxFileSizeMb) * 1024 * 1024;
   }
@@ -86,6 +90,9 @@ public class FileUploadController {
       String ext = fileExtension(original);
       if (ext == null || !ALLOWED_EXTENSIONS.contains(ext)) {
         return ApiResponse.failure(ErrorCodes.BAD_REQUEST, "文件格式不支持");
+      }
+      try (java.io.InputStream in = file.getInputStream()) {
+        uploadFileValidationService.validate(original, file.getContentType(), in);
       }
       lease = rateLimitService.acquireUploadQuota(userId, file.getSize());
       log.info("开始处理文件上传: {}, size: {} bytes", original, file.getSize());

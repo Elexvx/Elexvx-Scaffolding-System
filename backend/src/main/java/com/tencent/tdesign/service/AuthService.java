@@ -247,13 +247,27 @@ public class AuthService {
     // 婵犵數濮烽。钘壩ｉ崨鏉戠；闁逞屽墴閺屾稓鈧綆鍋呭畷宀勬煛瀹€瀣？濞寸媴濡囬幏鐘诲箵閹烘埈娼ュ┑鐘殿暯閳ь剙鍟跨痪褔鏌熼鐓庘偓鎼佹偩閻戣棄唯闁冲搫鍊瑰▍鍥⒑闁偛鑻晶瀵糕偓瑙勬礃閻熲晠寮澶婄妞ゆ挾濯寸槐鏌ユ⒒婵犲骸浜滄繛璇х畵楠炴劖绻濆鍗炲絾濡炪倖甯掔€氼參鎮￠弴銏㈠彄闁搞儯鍔嶉埛鎰版煛鐎ｎ亜顏紒杈ㄥ浮椤㈡岸宕ㄩ鐑嗘骄闂備胶鎳撻崲鏌ヮ敄婢舵劗宓侀柛鈩冨嚬濡俱劌鈹戦檱鐏忔瑩寮繝姘摕闁挎繂鐗滃Ο浣割渻閵堝棙鑲犻柛娑卞灣椤?
     // 禁用多端登录且存在存量会话时，优先尝试通过 SSE 请求在线设备确认；否则撤销旧会话继续登录。
     if (!allowMultiDeviceLogin && hasActiveSession(user.getId())) {
-      if (concurrentLoginService.hasActiveSubscriber(user.getId())) {
+      if (Boolean.TRUE.equals(force)) {
         concurrentLoginService.publishForceLogout(user.getId(), "当前登录状态已失效，请重新登录");
+        authTokenService.removeUserTokens(user.getId());
+      } else {
+        String deviceInfo = buildDeviceInfo(snapshot.deviceModel, snapshot.os, snapshot.browser);
+        ConcurrentLoginService.PendingLogin pending = concurrentLoginService.createPending(
+          user.getId(),
+          snapshot.deviceModel,
+          snapshot.os,
+          snapshot.browser,
+          deviceInfo,
+          snapshot.ipAddress,
+          snapshot.loginLocation
+        );
+        return LoginResponse.pending(pending.getRequestId(), pending.getRequestKey());
       }
-      authTokenService.removeUserTokens(user.getId());
     }
 
-    ensureUserGuid(user);
+    if (ensureUserGuid(user)) {
+      saveUser(user);
+    }
     long expiresInSeconds = resolveTokenTimeoutSeconds();
     AuthSession session = buildSession(user, snapshot);
     String token = authTokenService.createToken(user.getId(), session, expiresInSeconds);
@@ -665,7 +679,9 @@ public class AuthService {
     ConcurrentLoginService.PendingLogin pending = concurrentLoginService.consumeApproved(requestId, requestKey);
     UserEntity user = Optional.ofNullable(userMapper.selectById(pending.getLoginId()))
         .orElseThrow(() -> badRequest("User not found"));
-    ensureUserGuid(user);
+    if (ensureUserGuid(user)) {
+      saveUser(user);
+    }
     long expiresInSeconds = resolveTokenTimeoutSeconds();
     DeviceSnapshot snapshot = new DeviceSnapshot(
         pending.getDeviceModel(),
@@ -709,7 +725,9 @@ public class AuthService {
     long userId = authContext.requireUserId();
     UserEntity user = Optional.ofNullable(userMapper.selectById(userId))
         .orElseThrow(() -> badRequest("User not found"));
-    ensureUserGuid(user);
+    if (ensureUserGuid(user)) {
+      saveUser(user);
+    }
     List<String> roles = permissionFacade.getEffectiveRoles(userId);
     List<String> perms = permissionFacade.getEffectivePermissions(userId);
     String avatar = normalizeAvatar(user.getAvatar());
@@ -1093,11 +1111,11 @@ public class AuthService {
     return new BusinessException(ErrorCodes.BAD_REQUEST, message);
   }
 
-  private void ensureUserGuid(UserEntity user) {
+  private boolean ensureUserGuid(UserEntity user) {
     if (user.getGuid() != null && !user.getGuid().isBlank())
-      return;
+      return false;
     user.setGuid(UUID.randomUUID().toString());
-    saveUser(user);
+    return true;
   }
 
   private long resolveTokenTimeoutSeconds() {

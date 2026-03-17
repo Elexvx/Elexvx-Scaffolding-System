@@ -1,6 +1,7 @@
 package com.tencent.tdesign.service;
 
 import com.tencent.tdesign.dto.OrgUnitReorderRequest;
+import com.tencent.tdesign.dto.OrgUnitLeaderPair;
 import com.tencent.tdesign.dto.OrgUnitUpsertRequest;
 import com.tencent.tdesign.entity.OrgUnitEntity;
 import com.tencent.tdesign.entity.UserEntity;
@@ -242,13 +243,14 @@ public class OrgUnitService {
 
   private void attachLeaderInfo(Map<Long, OrgUnitNode> nodes) {
     if (nodes.isEmpty()) return;
+    List<Long> orgUnitIds = new ArrayList<>(nodes.keySet());
     Map<Long, List<Long>> leaderMap = new HashMap<>();
     Set<Long> userIds = new HashSet<>();
-    for (Long id : nodes.keySet()) {
-      List<Long> leaders = leaderMapper.selectLeaderIds(id);
-      if (leaders == null || leaders.isEmpty()) continue;
-      leaderMap.put(id, leaders);
-      userIds.addAll(leaders);
+    List<OrgUnitLeaderPair> pairs = leaderMapper.selectLeaderPairsByOrgUnitIds(orgUnitIds);
+    for (OrgUnitLeaderPair pair : pairs) {
+      if (pair == null || pair.getOrgUnitId() == null || pair.getUserId() == null) continue;
+      leaderMap.computeIfAbsent(pair.getOrgUnitId(), key -> new ArrayList<>()).add(pair.getUserId());
+      userIds.add(pair.getUserId());
     }
     Map<Long, String> userNameMap = new HashMap<>();
     if (!userIds.isEmpty()) {

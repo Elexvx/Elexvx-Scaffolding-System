@@ -13,7 +13,6 @@ import com.tencent.tdesign.vo.NotificationSummary;
 import com.tencent.tdesign.vo.PageResult;
 import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
@@ -146,7 +145,6 @@ public class NotificationService {
     int limit = Math.max(size, 1);
     List<Notification> result = mapper.selectLatestPublished(limit);
     return result.stream()
-      .sorted(Comparator.comparing(Notification::getPublishAt, Comparator.nullsLast(LocalDateTime::compareTo)).reversed())
       .map(NotificationSummary::from)
       .toList();
   }
@@ -177,7 +175,7 @@ public class NotificationService {
         ? n.getSummary()
         : stripHtml(n.getContent());
       String message = n.getTitle() + "\uff1a" + trimPreview(content, 120);
-      messageService.broadcast(message, "notification", priorityToQuality(n.getPriority()));
+      messageService.broadcastSystem(message, "notification", priorityToQuality(n.getPriority()));
       nettySocketService.ifPresent(service -> service.broadcastNotification(n, message));
     } catch (Exception e) {
       operationLogService.log("WARN", "\u901a\u77e5\u7ba1\u7406", "\u901a\u77e5\u63a8\u9001\u5931\u8d25: " + e.getMessage());

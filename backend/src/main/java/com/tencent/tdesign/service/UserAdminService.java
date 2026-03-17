@@ -2,6 +2,7 @@ package com.tencent.tdesign.service;
 
 import com.tencent.tdesign.dao.AuthQueryDao;
 import com.tencent.tdesign.dto.UserCreateRequest;
+import com.tencent.tdesign.dto.UserGuidPair;
 import com.tencent.tdesign.dto.UserIdLongValue;
 import com.tencent.tdesign.dto.UserIdStringValue;
 import com.tencent.tdesign.dto.UserUpdateRequest;
@@ -33,6 +34,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class UserAdminService {
   private static final String ROOT_ADMIN_ACCOUNT = "admin";
+  private static final int GUID_BACKFILL_BATCH_SIZE = 500;
   private static final String DOC_TYPE_RESIDENT_ID_CARD = "resident_id_card";
   private static final String DOC_TYPE_PASSPORT = "passport";
   private static final java.util.Set<String> DOC_TYPE_RESIDENT_ID_CARD_ALIASES =
@@ -94,15 +96,27 @@ public class UserAdminService {
   @Transactional
   public int backfillMissingGuids() {
     int updated = 0;
-    List<Long> userIds = userMapper.selectAllIds();
-    for (Long userId : userIds) {
-      if (userId == null) continue;
-      UserEntity user = userMapper.selectById(userId);
-      if (user == null) continue;
-      if (user.getGuid() != null && !user.getGuid().isBlank()) continue;
-      user.setGuid(java.util.UUID.randomUUID().toString());
-      saveUser(user);
-      updated++;
+    int offset = 0;
+    while (true) {
+      List<UserEntity> rows = userMapper.selectMissingGuidUsers(offset, GUID_BACKFILL_BATCH_SIZE);
+      if (rows == null || rows.isEmpty()) {
+        break;
+      }
+      List<UserGuidPair> pairs = new ArrayList<>();
+      for (UserEntity user : rows) {
+        if (user == null || user.getId() == null) continue;
+        UserGuidPair pair = new UserGuidPair();
+        pair.setId(user.getId());
+        pair.setGuid(java.util.UUID.randomUUID().toString());
+        pairs.add(pair);
+      }
+      if (!pairs.isEmpty()) {
+        updated += userMapper.updateGuidBatch(pairs);
+      }
+      if (rows.size() < GUID_BACKFILL_BATCH_SIZE) {
+        break;
+      }
+      offset += GUID_BACKFILL_BATCH_SIZE;
     }
     return updated;
   }
@@ -318,6 +332,10 @@ public class UserAdminService {
     UserEntity u = userMapper.selectById(id);
     if (u == null) return true;
     ensureManageableTarget(u);
+    authDao.replaceUserRoles(id, List.of());
+    userOrgUnitMapper.deleteByUserId(id);
+    userDepartmentMapper.deleteByUserId(id);
+    authTokenService.removeUserTokens(id);
     userMapper.deleteById(id);
     operationLogService.log("DELETE", "用户管理", "删除用户: " + u.getAccount());
     return true;
@@ -576,9 +594,9 @@ public class UserAdminService {
     java.util.Map<Long, List<Long>> departmentIds
   ) {}
 
-  private void ensureGuid(UserEntity user) {
-    if (user.getGuid() != null && !user.getGuid().isBlank()) return;
+  private boolean ensureGuid(UserEntity user) {
+    if (user.getGuid() != null && !user.getGuid().isBlank()) return false;
     user.setGuid(java.util.UUID.randomUUID().toString());
-    saveUser(user);
+    return true;
   }
 }

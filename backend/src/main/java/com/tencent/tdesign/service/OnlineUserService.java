@@ -6,9 +6,8 @@ import com.tencent.tdesign.vo.PageResult;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -27,17 +26,21 @@ public class OnlineUserService {
   }
 
   public PageResult<OnlineUserVO> getOnlineUsers(String loginAddress, String userName, int page, int size) {
-    Set<String> tokenSet = new LinkedHashSet<>();
-    tokenSet.addAll(authTokenService.listAllTokens());
-    List<String> tokenList = new ArrayList<>(tokenSet);
+    int safePage = Math.max(page, 0);
+    int safeSize = Math.max(size, 1);
+    boolean noFilter = (loginAddress == null || loginAddress.isEmpty()) && (userName == null || userName.isEmpty());
+    List<String> tokenList = noFilter
+      ? authTokenService.listActiveTokensByPage(safePage * safeSize, safeSize)
+      : authTokenService.listAllTokens();
     List<OnlineUserVO> allUsers = new ArrayList<>();
     logger.debug("Found {} tokens in system", tokenList.size());
 
     long now = System.currentTimeMillis();
     long idleTimeoutMs = resolveSessionTimeoutMs();
+    Map<String, AuthSession> sessionMap = authTokenService.getSessions(tokenList);
     for (String token : tokenList) {
       try {
-        AuthSession session = authTokenService.getSession(token);
+        AuthSession session = sessionMap.get(token);
         if (session == null) {
           logger.debug("No login ID found for token: {}", token);
           authTokenService.removeToken(token);
@@ -49,41 +52,19 @@ public class OnlineUserService {
           continue;
         }
 
-        // 从 session 中获取用户信息
         String userNameStr = (String) session.getAttributes().get("userName");
-        String account = (String) session.getAttributes().get("account");
         String ipAddr = session.getIpAddress();
-        String location = session.getLoginLocation();
-        String browser = session.getBrowser();
-        String os = session.getOs();
-        Object loginTimeObj = session.getAttributes().get("loginTime");
-        Long loginTimeMs = loginTimeObj instanceof Number ? ((Number) loginTimeObj).longValue() : null;
-
-        // 过滤条件：登录地址
         if (loginAddress != null && !loginAddress.isEmpty()) {
           if (ipAddr == null || !ipAddr.contains(loginAddress)) {
             continue;
           }
         }
-
-        // 过滤条件：用户名称
         if (userName != null && !userName.isEmpty()) {
           if (userNameStr == null || !userNameStr.contains(userName)) {
             continue;
           }
         }
-
-        OnlineUserVO user = new OnlineUserVO();
-        user.setSessionId(token);
-        user.setLoginName(account != null ? account : "unknown");
-        user.setUserName(userNameStr != null ? userNameStr : "unknown");
-        user.setIpAddress(ipAddr != null ? ipAddr : "");
-        user.setLoginLocation(location != null ? location : "");
-        user.setBrowser(browser != null ? browser : "Unknown");
-        user.setOs(os != null ? os : "Unknown");
-        user.setLoginTime(loginTimeMs != null ? dateFormat.format(new Date(loginTimeMs)) : "");
-
-        allUsers.add(user);
+        allUsers.add(toVo(token, session));
         logger.debug("Added online user: {}", userNameStr);
       } catch (Exception e) {
         logger.warn("Error processing token {}: {}", token, e.getMessage());
@@ -91,14 +72,15 @@ public class OnlineUserService {
     }
 
     logger.info("Total online users found: {}", allUsers.size());
-
-    // 分页处理
-    int start = page * size;
-    int end = Math.min(start + size, allUsers.size());
-    List<OnlineUserVO> pageList = start < allUsers.size() ? allUsers.subList(start, end) : new ArrayList<>();
-
     PageResult<OnlineUserVO> result = new PageResult<>();
-    result.setList(pageList);
+    if (noFilter) {
+      result.setList(allUsers);
+      result.setTotal(authTokenService.countActiveTokens());
+      return result;
+    }
+    int start = safePage * safeSize;
+    int end = Math.min(start + safeSize, allUsers.size());
+    result.setList(start < allUsers.size() ? allUsers.subList(start, end) : new ArrayList<>());
     result.setTotal(allUsers.size());
     return result;
   }
@@ -182,5 +164,27 @@ public class OnlineUserService {
       }
     }
     return null;
+  }
+
+  private OnlineUserVO toVo(String sessionId, AuthSession session) {
+    String userNameStr = (String) session.getAttributes().get("userName");
+    String account = (String) session.getAttributes().get("account");
+    String ipAddr = session.getIpAddress();
+    String location = session.getLoginLocation();
+    String browser = session.getBrowser();
+    String os = session.getOs();
+    Object loginTimeObj = session.getAttributes().get("loginTime");
+    Long loginTimeMs = loginTimeObj instanceof Number ? ((Number) loginTimeObj).longValue() : null;
+
+    OnlineUserVO user = new OnlineUserVO();
+    user.setSessionId(sessionId);
+    user.setLoginName(account != null ? account : "unknown");
+    user.setUserName(userNameStr != null ? userNameStr : "unknown");
+    user.setIpAddress(ipAddr != null ? ipAddr : "");
+    user.setLoginLocation(location != null ? location : "");
+    user.setBrowser(browser != null ? browser : "Unknown");
+    user.setOs(os != null ? os : "Unknown");
+    user.setLoginTime(loginTimeMs != null ? dateFormat.format(new Date(loginTimeMs)) : "");
+    return user;
   }
 }

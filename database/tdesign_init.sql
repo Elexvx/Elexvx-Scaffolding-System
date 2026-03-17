@@ -134,7 +134,10 @@ CREATE TABLE `notifications`  (
   `cover_url` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
   `attachment_url` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
   `attachment_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
-  PRIMARY KEY (`id`) USING BTREE
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_notifications_status_updated_at`(`status` ASC, `updated_at` ASC) USING BTREE,
+  INDEX `idx_notifications_status_publish_at`(`status` ASC, `publish_at` ASC) USING BTREE,
+  INDEX `idx_notifications_priority_status`(`priority` ASC, `status` ASC) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -155,7 +158,10 @@ CREATE TABLE `operation_logs`  (
   `browser` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
   `created_at` datetime NULL DEFAULT NULL,
   `user_guid` varchar(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL,
-  PRIMARY KEY (`id`) USING BTREE
+  PRIMARY KEY (`id`) USING BTREE,
+  INDEX `idx_operation_logs_created_at`(`created_at` ASC) USING BTREE,
+  INDEX `idx_operation_logs_user_created_at`(`user_id` ASC, `created_at` ASC) USING BTREE,
+  INDEX `idx_operation_logs_action_created_at`(`action` ASC, `created_at` ASC) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 379 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -1257,7 +1263,9 @@ CREATE TABLE `users`  (
   `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`) USING BTREE,
-  UNIQUE INDEX `account`(`account` ASC) USING BTREE
+  UNIQUE INDEX `account`(`account` ASC) USING BTREE,
+  INDEX `idx_users_mobile`(`mobile` ASC) USING BTREE,
+  INDEX `idx_users_account_name`(`account` ASC, `name` ASC) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 149 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
@@ -1376,6 +1384,29 @@ CREATE TABLE `watermark_settings`  (
 -- Records of watermark_settings
 -- ----------------------------
 INSERT INTO `watermark_settings` VALUES (1, 'text_single', '水印', '', 0.12, 30, 200, 200, 20, 1);
+
+-- ----------------------------
+-- Data consistency cleanup
+-- ----------------------------
+DELETE ur
+FROM user_roles ur
+LEFT JOIN users u ON u.id = ur.user_id
+WHERE u.id IS NULL;
+
+DELETE uou
+FROM user_org_units uou
+LEFT JOIN users u ON u.id = uou.user_id
+WHERE u.id IS NULL;
+
+DELETE ud
+FROM user_departments ud
+LEFT JOIN users u ON u.id = ud.user_id
+WHERE u.id IS NULL;
+
+DELETE oul
+FROM org_unit_leaders oul
+LEFT JOIN users u ON u.id = oul.user_id
+WHERE u.id IS NULL;
 
 SET FOREIGN_KEY_CHECKS = 1;
 

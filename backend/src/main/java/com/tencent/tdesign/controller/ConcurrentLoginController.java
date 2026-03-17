@@ -9,6 +9,7 @@ import com.tencent.tdesign.service.ConcurrentLoginService;
 import com.tencent.tdesign.service.AuthTokenService;
 import com.tencent.tdesign.vo.ApiResponse;
 import jakarta.validation.Valid;
+import java.util.Map;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -44,6 +45,15 @@ public class ConcurrentLoginController {
     return concurrentLoginService.subscribeLoginNotice(userId);
   }
 
+  @PostMapping("/concurrent/ticket")
+  @RepeatSubmit
+  public ApiResponse<Map<String, String>> issueConcurrentStreamTicket() {
+    authContext.requireUserId();
+    String token = authContext.requireToken();
+    String ticket = concurrentLoginService.issueConcurrentStreamTicket(token);
+    return ApiResponse.success(Map.of("ticket", ticket));
+  }
+
   @PostMapping("/concurrent/decision")
   @RepeatSubmit
   public ApiResponse<Boolean> decide(@RequestBody @Valid ConcurrentLoginDecisionRequest req) {
@@ -54,11 +64,11 @@ public class ConcurrentLoginController {
     else if ("reject".equalsIgnoreCase(action)) approve = false;
     else throw badRequest("action仅支持 approve 或 reject");
 
+    concurrentLoginService.decide(userId, req.getRequestId(), approve);
     if (approve) {
-      concurrentLoginService.publishForceLogout(userId, "\u5f53\u524d\u767b\u5f55\u72b6\u6001\u5df2\u5931\u6548\uff0c\u8bf7\u91cd\u65b0\u767b\u5f55");
+      concurrentLoginService.publishForceLogout(userId, "当前登录状态已失效，请重新登录");
       authTokenService.removeUserTokens(userId);
     }
-    concurrentLoginService.decide(userId, req.getRequestId(), approve);
     return ApiResponse.success(true);
   }
 

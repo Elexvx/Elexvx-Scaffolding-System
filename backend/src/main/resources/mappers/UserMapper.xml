@@ -86,6 +86,34 @@
     SELECT id FROM users ORDER BY id ASC
   </select>
 
+  <select id="selectMissingGuidUsers" resultType="com.tencent.tdesign.entity.UserEntity">
+    <include refid="BaseSelect" />
+    WHERE guid IS NULL OR guid = ''
+    ORDER BY id ASC
+    <choose>
+      <when test="_databaseId == 'oracle' or _databaseId == 'sqlserver'">
+        OFFSET #{offset} ROWS FETCH NEXT #{limit} ROWS ONLY
+      </when>
+      <otherwise>
+        LIMIT #{limit} OFFSET #{offset}
+      </otherwise>
+    </choose>
+  </select>
+
+  <update id="updateGuidBatch">
+    UPDATE users
+    SET guid = CASE id
+      <foreach collection="pairs" item="pair">
+        WHEN #{pair.id} THEN #{pair.guid}
+      </foreach>
+      ELSE guid
+    END
+    WHERE id IN
+    <foreach collection="pairs" item="pair" open="(" close=")" separator=",">
+      #{pair.id}
+    </foreach>
+  </update>
+
   <select id="selectPage" resultType="com.tencent.tdesign.entity.UserEntity">
     <include refid="BaseSelect" />
     <where>
@@ -94,7 +122,11 @@
           OR name LIKE CONCAT(CONCAT('%', #{keyword}), '%'))
       </if>
       <if test="mobile != null and mobile != ''">
-        AND mobile LIKE CONCAT(CONCAT('%', #{mobile}), '%')
+        AND (
+          mobile = #{mobile}
+          OR mobile LIKE CONCAT(#{mobile}, '%')
+          OR mobile LIKE CONCAT(CONCAT('%', #{mobile}), '%')
+        )
       </if>
       <if test="status != null">
         AND status = #{status}
@@ -136,7 +168,11 @@
           OR name LIKE CONCAT(CONCAT('%', #{keyword}), '%'))
       </if>
       <if test="mobile != null and mobile != ''">
-        AND mobile LIKE CONCAT(CONCAT('%', #{mobile}), '%')
+        AND (
+          mobile = #{mobile}
+          OR mobile LIKE CONCAT(#{mobile}, '%')
+          OR mobile LIKE CONCAT(CONCAT('%', #{mobile}), '%')
+        )
       </if>
       <if test="status != null">
         AND status = #{status}

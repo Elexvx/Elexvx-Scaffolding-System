@@ -60,6 +60,7 @@ public class FileChunkUploadService {
   private final Path chunkRoot;
   private final ConcurrentMap<String, Object> sessionLocks = new ConcurrentHashMap<>();
   private final AuthContext authContext;
+  private final UploadFileValidationService uploadFileValidationService;
   private final byte[] uploadIdSalt;
   private final long maxFileSizeBytes;
   private final ScheduledExecutorService cleanupExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
@@ -72,12 +73,14 @@ public class FileChunkUploadService {
     ObjectStorageService storageService,
     ObjectMapper objectMapper,
     AuthContext authContext,
+    UploadFileValidationService uploadFileValidationService,
     @Value("${tdesign.file.token-secret:}") String secret,
     @Value("${tdesign.file.upload.max-file-size-mb:100}") long maxFileSizeMb
   ) {
     this.storageService = storageService;
     this.objectMapper = objectMapper;
     this.authContext = authContext;
+    this.uploadFileValidationService = uploadFileValidationService;
     this.maxFileSizeBytes = Math.max(1, maxFileSizeMb) * 1024 * 1024;
     String effective = secret == null ? "" : secret.trim();
     if (effective.isEmpty()) {
@@ -144,6 +147,13 @@ public class FileChunkUploadService {
     long expectedSize = expectedChunkSize(session, chunkIndex);
     if (chunk.getSize() != expectedSize) {
       throw badRequest("分片大小不匹配，期望 " + expectedSize + " 字节，实际 " + chunk.getSize() + " 字节");
+    }
+    if (chunkIndex == 0) {
+      try (InputStream in = chunk.getInputStream()) {
+        uploadFileValidationService.validate(session.getFileName(), chunk.getContentType(), in);
+      } catch (IOException ioException) {
+        throw badRequest("读取分片文件头失败");
+      }
     }
     Path dir = sessionDir(uploadId);
     Path chunkFile = dir.resolve(chunkFileName(chunkIndex));

@@ -9,6 +9,15 @@
     WHERE org_unit_id = #{orgUnitId}
   </select>
 
+  <select id="selectLeaderPairsByOrgUnitIds" resultType="com.tencent.tdesign.dto.OrgUnitLeaderPair">
+    SELECT org_unit_id, user_id
+    FROM org_unit_leaders
+    WHERE org_unit_id IN
+    <foreach collection="orgUnitIds" item="orgUnitId" open="(" close=")" separator=",">
+      #{orgUnitId}
+    </foreach>
+  </select>
+
   <delete id="deleteByOrgUnitId">
     DELETE FROM org_unit_leaders WHERE org_unit_id = #{orgUnitId}
   </delete>

@@ -26,12 +26,6 @@
       </t-col>
 
       <t-col :xs="24" :sm="12">
-        <t-form-item label="悬浮工具栏" name="aiAssistantEnabled" help="控制右侧悬浮栏（AI/二维码/回到顶部）">
-          <t-switch v-model="form.aiAssistantEnabled" />
-        </t-form-item>
-      </t-col>
-
-      <t-col :xs="24" :sm="12">
         <t-form-item
           label="顶部 GitHub 链接"
           name="headerGithubUrl"
@@ -113,7 +107,6 @@ const form = reactive({
   logRetentionDays: 90,
   defaultHome: '/user/index',
   autoTheme: false,
-  aiAssistantEnabled: true,
   headerGithubUrl: '',
   headerHelpUrl: '',
   maintenanceEnabled: false,
@@ -170,7 +163,6 @@ const load = async () => {
   const rawHome = s.defaultHome || '/user/index';
   form.defaultHome = homePathMap.value[rawHome] || normalizePath('', rawHome);
   form.autoTheme = !!s.autoTheme;
-  form.aiAssistantEnabled = s.aiAssistantEnabled !== undefined ? !!s.aiAssistantEnabled : true;
   form.headerGithubUrl = s.headerGithubUrl || '';
   form.headerHelpUrl = s.headerHelpUrl || '';
   form.maintenanceEnabled = s.maintenanceEnabled !== undefined ? !!s.maintenanceEnabled : false;
@@ -201,7 +193,6 @@ const onSubmit = async (ctx: any) => {
         logRetentionDays: form.logRetentionDays,
         defaultHome: normalizedDefaultHome,
         autoTheme: form.autoTheme,
-        aiAssistantEnabled: form.aiAssistantEnabled,
         headerGithubUrl: form.headerGithubUrl,
         headerHelpUrl: form.headerHelpUrl,
         maintenanceEnabled: form.maintenanceEnabled,

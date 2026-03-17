@@ -289,8 +289,7 @@ public class GlobalExceptionHandler {
     }
     if (uri == null) return false;
     return uri.endsWith("/auth/concurrent/stream")
-      || uri.endsWith("/auth/login/pending/stream")
-      || uri.endsWith("/ai/chat/sse");
+      || uri.endsWith("/auth/login/pending/stream");
   }
 
   private boolean isClientDisconnected(Throwable throwable) {

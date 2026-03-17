@@ -17,7 +17,6 @@ import com.tencent.tdesign.service.SecurityRateLimitService;
 import com.tencent.tdesign.service.SecuritySettingService;
 import com.tencent.tdesign.service.UiSettingService;
 import com.tencent.tdesign.service.VerificationSettingService;
-import com.tencent.tdesign.service.ModuleRegistryService;
 import com.tencent.tdesign.util.PermissionUtil;
 import com.tencent.tdesign.vo.ApiResponse;
 import com.tencent.tdesign.vo.UiSettingResponse;
@@ -41,7 +40,6 @@ public class UiSettingController {
   private final Optional<EmailSenderService> emailSenderService;
   private final VerificationSettingService verificationSettingService;
   private final SecuritySettingService securitySettingService;
-  private final ModuleRegistryService moduleRegistryService;
   private final AuthContext authContext;
   private final AccessControlService accessControlService;
   private final SecurityRateLimitService rateLimitService;
@@ -57,7 +55,6 @@ public class UiSettingController {
     Optional<EmailSenderService> emailSenderService,
     VerificationSettingService verificationSettingService,
     SecuritySettingService securitySettingService,
-    ModuleRegistryService moduleRegistryService,
     AuthContext authContext,
     AccessControlService accessControlService,
     SecurityRateLimitService rateLimitService
@@ -68,7 +65,6 @@ public class UiSettingController {
     this.emailSenderService = emailSenderService;
     this.verificationSettingService = verificationSettingService;
     this.securitySettingService = securitySettingService;
-    this.moduleRegistryService = moduleRegistryService;
     this.authContext = authContext;
     this.accessControlService = accessControlService;
     this.rateLimitService = rateLimitService;
@@ -79,8 +75,6 @@ public class UiSettingController {
     UiSetting setting = uiSettingService.getOrCreate();
     VerificationSetting verificationSetting = verificationSettingService.getDecryptedCopy();
     SecuritySetting securitySetting = securitySettingService.getOrCreate();
-    boolean smsModuleAvailable = moduleRegistryService.isModuleAvailable("sms");
-    boolean emailModuleAvailable = moduleRegistryService.isModuleAvailable("email");
     UiSettingResponse response = new UiSettingResponse();
     response.setFooterCompany(setting.getFooterCompany());
     response.setFooterIcp(setting.getFooterIcp());
@@ -101,8 +95,8 @@ public class UiSettingController {
     response.setHeaderHelpUrl(setting.getHeaderHelpUrl());
     response.setUserAgreement(setting.getUserAgreement());
     response.setPrivacyAgreement(setting.getPrivacyAgreement());
-    response.setSmsEnabled(Boolean.TRUE.equals(verificationSetting.getSmsEnabled()) && smsModuleAvailable);
-    response.setEmailEnabled(Boolean.TRUE.equals(verificationSetting.getEmailEnabled()) && emailModuleAvailable);
+    response.setSmsEnabled(Boolean.TRUE.equals(verificationSetting.getSmsEnabled()));
+    response.setEmailEnabled(Boolean.TRUE.equals(verificationSetting.getEmailEnabled()));
     response.setCaptchaEnabled(securitySetting.getCaptchaEnabled());
     response.setCaptchaType(securitySetting.getCaptchaType());
     response.setDragCaptchaWidth(securitySetting.getDragCaptchaWidth());
@@ -131,8 +125,6 @@ public class UiSettingController {
     UiSetting setting = uiSettingService.getOrCreate();
     VerificationSetting verificationSetting = verificationSettingService.getDecryptedCopy();
     SecuritySetting securitySetting = securitySettingService.getOrCreate();
-    boolean smsModuleAvailable = moduleRegistryService.isModuleAvailable("sms");
-    boolean emailModuleAvailable = moduleRegistryService.isModuleAvailable("email");
     boolean canViewVerificationSensitive = false;
     boolean canViewSecuritySensitive = false;
     if (authContext.isAuthenticated()) {
@@ -159,7 +151,6 @@ public class UiSettingController {
     response.setQrCodeUrl(setting.getQrCodeUrl());
     response.setAllowMultiDeviceLogin(setting.getAllowMultiDeviceLogin());
     response.setLogRetentionDays(setting.getLogRetentionDays());
-    response.setAiAssistantEnabled(setting.getAiAssistantEnabled());
     response.setMaintenanceEnabled(setting.getMaintenanceEnabled());
     response.setMaintenanceMessage(setting.getMaintenanceMessage());
     response.setDefaultHome(setting.getDefaultHome());
@@ -185,7 +176,7 @@ public class UiSettingController {
     response.setUserAgreement(setting.getUserAgreement());
     response.setPrivacyAgreement(setting.getPrivacyAgreement());
 
-    response.setSmsEnabled(Boolean.TRUE.equals(verificationSetting.getSmsEnabled()) && smsModuleAvailable);
+    response.setSmsEnabled(Boolean.TRUE.equals(verificationSetting.getSmsEnabled()));
     response.setSmsProvider(verificationSetting.getSmsProvider());
     response.setSmsAliyunEnabled(verificationSetting.getSmsAliyunEnabled());
     response.setSmsAliyunAccessKeyId(verificationSetting.getSmsAliyunAccessKeyId());
@@ -202,7 +193,7 @@ public class UiSettingController {
     response.setSmsTencentRegion(verificationSetting.getSmsTencentRegion());
     response.setSmsTencentEndpoint(verificationSetting.getSmsTencentEndpoint());
     response.setSmsSdkAppId(verificationSetting.getSmsSdkAppId());
-    response.setEmailEnabled(Boolean.TRUE.equals(verificationSetting.getEmailEnabled()) && emailModuleAvailable);
+    response.setEmailEnabled(Boolean.TRUE.equals(verificationSetting.getEmailEnabled()));
     response.setEmailHost(verificationSetting.getEmailHost());
     response.setEmailPort(verificationSetting.getEmailPort());
     response.setEmailUsername(verificationSetting.getEmailUsername());
@@ -275,12 +266,6 @@ public class UiSettingController {
   @RepeatSubmit
   public ApiResponse<UiSettingResponse> save(@RequestBody @Valid UiSettingRequest req) {
     PermissionUtil.checkAny("system:SystemVerification:update", "system:SystemPersonalize:update", "system:SystemSecurity:update");
-    if (Boolean.TRUE.equals(req.getSmsEnabled())) {
-      moduleRegistryService.assertModuleAvailable("sms");
-    }
-    if (Boolean.TRUE.equals(req.getEmailEnabled())) {
-      moduleRegistryService.assertModuleAvailable("email");
-    }
     uiSettingService.save(req);
     verificationSettingService.applyRequest(req);
     securitySettingService.applyRequest(req);
@@ -293,7 +278,6 @@ public class UiSettingController {
   public ApiResponse<Boolean> testEmail(@RequestBody @Valid EmailSendRequest req) {
     authContext.requireUserId();
     PermissionUtil.checkAny("system:SystemVerification:update", "system:SystemPersonalize:update", "system:SystemSecurity:update");
-    moduleRegistryService.assertModuleAvailable("email");
     VerificationSetting setting = verificationSettingService.getDecryptedCopy();
     if (setting == null || !Boolean.TRUE.equals(setting.getEmailEnabled())) {
       throw badRequest("邮箱验证已禁用");

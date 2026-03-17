@@ -108,12 +108,8 @@ public class UiSettingService {
     UiSystemSetting system = systemMapper.selectTop();
     if (system != null) {
       out.setLogRetentionDays(system.getLogRetentionDays());
-      out.setAiAssistantEnabled(system.getAiAssistantEnabled());
       out.setMaintenanceEnabled(system.getMaintenanceEnabled());
       out.setMaintenanceMessage(system.getMaintenanceMessage());
-    }
-    if (out.getAiAssistantEnabled() == null) {
-      out.setAiAssistantEnabled(true);
     }
 
     return out;
@@ -220,7 +216,6 @@ public class UiSettingService {
     if (s == null) s = new UiSystemSetting();
     boolean changed = false;
     if (req.getLogRetentionDays() != null) { s.setLogRetentionDays(req.getLogRetentionDays()); changed = true; }
-    if (req.getAiAssistantEnabled() != null) { s.setAiAssistantEnabled(req.getAiAssistantEnabled()); changed = true; }
     if (req.getMaintenanceEnabled() != null) { s.setMaintenanceEnabled(req.getMaintenanceEnabled()); changed = true; }
     if (req.getMaintenanceMessage() != null) { s.setMaintenanceMessage(req.getMaintenanceMessage()); changed = true; }
     if (changed) upsertSystem(s);

@@ -13,7 +13,6 @@ public class UiSettingResponse {
   private String qrCodeUrl;
   private Boolean allowMultiDeviceLogin;
   private Integer logRetentionDays;
-  private Boolean aiAssistantEnabled;
   private Boolean maintenanceEnabled;
   private String maintenanceMessage;
   private String defaultHome;
@@ -103,8 +102,6 @@ public class UiSettingResponse {
   public void setAllowMultiDeviceLogin(Boolean allowMultiDeviceLogin) { this.allowMultiDeviceLogin = allowMultiDeviceLogin; }
   public Integer getLogRetentionDays() { return logRetentionDays; }
   public void setLogRetentionDays(Integer logRetentionDays) { this.logRetentionDays = logRetentionDays; }
-  public Boolean getAiAssistantEnabled() { return aiAssistantEnabled; }
-  public void setAiAssistantEnabled(Boolean aiAssistantEnabled) { this.aiAssistantEnabled = aiAssistantEnabled; }
   public Boolean getMaintenanceEnabled() { return maintenanceEnabled; }
   public void setMaintenanceEnabled(Boolean maintenanceEnabled) { this.maintenanceEnabled = maintenanceEnabled; }
   public String getMaintenanceMessage() { return maintenanceMessage; }

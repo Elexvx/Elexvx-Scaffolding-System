@@ -18,7 +18,6 @@ declare module 'vue-router' {
     resource?: string;
     actions?: string[];
     requiredPermissions?: string[];
-    requiredModules?: string[];
     // roleCode?: string; // 前端 roles 控制菜单权限
   }
 }

@@ -33,6 +33,7 @@ public class MenuMaintenanceRunner implements ApplicationRunner {
     runTask("removeObsoleteWatermarkRoute", menuItemService::removeObsoleteWatermarkRoute);
     runTask("removeObsoleteTeamRoute", menuItemService::removeObsoleteTeamRoute);
     runTask("removeObsoleteNotificationRoute", menuItemService::removeObsoleteNotificationRoute);
+    runTask("removeObsoleteModuleAccessRoutes", menuItemService::removeObsoleteModuleAccessRoutes);
   }
 
   private void runTask(String name, MaintenanceTask task) {

@@ -2,14 +2,6 @@
   <div class="module-management">
     <t-card title="模块管理" :bordered="false">
       <t-space direction="vertical" style="width: 100%" size="large">
-        <t-alert v-if="requiredModuleHints.length > 0" theme="warning" :close="false">
-          <template #message>
-            检测到路由 {{ fromRoutePath || '-' }} 依赖模块：
-            {{ requiredModuleHints.map((item) => `${item.label}(${item.key})`).join('、') }}。
-            请先安装并启用对应模块后再返回目标页面。
-          </template>
-        </t-alert>
-
         <t-space>
           <t-button variant="outline" :loading="loading" @click="loadModules">刷新</t-button>
           <t-upload
@@ -92,7 +84,6 @@ import dayjs from 'dayjs';
 import type { PrimaryTableCol } from 'tdesign-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, ref } from 'vue';
-import { useRoute } from 'vue-router';
 
 import { importExportApi } from '@/api/importExport';
 import type { ModuleRegistryItem } from '@/api/system/module';
@@ -107,7 +98,6 @@ interface ModuleTableRow extends ModuleRegistryItem {
 const loading = ref(false);
 const modules = ref<ModuleTableRow[]>([]);
 const actionLoading = ref<Record<string, boolean>>({});
-const route = useRoute();
 const userStore = useUserStore();
 const permissionStore = usePermissionStore();
 const installPackages = ref<any[]>([]);
@@ -126,38 +116,6 @@ const refreshNavigation = async () => {
     MessagePlugin.warning(error?.message || '导航刷新失败');
   }
 };
-
-const normalizeModuleKey = (value?: string | null) =>
-  String(value || '')
-    .trim()
-    .toLowerCase();
-
-const moduleNameMap: Record<string, string> = {
-  sms: '短信模块',
-  email: '邮箱模块',
-  captcha: '验证码模块',
-  sensitive: '敏感词拦截模块',
-  ai: 'AI 设置模块',
-};
-
-const requiredModuleHints = computed(() => {
-  const raw = route.query.requiredModules;
-  const text = Array.isArray(raw) ? raw.join(',') : String(raw || '');
-  return text
-    .split(',')
-    .map((item) => normalizeModuleKey(item))
-    .filter(Boolean)
-    .filter((item, index, list) => list.indexOf(item) === index)
-    .map((key) => ({
-      key,
-      label: moduleNameMap[key] || '模块',
-    }));
-});
-
-const fromRoutePath = computed(() => {
-  const raw = route.query.from;
-  return Array.isArray(raw) ? raw[0] : String(raw || '');
-});
 
 const columns: PrimaryTableCol[] = [
   {
@@ -193,7 +151,6 @@ const fallbackSource = (key: string) => {
   if (key === 'email') return 'Spring Boot Mail Starter';
   if (key === 'captcha') return 'AJ Captcha';
   if (key === 'sensitive') return 'Sensitive Word Filter';
-  if (key === 'ai') return 'AI Provider Settings';
   return 'Built-in Module';
 };
 

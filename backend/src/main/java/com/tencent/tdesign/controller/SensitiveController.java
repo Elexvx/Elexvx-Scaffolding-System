@@ -3,7 +3,6 @@ package com.tencent.tdesign.controller;
 import com.tencent.tdesign.dto.SensitiveSettingsRequest;
 import com.tencent.tdesign.dto.SensitiveWordCreateRequest;
 import com.tencent.tdesign.entity.SensitiveWord;
-import com.tencent.tdesign.service.ModuleRegistryService;
 import com.tencent.tdesign.service.SensitiveService;
 import com.tencent.tdesign.util.PermissionUtil;
 import com.tencent.tdesign.vo.ApiResponse;
@@ -25,21 +24,14 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/system/sensitive")
 public class SensitiveController {
-  private final ModuleRegistryService moduleRegistryService;
   private final SensitiveService sensitiveService;
 
-  public SensitiveController(ModuleRegistryService moduleRegistryService, SensitiveService sensitiveService) {
-    this.moduleRegistryService = moduleRegistryService;
+  public SensitiveController(SensitiveService sensitiveService) {
     this.sensitiveService = sensitiveService;
-  }
-
-  private void requireModule() {
-    moduleRegistryService.assertModuleAvailable("sensitive");
   }
 
   @GetMapping("/words")
   public ApiResponse<List<SensitiveWord>> listWords(@RequestParam(required = false) String keyword) {
-    requireModule();
     PermissionUtil.check("system:SystemSensitive:query");
     return ApiResponse.success(sensitiveService.listWords(keyword));
   }
@@ -50,49 +42,42 @@ public class SensitiveController {
     @RequestParam(defaultValue = "0") int page,
     @RequestParam(defaultValue = "10") int size
   ) {
-    requireModule();
     PermissionUtil.check("system:SystemSensitive:query");
     return ApiResponse.success(sensitiveService.pageWords(keyword, page, size));
   }
 
   @PostMapping("/words")
   public ApiResponse<SensitiveWord> createWord(@RequestBody @Valid SensitiveWordCreateRequest req) {
-    requireModule();
     PermissionUtil.check("system:SystemSensitive:create");
     return ApiResponse.success(sensitiveService.createWord(req.getWord()));
   }
 
   @DeleteMapping("/words/{id}")
   public ApiResponse<Boolean> deleteWord(@PathVariable long id) {
-    requireModule();
     PermissionUtil.check("system:SystemSensitive:delete");
     return ApiResponse.success(sensitiveService.deleteWord(id));
   }
 
   @GetMapping("/words/template")
   public void downloadTemplate(jakarta.servlet.http.HttpServletResponse response) {
-    requireModule();
     PermissionUtil.check("system:SystemSensitive:query");
     sensitiveService.downloadTemplate(response);
   }
 
   @PostMapping("/words/import")
   public ApiResponse<SensitiveImportResult> importWords(@RequestParam("file") MultipartFile file) {
-    requireModule();
     PermissionUtil.check("system:SystemSensitive:create");
     return ApiResponse.success(sensitiveService.importWords(file));
   }
 
   @GetMapping("/settings")
   public ApiResponse<SensitiveSettingsResponse> getSettings() {
-    requireModule();
     PermissionUtil.check("system:SystemSensitive:query");
     return ApiResponse.success(sensitiveService.getSettings());
   }
 
   @PostMapping("/settings")
   public ApiResponse<SensitiveSettingsResponse> saveSettings(@RequestBody SensitiveSettingsRequest req) {
-    requireModule();
     PermissionUtil.check("system:SystemSensitive:update");
     return ApiResponse.success(sensitiveService.saveSettings(req));
   }

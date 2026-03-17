@@ -39,22 +39,19 @@ public class MenuItemService {
   private final AuthQueryDao authDao;
   private final PermissionFacade permissionFacade;
   private final AuthContext authContext;
-  private final ModuleRegistryService moduleRegistryService;
 
   public MenuItemService(
     MenuItemMapper menuItemMapper,
     OperationLogService operationLogService,
     AuthQueryDao authDao,
     PermissionFacade permissionFacade,
-    AuthContext authContext,
-    ModuleRegistryService moduleRegistryService
+    AuthContext authContext
   ) {
     this.menuItemMapper = menuItemMapper;
     this.operationLogService = operationLogService;
     this.authDao = authDao;
     this.permissionFacade = permissionFacade;
     this.authContext = authContext;
-    this.moduleRegistryService = moduleRegistryService;
   }
 
   private static BusinessException badRequest(String message) {
@@ -261,6 +258,22 @@ public class MenuItemService {
     MenuItemEntity teamRoute = menuItemMapper.selectByRouteName("team");
     if (teamRoute != null) return delete(teamRoute.getId(), true);
     return false;
+  }
+
+  @Transactional
+  public boolean removeObsoleteModuleAccessRoutes() {
+    boolean changed = false;
+    MenuItemEntity aiPage = menuItemMapper.selectByRouteName("SystemAi");
+    if (aiPage != null) {
+      delete(aiPage.getId(), true);
+      changed = true;
+    }
+    MenuItemEntity modulePage = menuItemMapper.selectByRouteName("SystemModule");
+    if (modulePage != null) {
+      delete(modulePage.getId(), true);
+      changed = true;
+    }
+    return changed;
   }
 
   @Transactional
@@ -479,7 +492,6 @@ public class MenuItemService {
     Set<Long> visibleIds = new HashSet<>();
     for (MenuItemEntity e : items) {
       if (!Boolean.TRUE.equals(e.getEnabled())) continue;
-      if (!isModulesAvailable(e.getRequiredModules())) continue;
 
       // 检查角色配置 (只校验是否分配给了该用户，以 role_menus 为准)
       if (accessibleMenuIds.contains(e.getId())) {
@@ -491,7 +503,6 @@ public class MenuItemService {
           if (visibleIds.contains(pid)) break;
           MenuItemEntity p = idMap.get(pid);
           if (p == null || !Boolean.TRUE.equals(p.getEnabled())) break;
-          if (!isModulesAvailable(p.getRequiredModules())) break;
           visibleIds.add(pid);
           pid = p.getParentId();
         }
@@ -549,7 +560,6 @@ public class MenuItemService {
     meta.setFrameBlank(n.getFrameBlank());
     List<String> actions = parseActions(n.getActions());
     meta.setActions(actions);
-    meta.setRequiredModules(parseModules(n.getRequiredModules()));
     String resource = resolveResource(n);
     meta.setResource(resource);
     boolean isDir = "DIR".equalsIgnoreCase(String.valueOf(n.getNodeType()));
@@ -576,26 +586,6 @@ public class MenuItemService {
       ri.setChildren(children);
     }
     return ri;
-  }
-
-  private boolean isModulesAvailable(String requiredModules) {
-    List<String> modules = parseModules(requiredModules);
-    if (modules.isEmpty()) return true;
-    for (String key : modules) {
-      if (!moduleRegistryService.isModuleAvailable(key)) return false;
-    }
-    return true;
-  }
-
-  private List<String> parseModules(String requiredModules) {
-    if (requiredModules == null || requiredModules.isBlank()) return List.of();
-    String[] parts = requiredModules.split(",");
-    List<String> out = new ArrayList<>();
-    for (String p : parts) {
-      String v = p == null ? "" : p.trim();
-      if (!v.isEmpty()) out.add(v.toLowerCase(Locale.ROOT));
-    }
-    return out;
   }
 
   private List<String> parseActions(String actions) {
@@ -977,26 +967,6 @@ public class MenuItemService {
       );
       list.add(
         new SeedNode(
-          "system",
-          null,
-          "PAGE",
-          "ai",
-          "SystemAi",
-          "/system/ai/index",
-          null,
-          "AI设置",
-          "AI Settings",
-          "chat",
-          false,
-          null,
-          false,
-          true,
-          6,
-          "create,update,delete,query"
-        )
-      );
-      list.add(
-        new SeedNode(
           "users",
           null,
           "PAGE",
@@ -1153,26 +1123,6 @@ public class MenuItemService {
           false,
           true,
           4,
-          "update,query"
-        )
-      );
-      list.add(
-        new SeedNode(
-          "system",
-          null,
-          "PAGE",
-          "modules",
-          "SystemModule",
-          "/system/modules/index",
-          null,
-          "模块管理",
-          "Modules",
-          "grid-view",
-          false,
-          null,
-          false,
-          true,
-          6,
           "update,query"
         )
       );

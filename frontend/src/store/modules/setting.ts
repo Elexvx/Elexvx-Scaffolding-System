@@ -36,7 +36,6 @@ const state: Record<string, any> = {
   defaultHome: '/user/index',
   loginBgUrl: OFFLINE_UI_CONFIG.loginBgUrl,
   qrCodeUrl: '',
-  aiAssistantEnabled: true,
   headerGithubUrl: '',
   headerHelpUrl: '',
   maintenanceEnabled: false,
@@ -197,8 +196,6 @@ export const useSettingStore = defineStore('setting', {
         }
         payload.loginBgUrl = resolveAssetUrl(s.loginBgUrl, OFFLINE_UI_CONFIG.loginBgUrl);
         if (s.qrCodeUrl !== null && s.qrCodeUrl !== undefined) payload.qrCodeUrl = s.qrCodeUrl;
-        if (s.aiAssistantEnabled !== null && s.aiAssistantEnabled !== undefined)
-          payload.aiAssistantEnabled = !!s.aiAssistantEnabled;
         if (s.headerGithubUrl !== null && s.headerGithubUrl !== undefined)
           payload.headerGithubUrl = String(s.headerGithubUrl || '');
         if (s.headerHelpUrl !== null && s.headerHelpUrl !== undefined)
@@ -303,7 +300,6 @@ export const useSettingStore = defineStore('setting', {
         'defaultHome',
         'loginBgUrl',
         'qrCodeUrl',
-        'aiAssistantEnabled',
         'headerGithubUrl',
         'headerHelpUrl',
         'maintenanceEnabled',

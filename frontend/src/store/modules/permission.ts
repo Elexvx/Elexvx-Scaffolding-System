@@ -4,7 +4,6 @@ import type { RouteRecordRaw } from 'vue-router';
 
 import type { RouteItem } from '@/api/model/permissionModel';
 import { getMenuList } from '@/api/permission';
-import { fetchModuleList } from '@/api/system/module';
 import router from '@/router';
 import { store } from '@/store';
 import type { UserInfo } from '@/types/interface';
@@ -27,68 +26,6 @@ import { getTabsRouterStore } from './tabs-router';
  * 注意：真正的路由注入发生在 src/permission.ts（router.addRoute），这里负责构建与维护可展示的 routers 数据。
  */
 const normalizePath = (path?: string) => String(path || '').split(/[?#]/)[0];
-
-const normalizeModuleKey = (value: string) =>
-  String(value || '')
-    .trim()
-    .toLowerCase();
-
-const normalizeRequiredModules = (value: unknown): string[] => {
-  if (!value) return [];
-  if (Array.isArray(value)) return value.map((v) => normalizeModuleKey(String(v))).filter(Boolean);
-  if (typeof value === 'string') {
-    return value
-      .split(',')
-      .map((v) => normalizeModuleKey(v))
-      .filter(Boolean);
-  }
-  return [];
-};
-
-const normalizeComponentKey = (value: unknown) => {
-  if (typeof value !== 'string') return '';
-  let path = value.trim();
-  if (!path) return '';
-  path = path.replace(/\\/g, '/');
-  path = path.replace(/\.(vue|tsx)$/i, '');
-  if (path.startsWith('/')) path = path.slice(1);
-  if (path.startsWith('src/')) path = path.slice('src/'.length);
-  if (path.startsWith('/src/')) path = path.slice('/src/'.length);
-  if (path.startsWith('pages/')) path = path.slice('pages/'.length);
-  if (path.startsWith('views/')) path = path.slice('views/'.length);
-  return path.toLowerCase();
-};
-
-const isVerificationSettingsRoute = (route: RouteItem) => {
-  const componentKey = normalizeComponentKey(route.component);
-  return componentKey.endsWith('system/verification/index');
-};
-
-const filterRoutesByModuleState = (routes: RouteItem[], enabledModuleKeys: Set<string>): RouteItem[] => {
-  const result: RouteItem[] = [];
-  routes.forEach((route) => {
-    const nextChildren = route.children?.length
-      ? filterRoutesByModuleState(route.children, enabledModuleKeys)
-      : undefined;
-
-    const required = normalizeRequiredModules((route as any)?.meta?.requiredModules);
-    const requiredSatisfied = required.length === 0 || required.every((key) => enabledModuleKeys.has(key));
-    if (!requiredSatisfied) return;
-
-    if (isVerificationSettingsRoute(route)) {
-      const hasVerificationProvider = enabledModuleKeys.has('sms') || enabledModuleKeys.has('email');
-      if (!hasVerificationProvider) return;
-    }
-
-    if (route.children?.length && (!nextChildren || nextChildren.length === 0)) return;
-
-    result.push({
-      ...route,
-      children: nextChildren,
-    });
-  });
-  return result;
-};
 
 const isPathInRoutes = (target: string, routes: RouteRecordRaw[]) => {
   const normalized = normalizePath(target);
@@ -169,13 +106,8 @@ export const usePermissionStore = defineStore('permission', {
     },
     async buildAsyncRoutes(_userInfo?: UserInfo) {
       try {
-        const [menuListData, moduleDescriptors] = await Promise.all([getMenuList(), fetchModuleList().catch(() => [])]);
-
-        const enabledModuleKeys = new Set(
-          (moduleDescriptors || []).filter((m) => m?.enabled).map((m) => normalizeModuleKey(m.key)),
-        );
-
-        const asyncRoutes: Array<RouteItem> = filterRoutesByModuleState(menuListData.list || [], enabledModuleKeys);
+        const menuListData = await getMenuList();
+        const asyncRoutes: Array<RouteItem> = menuListData.list || [];
         this.asyncRoutes = transformObjectToRoute(asyncRoutes);
         await this.initRoutes();
         syncDefaultHome(this.asyncRoutes);
@@ -187,13 +119,8 @@ export const usePermissionStore = defineStore('permission', {
     },
     async refreshAsyncRoutes(_userInfo?: UserInfo) {
       try {
-        const [menuListData, moduleDescriptors] = await Promise.all([getMenuList(), fetchModuleList().catch(() => [])]);
-
-        const enabledModuleKeys = new Set(
-          (moduleDescriptors || []).filter((m) => m?.enabled).map((m) => normalizeModuleKey(m.key)),
-        );
-
-        const nextAsyncRoutes: Array<RouteItem> = filterRoutesByModuleState(menuListData.list || [], enabledModuleKeys);
+        const menuListData = await getMenuList();
+        const nextAsyncRoutes: Array<RouteItem> = menuListData.list || [];
         const nextRoutes = transformObjectToRoute(nextAsyncRoutes);
 
         const currentRoute = router.currentRoute.value;

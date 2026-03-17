@@ -108,14 +108,13 @@
       </t-col>
 
       <t-col :xs="24" :sm="12">
-        <t-form-item label="二维码" name="qrCodeUrl" :help="qrHelpText">
+        <t-form-item label="二维码" name="qrCodeUrl">
           <t-space direction="vertical" :size="8" class="image-panel__url-wrap">
             <div class="image-panel__url-row">
               <t-input
                 v-model="form.qrCodeUrl"
                 class="image-panel__url-input"
                 placeholder="图片URL，用于侧边栏展示"
-                :readonly="qrReadonly"
                 :disabled="!isAdmin"
               />
               <input
@@ -123,13 +122,13 @@
                 class="logo-file-input"
                 type="file"
                 accept="image/*"
-                :disabled="qrUploadDisabled"
+                :disabled="!isAdmin"
                 @change="handleQrSelect"
               />
               <t-button
                 class="image-panel__upload-btn"
                 variant="outline"
-                :disabled="qrUploadDisabled"
+                :disabled="!isAdmin"
                 @click="triggerQrSelect"
               >
                 上传
@@ -344,17 +343,14 @@ const handleCropConfirm = async () => {
 const settingStore = useSettingStore();
 const userStore = useUserStore();
 const isAdmin = computed(() => (userStore.userInfo?.roles || []).includes('admin'));
-const qrReadonly = computed(() => !settingStore.aiAssistantEnabled);
-const qrUploadDisabled = computed(() => !isAdmin.value || !settingStore.aiAssistantEnabled);
-const qrHelpText = computed(() => (settingStore.aiAssistantEnabled ? '' : '悬浮工具栏已关闭，二维码为只读状态'));
 
 const triggerQrSelect = () => {
-  if (qrUploadDisabled.value) return;
+  if (!isAdmin.value) return;
   qrInputRef.value?.click();
 };
 
 const handleQrSelect = async (event: Event) => {
-  if (qrUploadDisabled.value) return;
+  if (!isAdmin.value) return;
   const target = event.target as HTMLInputElement;
   const file = target.files?.[0];
   if (!file) return;

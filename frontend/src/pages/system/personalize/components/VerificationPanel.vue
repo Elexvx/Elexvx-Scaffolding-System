@@ -1,17 +1,6 @@
 <template>
-  <div v-if="availableTabs.length === 0" class="verification-empty-state">
-    <t-alert theme="warning" :close="false">
-      <template #message>
-        当前路由未检测到可用模块，请先在模块管理中安装并启用以下任一模块：短信模块（`sms`）或邮箱模块（`email`）。
-      </template>
-    </t-alert>
-    <t-space style="margin-top: 12px">
-      <t-button theme="primary" @click="goToModuleManagement">前往模块管理</t-button>
-      <t-button variant="outline" @click="loadModuleRegistries">重新检测</t-button>
-    </t-space>
-  </div>
-  <t-tabs v-else v-model="activeTab">
-    <t-tab-panel v-if="smsInstalled" value="sms" label="短信验证码设置" :destroy-on-hide="false">
+  <t-tabs v-model="activeTab">
+    <t-tab-panel value="sms" label="短信验证码设置" :destroy-on-hide="false">
       <div class="verification-content">
         <t-form :data="smsForm" layout="vertical" label-align="right" label-width="140px" @submit="onSubmitSms">
           <t-row :gutter="[24, 16]">
@@ -192,7 +181,7 @@
         </t-form>
       </div>
     </t-tab-panel>
-    <t-tab-panel v-if="emailInstalled" value="email" label="邮箱验证码设置" :destroy-on-hide="false">
+    <t-tab-panel value="email" label="邮箱验证码设置" :destroy-on-hide="false">
       <div class="verification-content">
         <t-form :data="emailForm" layout="vertical" label-align="right" label-width="140px" @submit="onSubmitEmail">
           <t-row :gutter="[24, 16]">
@@ -271,8 +260,6 @@ import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
-import type { ModuleDescriptor } from '@/api/system/module';
-import { fetchModuleList } from '@/api/system/module';
 import { useDictionary } from '@/hooks/useDictionary';
 import { useSettingStore } from '@/store';
 import { buildDictOptions } from '@/utils/dict';
@@ -281,12 +268,13 @@ import { request } from '@/utils/request';
 
 const route = useRoute();
 const router = useRouter();
-const resolveTab = (value: unknown, tabs: string[]) => {
+const verificationTabs = ['sms', 'email'];
+const resolveTab = (value: unknown) => {
   const tab = typeof value === 'string' ? value : '';
-  return tabs.includes(tab) ? tab : tabs[0] || 'sms';
+  return verificationTabs.includes(tab) ? tab : verificationTabs[0];
 };
 
-const activeTab = ref('sms');
+const activeTab = ref(resolveTab(route.query.tab));
 
 const smsForm = reactive({
   smsEnabled: false,
@@ -319,26 +307,12 @@ const emailForm = reactive({
   emailTemplate: '',
 });
 
-const moduleDescriptors = ref<ModuleDescriptor[]>([]);
-
 const settingStore = useSettingStore();
-const smsInstalled = computed(() =>
-  moduleDescriptors.value.some((item) => item.key === 'sms' && Boolean(item.enabled)),
-);
-const emailInstalled = computed(() =>
-  moduleDescriptors.value.some((item) => item.key === 'email' && Boolean(item.enabled)),
-);
-const availableTabs = computed(() => {
-  const tabs: string[] = [];
-  if (smsInstalled.value) tabs.push('sms');
-  if (emailInstalled.value) tabs.push('email');
-  return tabs;
-});
 
 watch(
   () => route.query.tab,
   (value) => {
-    const next = resolveTab(value, availableTabs.value);
+    const next = resolveTab(value);
     if (next !== activeTab.value) {
       activeTab.value = next;
     }
@@ -452,60 +426,6 @@ const onSubmitEmail = async (ctx: any) => {
   MessagePlugin.success('保存成功');
 };
 
-const loadModuleRegistries = async () => {
-  try {
-    moduleDescriptors.value = await fetchModuleList();
-  } catch {
-    moduleDescriptors.value = [];
-  }
-};
-
-const resolveModuleRouteTarget = () => {
-  const preferredNames = ['SystemModule', 'systemModule', 'modules'];
-  for (const name of preferredNames) {
-    if (router.hasRoute(name)) {
-      return { name };
-    }
-  }
-
-  const matchedPath = router
-    .getRoutes()
-    .map((item) => String(item.path || ''))
-    .find((path) => path.includes('/system/modules'));
-  if (matchedPath) {
-    return { path: matchedPath };
-  }
-
-  return { path: '/system/modules/index' };
-};
-
-const goToModuleManagement = () => {
-  const target = resolveModuleRouteTarget();
-  router
-    .push({
-      ...target,
-      query: {
-        requiredModules: 'sms,email',
-        from: route.fullPath,
-      },
-    })
-    .catch((error) => {
-      console.error('Go to module page failed:', error);
-      MessagePlugin.error('无法跳转到模块管理页，请从左侧菜单进入“模块管理”');
-    });
-};
-
-watch(
-  availableTabs,
-  (tabs) => {
-    const next = resolveTab(route.query.tab, tabs);
-    if (next !== activeTab.value) {
-      activeTab.value = next;
-    }
-  },
-  { immediate: true },
-);
-
 watch(
   activeTab,
   (value) => {
@@ -518,7 +438,6 @@ watch(
 onMounted(() => {
   void smsProviderDict.load();
   load();
-  void loadModuleRegistries();
 });
 </script>
 <style lang="less" scoped>
@@ -528,9 +447,5 @@ onMounted(() => {
   :deep(.t-divider) {
     margin: var(--td-starter-gap-lg) 0 0;
   }
-}
-
-.verification-empty-state {
-  padding-top: 8px;
 }
 </style>

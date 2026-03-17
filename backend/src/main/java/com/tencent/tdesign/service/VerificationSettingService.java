@@ -13,18 +13,15 @@ public class VerificationSettingService {
   private final VerificationSmsSettingMapper smsMapper;
   private final VerificationEmailSettingMapper emailMapper;
   private final SensitiveFieldCryptoService cryptoService;
-  private final ModuleRegistryService moduleRegistryService;
 
   public VerificationSettingService(
     VerificationSmsSettingMapper smsMapper,
     VerificationEmailSettingMapper emailMapper,
-    SensitiveFieldCryptoService cryptoService,
-    ModuleRegistryService moduleRegistryService
+    SensitiveFieldCryptoService cryptoService
   ) {
     this.smsMapper = smsMapper;
     this.emailMapper = emailMapper;
     this.cryptoService = cryptoService;
-    this.moduleRegistryService = moduleRegistryService;
   }
 
   public VerificationSetting getOrCreate() {
@@ -74,129 +71,122 @@ public class VerificationSettingService {
   public boolean applyRequest(UiSettingRequest req) {
     boolean changed = false;
 
-    if (moduleRegistryService.isModuleAvailable("sms")) {
-      VerificationSmsSetting sms = smsMapper.selectTop();
-      if (sms == null) sms = new VerificationSmsSetting();
-      boolean smsChanged = false;
-      if (req.getSmsEnabled() != null) {
-        sms.setSmsEnabled(req.getSmsEnabled());
-        smsChanged = true;
-      }
-      if (req.getSmsProvider() != null) {
-        sms.setSmsProvider(req.getSmsProvider());
-        smsChanged = true;
-      }
-      if (req.getSmsAliyunEnabled() != null) {
-        sms.setSmsAliyunEnabled(req.getSmsAliyunEnabled());
-        smsChanged = true;
-      }
-      if (req.getSmsAliyunAccessKeyId() != null) {
-        sms.setSmsAliyunAccessKeyId(cryptoService.encryptIfNeeded(req.getSmsAliyunAccessKeyId()));
-        smsChanged = true;
-      }
-      if (req.getSmsAliyunAccessKeySecret() != null) {
-        sms.setSmsAliyunAccessKeySecret(cryptoService.encryptIfNeeded(req.getSmsAliyunAccessKeySecret()));
-        smsChanged = true;
-      }
-      if (req.getSmsAliyunSignName() != null) {
-        sms.setSmsAliyunSignName(req.getSmsAliyunSignName());
-        smsChanged = true;
-      }
-      if (req.getSmsAliyunTemplateCode() != null) {
-        sms.setSmsAliyunTemplateCode(req.getSmsAliyunTemplateCode());
-        smsChanged = true;
-      }
-      if (req.getSmsAliyunRegionId() != null) {
-        sms.setSmsAliyunRegionId(req.getSmsAliyunRegionId());
-        smsChanged = true;
-      }
-      if (req.getSmsAliyunEndpoint() != null) {
-        sms.setSmsAliyunEndpoint(req.getSmsAliyunEndpoint());
-        smsChanged = true;
-      }
-      if (req.getSmsTencentEnabled() != null) {
-        sms.setSmsTencentEnabled(req.getSmsTencentEnabled());
-        smsChanged = true;
-      }
-      if (req.getSmsTencentSecretId() != null) {
-        sms.setSmsTencentSecretId(cryptoService.encryptIfNeeded(req.getSmsTencentSecretId()));
-        smsChanged = true;
-      }
-      if (req.getSmsTencentSecretKey() != null) {
-        sms.setSmsTencentSecretKey(cryptoService.encryptIfNeeded(req.getSmsTencentSecretKey()));
-        smsChanged = true;
-      }
-      if (req.getSmsTencentSignName() != null) {
-        sms.setSmsTencentSignName(req.getSmsTencentSignName());
-        smsChanged = true;
-      }
-      if (req.getSmsTencentTemplateId() != null) {
-        sms.setSmsTencentTemplateId(req.getSmsTencentTemplateId());
-        smsChanged = true;
-      }
-      if (req.getSmsTencentRegion() != null) {
-        sms.setSmsTencentRegion(req.getSmsTencentRegion());
-        smsChanged = true;
-      }
-      if (req.getSmsTencentEndpoint() != null) {
-        sms.setSmsTencentEndpoint(req.getSmsTencentEndpoint());
-        smsChanged = true;
-      }
-      if (req.getSmsSdkAppId() != null) {
-        sms.setSmsSdkAppId(req.getSmsSdkAppId());
-        smsChanged = true;
-      }
-      if (smsChanged) {
-        upsertSms(sms);
-        changed = true;
-      }
+    VerificationSmsSetting sms = smsMapper.selectTop();
+    if (sms == null) sms = new VerificationSmsSetting();
+    boolean smsChanged = false;
+    if (req.getSmsEnabled() != null) {
+      sms.setSmsEnabled(req.getSmsEnabled());
+      smsChanged = true;
+    }
+    if (req.getSmsProvider() != null) {
+      sms.setSmsProvider(req.getSmsProvider());
+      smsChanged = true;
+    }
+    if (req.getSmsAliyunEnabled() != null) {
+      sms.setSmsAliyunEnabled(req.getSmsAliyunEnabled());
+      smsChanged = true;
+    }
+    if (req.getSmsAliyunAccessKeyId() != null) {
+      sms.setSmsAliyunAccessKeyId(cryptoService.encryptIfNeeded(req.getSmsAliyunAccessKeyId()));
+      smsChanged = true;
+    }
+    if (req.getSmsAliyunAccessKeySecret() != null) {
+      sms.setSmsAliyunAccessKeySecret(cryptoService.encryptIfNeeded(req.getSmsAliyunAccessKeySecret()));
+      smsChanged = true;
+    }
+    if (req.getSmsAliyunSignName() != null) {
+      sms.setSmsAliyunSignName(req.getSmsAliyunSignName());
+      smsChanged = true;
+    }
+    if (req.getSmsAliyunTemplateCode() != null) {
+      sms.setSmsAliyunTemplateCode(req.getSmsAliyunTemplateCode());
+      smsChanged = true;
+    }
+    if (req.getSmsAliyunRegionId() != null) {
+      sms.setSmsAliyunRegionId(req.getSmsAliyunRegionId());
+      smsChanged = true;
+    }
+    if (req.getSmsAliyunEndpoint() != null) {
+      sms.setSmsAliyunEndpoint(req.getSmsAliyunEndpoint());
+      smsChanged = true;
+    }
+    if (req.getSmsTencentEnabled() != null) {
+      sms.setSmsTencentEnabled(req.getSmsTencentEnabled());
+      smsChanged = true;
+    }
+    if (req.getSmsTencentSecretId() != null) {
+      sms.setSmsTencentSecretId(cryptoService.encryptIfNeeded(req.getSmsTencentSecretId()));
+      smsChanged = true;
+    }
+    if (req.getSmsTencentSecretKey() != null) {
+      sms.setSmsTencentSecretKey(cryptoService.encryptIfNeeded(req.getSmsTencentSecretKey()));
+      smsChanged = true;
+    }
+    if (req.getSmsTencentSignName() != null) {
+      sms.setSmsTencentSignName(req.getSmsTencentSignName());
+      smsChanged = true;
+    }
+    if (req.getSmsTencentTemplateId() != null) {
+      sms.setSmsTencentTemplateId(req.getSmsTencentTemplateId());
+      smsChanged = true;
+    }
+    if (req.getSmsTencentRegion() != null) {
+      sms.setSmsTencentRegion(req.getSmsTencentRegion());
+      smsChanged = true;
+    }
+    if (req.getSmsTencentEndpoint() != null) {
+      sms.setSmsTencentEndpoint(req.getSmsTencentEndpoint());
+      smsChanged = true;
+    }
+    if (req.getSmsSdkAppId() != null) {
+      sms.setSmsSdkAppId(req.getSmsSdkAppId());
+      smsChanged = true;
+    }
+    if (smsChanged) {
+      upsertSms(sms);
+      changed = true;
     }
 
-    if (moduleRegistryService.isModuleAvailable("email")) {
-      VerificationEmailSetting email = emailMapper.selectTop();
-      if (email == null) email = new VerificationEmailSetting();
-      boolean emailChanged = false;
-      if (req.getEmailEnabled() != null) {
-        email.setEmailEnabled(req.getEmailEnabled());
-        emailChanged = true;
-      }
-      if (req.getEmailHost() != null) {
-        email.setEmailHost(req.getEmailHost());
-        emailChanged = true;
-      }
-      if (req.getEmailPort() != null) {
-        email.setEmailPort(req.getEmailPort());
-        emailChanged = true;
-      }
-      if (req.getEmailUsername() != null) {
-        email.setEmailUsername(req.getEmailUsername());
-        emailChanged = true;
-      }
-      if (req.getEmailPassword() != null) {
-        email.setEmailPassword(cryptoService.encryptIfNeeded(req.getEmailPassword()));
-        emailChanged = true;
-      }
-      if (req.getEmailFrom() != null) {
-        email.setEmailFrom(req.getEmailFrom());
-        emailChanged = true;
-      }
-      if (req.getEmailSsl() != null) {
-        email.setEmailSsl(req.getEmailSsl());
-        emailChanged = true;
-      }
-      if (emailChanged) {
-        upsertEmail(email);
-        changed = true;
-      }
+    VerificationEmailSetting email = emailMapper.selectTop();
+    if (email == null) email = new VerificationEmailSetting();
+    boolean emailChanged = false;
+    if (req.getEmailEnabled() != null) {
+      email.setEmailEnabled(req.getEmailEnabled());
+      emailChanged = true;
+    }
+    if (req.getEmailHost() != null) {
+      email.setEmailHost(req.getEmailHost());
+      emailChanged = true;
+    }
+    if (req.getEmailPort() != null) {
+      email.setEmailPort(req.getEmailPort());
+      emailChanged = true;
+    }
+    if (req.getEmailUsername() != null) {
+      email.setEmailUsername(req.getEmailUsername());
+      emailChanged = true;
+    }
+    if (req.getEmailPassword() != null) {
+      email.setEmailPassword(cryptoService.encryptIfNeeded(req.getEmailPassword()));
+      emailChanged = true;
+    }
+    if (req.getEmailFrom() != null) {
+      email.setEmailFrom(req.getEmailFrom());
+      emailChanged = true;
+    }
+    if (req.getEmailSsl() != null) {
+      email.setEmailSsl(req.getEmailSsl());
+      emailChanged = true;
+    }
+    if (emailChanged) {
+      upsertEmail(email);
+      changed = true;
     }
 
     return changed;
   }
 
   private VerificationSmsSetting getOrCreateSms() {
-    if (!moduleRegistryService.isModuleAvailable("sms")) {
-      return new VerificationSmsSetting();
-    }
     VerificationSmsSetting sms = smsMapper.selectTop();
     if (sms == null) {
       sms = new VerificationSmsSetting();
@@ -206,9 +196,6 @@ public class VerificationSettingService {
   }
 
   private VerificationEmailSetting getOrCreateEmail() {
-    if (!moduleRegistryService.isModuleAvailable("email")) {
-      return new VerificationEmailSetting();
-    }
     VerificationEmailSetting email = emailMapper.selectTop();
     if (email == null) {
       email = new VerificationEmailSetting();
@@ -218,13 +205,11 @@ public class VerificationSettingService {
   }
 
   private void upsertSms(VerificationSmsSetting setting) {
-    if (!moduleRegistryService.isModuleAvailable("sms")) return;
     if (setting.getId() == null) smsMapper.insert(setting);
     else smsMapper.update(setting);
   }
 
   private void upsertEmail(VerificationEmailSetting setting) {
-    if (!moduleRegistryService.isModuleAvailable("email")) return;
     if (setting.getId() == null) emailMapper.insert(setting);
     else emailMapper.update(setting);
   }

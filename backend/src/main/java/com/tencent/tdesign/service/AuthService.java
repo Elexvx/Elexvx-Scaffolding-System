@@ -50,7 +50,7 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>覆盖能力：
  * <ul>
  *   <li>账号密码登录（可选验证码校验）。</li>
- *   <li>短信/邮箱验证码发送与登录（依赖模块安装状态与系统开关）。</li>
+ *   <li>短信/邮箱验证码发送与登录（受系统配置开关控制）。</li>
  *   <li>并发登录处理：当禁用多端登录且存在存量会话时，可通过 SSE 请求在线设备确认。</li>
  *   <li>Token 会话创建与登录审计。</li>
  *   <li>个人信息维护与密码修改/找回。</li>
@@ -88,7 +88,6 @@ public class AuthService {
   private final SmsCodeService smsCodeService;
   private final EmailCodeService emailCodeService;
   private final VerificationSettingService verificationSettingService;
-  private final ModuleRegistryService moduleRegistryService;
   private final com.tencent.tdesign.verification.VerificationProviderRegistry verificationProviderRegistry;
   private final SecuritySettingService securitySettingService;
   private final AuthTokenService authTokenService;
@@ -112,7 +111,6 @@ public class AuthService {
       SmsCodeService smsCodeService,
       EmailCodeService emailCodeService,
       VerificationSettingService verificationSettingService,
-      ModuleRegistryService moduleRegistryService,
       com.tencent.tdesign.verification.VerificationProviderRegistry verificationProviderRegistry,
       SecuritySettingService securitySettingService,
       AuthTokenService authTokenService,
@@ -134,7 +132,6 @@ public class AuthService {
     this.smsCodeService = smsCodeService;
     this.emailCodeService = emailCodeService;
     this.verificationSettingService = verificationSettingService;
-    this.moduleRegistryService = moduleRegistryService;
     this.verificationProviderRegistry = verificationProviderRegistry;
     this.securitySettingService = securitySettingService;
     this.authTokenService = authTokenService;
@@ -169,7 +166,6 @@ public class AuthService {
   }
 
   public SmsSendResponse sendSmsCode(SmsSendRequest req) {
-    moduleRegistryService.assertModuleAvailable("sms");
     VerificationSetting setting = verificationSettingService.getDecryptedCopy();
     ensureSmsEnabled(setting);
     ensureSmsConfig(setting);
@@ -190,7 +186,6 @@ public class AuthService {
   }
 
   public LoginResponse loginBySms(SmsLoginRequest req) {
-    moduleRegistryService.assertModuleAvailable("sms");
     VerificationSetting setting = verificationSettingService.getDecryptedCopy();
     ensureSmsEnabled(setting);
 
@@ -208,7 +203,6 @@ public class AuthService {
   }
 
   public SmsSendResponse sendEmailCode(EmailSendRequest req) {
-    moduleRegistryService.assertModuleAvailable("email");
     VerificationSetting setting = verificationSettingService.getDecryptedCopy();
     ensureEmailEnabled(setting);
     ensureEmailConfig(setting);
@@ -229,7 +223,6 @@ public class AuthService {
   }
 
   public LoginResponse loginByEmail(EmailLoginRequest req) {
-    moduleRegistryService.assertModuleAvailable("email");
     VerificationSetting setting = verificationSettingService.getDecryptedCopy();
     ensureEmailEnabled(setting);
 

@@ -5,7 +5,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tencent.tdesign.service.ModulePackageService;
-import com.tencent.tdesign.service.ModuleRegistryService;
 import com.tencent.tdesign.service.SensitiveService;
 import java.util.ArrayList;
 import java.util.List;
@@ -70,12 +69,11 @@ public class WebConfig implements WebMvcConfigurer {
 
   @Bean
   public FilterRegistrationBean<SensitiveWordFilter> sensitiveWordFilterRegistration(
-    ModuleRegistryService moduleRegistryService,
     SensitiveService sensitiveService,
     ObjectMapper objectMapper
   ) {
     FilterRegistrationBean<SensitiveWordFilter> registration =
-      new FilterRegistrationBean<>(new SensitiveWordFilter(moduleRegistryService, sensitiveService, objectMapper));
+      new FilterRegistrationBean<>(new SensitiveWordFilter(sensitiveService, objectMapper));
     registration.setAsyncSupported(true);
     registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 2);
     return registration;

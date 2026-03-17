@@ -4,6 +4,8 @@ import com.tencent.tdesign.annotation.RepeatSubmit;
 import com.tencent.tdesign.annotation.PagePerm;
 import com.tencent.tdesign.dto.UserCreateRequest;
 import com.tencent.tdesign.dto.UserUpdateRequest;
+import com.tencent.tdesign.exception.BusinessException;
+import com.tencent.tdesign.exception.ErrorCodes;
 import com.tencent.tdesign.security.AuthContext;
 import com.tencent.tdesign.service.UserAdminService;
 import com.tencent.tdesign.vo.ApiResponse;
@@ -11,6 +13,8 @@ import com.tencent.tdesign.vo.PageResult;
 import com.tencent.tdesign.vo.UserListItem;
 import jakarta.validation.Valid;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -25,6 +29,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/system/user")
 public class SystemUserController {
+  private static final Logger log = LoggerFactory.getLogger(SystemUserController.class);
+  private static BusinessException badRequest(String message) {
+    return new BusinessException(ErrorCodes.BAD_REQUEST, message);
+  }
   private final UserAdminService userAdminService;
   private final AuthContext authContext;
   private final boolean allowPasswordInQuery;
@@ -73,7 +81,7 @@ public class SystemUserController {
   @PutMapping("/{id}")
   @RepeatSubmit
   @PagePerm(routeName = "SystemUser", action = "update")
-  public ApiResponse<UserListItem> update(@PathVariable long id, @RequestBody UserUpdateRequest req) {
+  public ApiResponse<UserListItem> update(@PathVariable long id, @RequestBody @Valid UserUpdateRequest req) {
     return ApiResponse.success(userAdminService.update(id, req));
   }
 
@@ -82,7 +90,7 @@ public class SystemUserController {
   @PagePerm(routeName = "SystemUser", action = "delete")
   public ApiResponse<Boolean> delete(@PathVariable long id) {
     long self = authContext.requireUserId();
-    if (self == id) throw new IllegalArgumentException("不允许删除当前登录用户");
+    if (self == id) throw badRequest("不允许删除当前登录用户");
     return ApiResponse.success(userAdminService.delete(id));
   }
 
@@ -96,7 +104,7 @@ public class SystemUserController {
     @RequestParam(required = false) String password
   ) {
     if (password != null && !allowPasswordInQuery) {
-      throw new IllegalArgumentException("不允许通过 URL 参数传递密码，请改为 JSON body: {\"password\": \"...\"}");
+      throw badRequest("不允许通过 URL 参数传递密码，请改为 JSON body: {\"password\": \"...\"}");
     }
     String newPassword = null;
     if (body != null) {
@@ -113,11 +121,12 @@ public class SystemUserController {
     if (value == null || value.isBlank()) return null;
     try {
       return java.time.LocalDateTime.parse(value);
-    } catch (Exception ignored) {
+    } catch (java.time.format.DateTimeParseException firstParseException) {
       try {
         java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         return java.time.LocalDateTime.parse(value, formatter);
-      } catch (Exception ignored2) {
+      } catch (java.time.format.DateTimeParseException secondParseException) {
+        log.debug("用户时间参数解析失败，value={}", value, secondParseException);
         return null;
       }
     }

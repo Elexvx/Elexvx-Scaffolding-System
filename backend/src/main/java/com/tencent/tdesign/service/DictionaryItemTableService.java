@@ -2,6 +2,8 @@ package com.tencent.tdesign.service;
 
 import com.tencent.tdesign.entity.SysDict;
 import com.tencent.tdesign.entity.SysDictItem;
+import com.tencent.tdesign.exception.BusinessException;
+import com.tencent.tdesign.exception.ErrorCodes;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.sql.Connection;
@@ -27,6 +29,10 @@ public class DictionaryItemTableService {
   private static final String TABLE_PREFIX = "sys_di_";
   private static final String CODE_PATTERN = "[^a-z0-9_]";
 
+  private static BusinessException badRequest(String message) {
+    return new BusinessException(ErrorCodes.BAD_REQUEST, message);
+  }
+
   private final DataSource dataSource;
   private final JdbcTemplate jdbcTemplate;
   private final Set<String> initializedTables = ConcurrentHashMap.newKeySet();
@@ -42,7 +48,7 @@ public class DictionaryItemTableService {
   public void ensureDictTable(SysDict dict) {
     Objects.requireNonNull(dict, "dict");
     if (!StringUtils.hasText(dict.getCode())) {
-      throw new IllegalArgumentException("Dictionary code is required.");
+      throw badRequest("Dictionary code is required.");
     }
 
     String tableName = resolveTableName(dict.getCode());
@@ -60,7 +66,7 @@ public class DictionaryItemTableService {
   public void renameDictTable(SysDict dict, String newCode) {
     Objects.requireNonNull(dict, "dict");
     if (!StringUtils.hasText(dict.getCode()) || !StringUtils.hasText(newCode)) {
-      throw new IllegalArgumentException("Dictionary code is required.");
+      throw badRequest("Dictionary code is required.");
     }
 
     String oldTableName = resolveTableName(dict.getCode());

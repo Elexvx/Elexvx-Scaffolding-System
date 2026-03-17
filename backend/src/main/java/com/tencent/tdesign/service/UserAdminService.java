@@ -6,6 +6,8 @@ import com.tencent.tdesign.dto.UserIdLongValue;
 import com.tencent.tdesign.dto.UserIdStringValue;
 import com.tencent.tdesign.dto.UserUpdateRequest;
 import com.tencent.tdesign.entity.UserEntity;
+import com.tencent.tdesign.exception.BusinessException;
+import com.tencent.tdesign.exception.ErrorCodes;
 import com.tencent.tdesign.mapper.OrgUnitMapper;
 import com.tencent.tdesign.mapper.RoleMapper;
 import com.tencent.tdesign.mapper.UserDepartmentMapper;
@@ -79,6 +81,10 @@ public class UserAdminService {
     this.guidBackfillOnStartup = guidBackfillOnStartup;
   }
 
+  private static BusinessException badRequest(String message) {
+    return new BusinessException(ErrorCodes.BAD_REQUEST, message);
+  }
+
   @PostConstruct
   public void backfillMissingGuidsOnStartup() {
     if (!guidBackfillOnStartup) return;
@@ -149,7 +155,7 @@ public class UserAdminService {
     requiredPermissions = { "system:SystemUser:query" }
   )
   public UserListItem get(long id) {
-    UserEntity u = Optional.ofNullable(userMapper.selectById(id)).orElseThrow(() -> new IllegalArgumentException("用户不存在"));
+    UserEntity u = Optional.ofNullable(userMapper.selectById(id)).orElseThrow(() -> badRequest("用户不存在"));
     UserRelatedData relatedData = loadUserRelatedData(List.of(id));
     UserListItem item = toListItem(u);
     item.setRoles(relatedData.roles().getOrDefault(id, List.of()));
@@ -163,7 +169,7 @@ public class UserAdminService {
   @Transactional
   public UserListItem create(UserCreateRequest req) {
     if (userMapper.countByAccount(req.getAccount()) > 0) {
-      throw new IllegalArgumentException("账号已存在");
+      throw badRequest("账号已存在");
     }
     UserEntity u = new UserEntity();
     u.setAccount(req.getAccount());
@@ -215,22 +221,22 @@ public class UserAdminService {
 
   @Transactional
   public UserListItem update(long id, UserUpdateRequest req) {
-    UserEntity u = Optional.ofNullable(userMapper.selectById(id)).orElseThrow(() -> new IllegalArgumentException("用户不存在"));
+    UserEntity u = Optional.ofNullable(userMapper.selectById(id)).orElseThrow(() -> badRequest("用户不存在"));
     ensureManageableTarget(u, true);
     List<String> originalRoles = req.getRoles() != null ? authDao.findRoleNamesByUserId(id) : List.of();
     boolean documentFieldsTouched = false;
     if (req.getAccount() != null) {
       String nextAccount = req.getAccount().trim();
       if (nextAccount.isEmpty()) {
-        throw new IllegalArgumentException("账号不能为空");
+        throw badRequest("账号不能为空");
       }
       if (!nextAccount.matches("^[a-zA-Z0-9_@.-]+$")) {
-        throw new IllegalArgumentException("账号包含非法字符");
+        throw badRequest("账号包含非法字符");
       }
       if (!nextAccount.equals(u.getAccount())) {
         UserEntity existing = userMapper.selectByAccount(nextAccount);
         if (existing != null && !Objects.equals(existing.getId(), u.getId())) {
-          throw new IllegalArgumentException("账号已存在");
+          throw badRequest("账号已存在");
         }
       }
       u.setAccount(nextAccount);
@@ -280,7 +286,7 @@ public class UserAdminService {
     if (req.getRoles() != null) {
       List<String> roles = normalizeRoles(req.getRoles());
       if (roles.isEmpty()) {
-        throw new IllegalArgumentException("用户必须至少拥有一个角色");
+        throw badRequest("用户必须至少拥有一个角色");
       }
       ensureRolesExist(roles);
       authDao.replaceUserRoles(id, roles);
@@ -319,7 +325,7 @@ public class UserAdminService {
 
   @Transactional
   public boolean resetPassword(long id, String newPassword) {
-    UserEntity u = Optional.ofNullable(userMapper.selectById(id)).orElseThrow(() -> new IllegalArgumentException("用户不存在"));
+    UserEntity u = Optional.ofNullable(userMapper.selectById(id)).orElseThrow(() -> badRequest("用户不存在"));
     ensureManageableTarget(u);
     String pwd = (newPassword == null || newPassword.isBlank()) ? "123456" : newPassword;
     // 重置密码也遵循统一的密码规范
@@ -356,36 +362,36 @@ public class UserAdminService {
     user.setIdCard(idCard.isBlank() ? null : idCard);
 
     if (idType == null && !idCard.isBlank()) {
-      throw new IllegalArgumentException("证件号码已填写，请先选择证件类型");
+      throw badRequest("证件号码已填写，请先选择证件类型");
     }
 
     if (!idCard.isBlank()) {
       switch (idType) {
         case DOC_TYPE_RESIDENT_ID_CARD -> validateResidentIdCard(idCard);
         case DOC_TYPE_PASSPORT -> validatePassport(idCard);
-        default -> throw new IllegalArgumentException("不支持的证件类型: " + idType);
+        default -> throw badRequest("不支持的证件类型: " + idType);
       }
     }
 
     LocalDate validFrom = user.getIdValidFrom();
     LocalDate validTo = user.getIdValidTo();
     if (validFrom != null && validTo != null && validTo.isBefore(validFrom)) {
-      throw new IllegalArgumentException("证件有效期止不能早于证件有效期起");
+      throw badRequest("证件有效期止不能早于证件有效期起");
     }
   }
 
   private void validateResidentIdCard(String idCard) {
     if (!idCard.matches("^[1-9]\\d{16}[0-9X]$")) {
-      throw new IllegalArgumentException("居民身份证号码格式不正确");
+      throw badRequest("居民身份证号码格式不正确");
     }
     String birth = idCard.substring(6, 14);
     try {
       LocalDate.parse(birth, java.time.format.DateTimeFormatter.BASIC_ISO_DATE);
     } catch (Exception ex) {
-      throw new IllegalArgumentException("居民身份证号码中的出生日期不合法");
+      throw badRequest("居民身份证号码中的出生日期不合法");
     }
     if (!isValidResidentIdCardChecksum(idCard)) {
-      throw new IllegalArgumentException("居民身份证号码校验位不正确");
+      throw badRequest("居民身份证号码校验位不正确");
     }
   }
 
@@ -402,7 +408,7 @@ public class UserAdminService {
 
   private void validatePassport(String passportNo) {
     if (!passportNo.matches("^[A-Z0-9]{5,17}$")) {
-      throw new IllegalArgumentException("护照号码格式不正确");
+      throw badRequest("护照号码格式不正确");
     }
   }
 
@@ -428,7 +434,7 @@ public class UserAdminService {
     for (String role : roles) {
       if (role == null || role.isBlank()) continue;
       if (roleMapper.countByName(role) == 0) {
-        throw new IllegalArgumentException("角色不存在: " + role);
+        throw badRequest("角色不存在: " + role);
       }
     }
   }
@@ -442,11 +448,11 @@ public class UserAdminService {
     boolean allowRootAdmin
   ) {
     if (!allowRootAdmin && targetAccount != null && targetAccount.equalsIgnoreCase(ROOT_ADMIN_ACCOUNT)) {
-      throw new IllegalArgumentException("禁止操作系统管理员账号");
+      throw badRequest("禁止操作系统管理员账号");
     }
     if (currentUserId == targetUserId) return;
     if (targetIsAdminRole && !currentIsAdminRole) {
-      throw new IllegalArgumentException("禁止操作管理员账号");
+      throw badRequest("禁止操作管理员账号");
     }
   }
 
@@ -531,7 +537,7 @@ public class UserAdminService {
     boolean hasOrg = orgUnitIds != null && orgUnitIds.stream().anyMatch(Objects::nonNull);
     boolean hasDepartment = departmentIds != null && departmentIds.stream().anyMatch(Objects::nonNull);
     if (hasOrg && hasDepartment) {
-      throw new IllegalArgumentException("已选择机构时不能选择部门");
+      throw badRequest("已选择机构时不能选择部门");
     }
   }
 

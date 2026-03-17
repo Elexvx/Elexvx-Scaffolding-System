@@ -1,6 +1,8 @@
 package com.tencent.tdesign.service;
 
 import com.tencent.tdesign.entity.VerificationSetting;
+import com.tencent.tdesign.exception.BusinessException;
+import com.tencent.tdesign.exception.ErrorCodes;
 import jakarta.mail.internet.MimeMessage;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
@@ -11,6 +13,10 @@ import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 public class EmailSenderService {
   private final DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+  private static BusinessException badRequest(String message) {
+    return new BusinessException(ErrorCodes.BAD_REQUEST, message);
+  }
 
   public void sendLoginCode(VerificationSetting setting, String to, String code, int expiresInSeconds) {
     String subject = "登录验证码";
@@ -32,7 +38,7 @@ public class EmailSenderService {
       from = setting == null ? null : setting.getEmailUsername();
     }
     if (from == null || from.isBlank()) {
-      throw new IllegalArgumentException("发件人不能为空");
+      throw badRequest("发件人不能为空");
     }
 
     try {
@@ -44,7 +50,7 @@ public class EmailSenderService {
       helper.setText(Objects.requireNonNull(text), false);
       sender.send(message);
     } catch (Exception e) {
-      throw new IllegalArgumentException("邮件发送失败: " + safeMessage(e));
+      throw badRequest("邮件发送失败: " + safeMessage(e));
     }
   }
 
@@ -54,7 +60,7 @@ public class EmailSenderService {
       || setting.getEmailPort() == null || setting.getEmailPort() <= 0
       || setting.getEmailUsername() == null || setting.getEmailUsername().isBlank()
       || setting.getEmailPassword() == null || setting.getEmailPassword().isBlank()) {
-      throw new IllegalArgumentException("邮箱配置不完整");
+      throw badRequest("邮箱配置不完整");
     }
 
     JavaMailSenderImpl sender = new JavaMailSenderImpl();

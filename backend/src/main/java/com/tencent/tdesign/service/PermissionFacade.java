@@ -1,6 +1,8 @@
 package com.tencent.tdesign.service;
 
 import com.tencent.tdesign.dao.AuthQueryDao;
+import com.tencent.tdesign.exception.BusinessException;
+import com.tencent.tdesign.exception.ErrorCodes;
 import com.tencent.tdesign.security.AuthContext;
 import com.tencent.tdesign.security.AuthSession;
 import java.util.ArrayList;
@@ -14,6 +16,10 @@ import org.springframework.stereotype.Service;
 public class PermissionFacade {
   private static final String KEY_ASSUMED_ROLES = "assumedRoles";
   private static final String KEY_ASSUMED_PERMISSIONS = "assumedPermissions";
+
+  private static BusinessException badRequest(String message) {
+    return new BusinessException(ErrorCodes.BAD_REQUEST, message);
+  }
 
   private final AuthQueryDao authDao;
   private final AuthTokenService authTokenService;
@@ -62,13 +68,13 @@ public class PermissionFacade {
 
   public List<String> assumeRoles(long userId, List<String> roleNames) {
     List<String> normalized = normalizeRoles(roleNames);
-    if (normalized.isEmpty()) throw new IllegalArgumentException("请选择要切换的角色");
+    if (normalized.isEmpty()) throw badRequest("请选择要切换的角色");
 
     List<String> existing = authDao.findExistingRoleNames(normalized);
     if (existing.size() != normalized.size()) {
       Set<String> missing = new HashSet<>(normalized);
       missing.removeAll(existing);
-      throw new IllegalArgumentException("以下角色不存在: " + String.join(", ", missing));
+      throw badRequest("以下角色不存在: " + String.join(", ", missing));
     }
     List<String> permissions = authDao.findPermissionsByRoleNames(normalized);
     AuthSession session = getCurrentSession(userId);
@@ -134,7 +140,7 @@ public class PermissionFacade {
     String token = authContext.requireToken();
     AuthSession session = authTokenService.getSession(token);
     if (session == null || session.getUserId() != userId) {
-      throw new IllegalArgumentException("登录已失效，请重新登录");
+      throw badRequest("登录已失效，请重新登录");
     }
     return session;
   }

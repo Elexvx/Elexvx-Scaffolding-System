@@ -8,12 +8,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 @Service
 public class AuthTokenService {
+  private static final Logger log = LoggerFactory.getLogger(AuthTokenService.class);
   private static final String TOKEN_KEY_PREFIX = "auth:token:";
   private static final String ALL_TOKENS_KEY = "auth:tokens";
   private static final String ALL_TOKENS_ZSET_KEY = "auth:tokens:z";
@@ -122,7 +125,8 @@ public class AuthTokenService {
     try {
       String payload = objectMapper.writeValueAsString(session);
       redisTemplate.opsForValue().set(tokenKey(token), payload, Duration.ofSeconds(expiresInSeconds));
-    } catch (JsonProcessingException ignored) {
+    } catch (JsonProcessingException serializationException) {
+      log.warn("序列化登录会话失败，token={}", token, serializationException);
     }
   }
 

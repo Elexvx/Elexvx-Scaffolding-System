@@ -5,6 +5,8 @@ import com.aliyuncs.IAcsClient;
 import com.aliyuncs.profile.DefaultProfile;
 import com.aliyuncs.profile.IClientProfile;
 import com.tencent.tdesign.entity.VerificationSetting;
+import com.tencent.tdesign.exception.BusinessException;
+import com.tencent.tdesign.exception.ErrorCodes;
 import com.tencentcloudapi.common.Credential;
 import com.tencentcloudapi.common.exception.TencentCloudSDKException;
 import com.tencentcloudapi.common.profile.ClientProfile;
@@ -19,6 +21,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 public class SmsSenderService {
   private static final Logger log = LoggerFactory.getLogger(SmsSenderService.class);
+  private static BusinessException badRequest(String message) {
+    return new BusinessException(ErrorCodes.BAD_REQUEST, message);
+  }
 
   public enum Provider {
     ALIYUN,
@@ -37,7 +42,7 @@ public class SmsSenderService {
   public void sendCode(VerificationSetting setting, String phone, String code, String sourceIp, String providerHint) {
     List<Provider> providers = resolveProviders(setting, providerHint);
     if (providers.isEmpty()) {
-      throw new IllegalArgumentException("短信配置不完整");
+      throw badRequest("短信配置不完整");
     }
     RuntimeException lastError = null;
     for (Provider provider : providers) {
@@ -53,7 +58,7 @@ public class SmsSenderService {
       }
     }
     if (lastError != null) throw lastError;
-    throw new IllegalArgumentException("短信发送失败");
+    throw badRequest("短信发送失败");
   }
 
   public List<Provider> resolveProviders(VerificationSetting setting, String providerHint) {
@@ -122,10 +127,10 @@ public class SmsSenderService {
       String respCode = response == null ? null : response.getCode();
       if (response == null || respCode == null || !"OK".equalsIgnoreCase(respCode)) {
         String message = response == null ? "unknown" : response.getMessage();
-        throw new IllegalArgumentException("短信发送失败（阿里云）: " + message);
+        throw badRequest("短信发送失败（阿里云）: " + message);
       }
     } catch (Exception e) {
-      throw new IllegalArgumentException("短信发送失败（阿里云）: " + e.getMessage());
+      throw badRequest("短信发送失败（阿里云）: " + e.getMessage());
     }
   }
 
@@ -150,15 +155,15 @@ public class SmsSenderService {
       SendSmsResponse response = client.SendSms(request);
       SendStatus[] statuses = response == null ? null : response.getSendStatusSet();
       if (statuses == null || statuses.length == 0) {
-        throw new IllegalArgumentException("短信发送失败（腾讯云）: empty response");
+        throw badRequest("短信发送失败（腾讯云）: empty response");
       }
       SendStatus status = statuses[0];
       if (status.getCode() == null || !"Ok".equalsIgnoreCase(status.getCode())) {
         String msg = status.getMessage() == null ? "unknown" : status.getMessage();
-        throw new IllegalArgumentException("短信发送失败（腾讯云）: " + msg);
+        throw badRequest("短信发送失败（腾讯云）: " + msg);
       }
     } catch (TencentCloudSDKException e) {
-      throw new IllegalArgumentException("短信发送失败（腾讯云）: " + e.getMessage());
+      throw badRequest("短信发送失败（腾讯云）: " + e.getMessage());
     }
   }
 

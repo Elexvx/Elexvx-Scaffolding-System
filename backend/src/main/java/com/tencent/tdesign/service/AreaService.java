@@ -1,6 +1,8 @@
 package com.tencent.tdesign.service;
 
 import com.tencent.tdesign.entity.AreaEntity;
+import com.tencent.tdesign.exception.BusinessException;
+import com.tencent.tdesign.exception.ErrorCodes;
 import com.tencent.tdesign.mapper.AreaMapper;
 import com.tencent.tdesign.vo.AreaNodeResponse;
 import com.tencent.tdesign.vo.AreaNodeRow;
@@ -15,6 +17,9 @@ import org.springframework.stereotype.Service;
 @Service
 public class AreaService {
   private static final Logger log = LoggerFactory.getLogger(AreaService.class);
+  private static BusinessException badRequest(String message) {
+    return new BusinessException(ErrorCodes.BAD_REQUEST, message);
+  }
   private final AreaMapper areaMapper;
 
   public AreaService(AreaMapper areaMapper) {
@@ -28,7 +33,7 @@ public class AreaService {
       rows = areaMapper.selectChildren(safeParentId);
     } catch (Exception e) {
       log.error("Load area children failed, parentId={}", safeParentId, e);
-      throw new IllegalArgumentException("地区数据未初始化，请先导入地区数据");
+      throw badRequest("地区数据未初始化，请先导入地区数据");
     }
     List<AreaNodeResponse> result = new ArrayList<>();
     for (AreaNodeRow row : rows) {
@@ -54,7 +59,7 @@ public class AreaService {
         entity = areaMapper.selectById(cursor);
       } catch (Exception e) {
         log.error("Load area path failed, areaId={}", areaId, e);
-        throw new IllegalArgumentException("地区数据未初始化，请先导入地区数据");
+        throw badRequest("地区数据未初始化，请先导入地区数据");
       }
       if (entity == null) break;
       AreaPathNode node = new AreaPathNode();
@@ -79,7 +84,7 @@ public class AreaService {
       parentId = appendByName(path, parentId, district);
     } catch (Exception e) {
       log.error("Resolve area path failed.", e);
-      throw new IllegalArgumentException("地区数据未初始化，请先导入地区数据");
+      throw badRequest("地区数据未初始化，请先导入地区数据");
     }
     return path;
   }

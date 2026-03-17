@@ -2,6 +2,8 @@ package com.tencent.tdesign.service;
 
 import com.tencent.tdesign.dto.NotificationUpsertRequest;
 import com.tencent.tdesign.entity.Notification;
+import com.tencent.tdesign.exception.BusinessException;
+import com.tencent.tdesign.exception.ErrorCodes;
 import com.tencent.tdesign.mapper.NotificationMapper;
 import com.tencent.tdesign.security.AuthContext;
 import com.tencent.tdesign.socket.NettySocketService;
@@ -21,6 +23,9 @@ import org.springframework.util.StringUtils;
 @Service
 public class NotificationService {
   private static final String DEFAULT_STATUS = "draft";
+  private static BusinessException badRequest(String message) {
+    return new BusinessException(ErrorCodes.BAD_REQUEST, message);
+  }
   private final NotificationMapper mapper;
   private final MessageService messageService;
   private final OperationLogService operationLogService;
@@ -67,7 +72,7 @@ public class NotificationService {
   public NotificationResponse update(Long id, NotificationUpsertRequest req) {
     PermissionUtil.check("system:NotificationTable:update");
     Notification n = Optional.ofNullable(mapper.selectById(id))
-      .orElseThrow(() -> new IllegalArgumentException("\u901a\u77e5\u4e0d\u5b58\u5728"));
+      .orElseThrow(() -> badRequest("\u901a\u77e5\u4e0d\u5b58\u5728"));
     apply(n, req);
     if (StringUtils.hasText(req.getStatus())) {
       n.setStatus(req.getStatus());
@@ -85,7 +90,7 @@ public class NotificationService {
   public NotificationResponse publish(Long id, boolean publish) {
     PermissionUtil.check("system:NotificationTable:update");
     Notification n = Optional.ofNullable(mapper.selectById(id))
-      .orElseThrow(() -> new IllegalArgumentException("\u901a\u77e5\u4e0d\u5b58\u5728"));
+      .orElseThrow(() -> badRequest("\u901a\u77e5\u4e0d\u5b58\u5728"));
     n.setStatus(publish ? "published" : "withdrawn");
     if (publish) {
       n.setPublishAt(LocalDateTime.now());
@@ -103,7 +108,7 @@ public class NotificationService {
   public boolean delete(Long id) {
     PermissionUtil.check("system:NotificationTable:delete");
     Notification n = Optional.ofNullable(mapper.selectById(id))
-      .orElseThrow(() -> new IllegalArgumentException("\u901a\u77e5\u4e0d\u5b58\u5728"));
+      .orElseThrow(() -> badRequest("\u901a\u77e5\u4e0d\u5b58\u5728"));
     mapper.deleteById(n.getId());
     operationLogService.log("DELETE", "\u901a\u77e5\u7ba1\u7406", "\u5220\u9664\u901a\u77e5: " + n.getTitle());
     return true;
@@ -113,7 +118,7 @@ public class NotificationService {
   public NotificationResponse detail(Long id) {
     PermissionUtil.check("system:NotificationTable:query");
     return NotificationResponse.from(Optional.ofNullable(mapper.selectById(id))
-      .orElseThrow(() -> new IllegalArgumentException("\u901a\u77e5\u4e0d\u5b58\u5728")));
+      .orElseThrow(() -> badRequest("\u901a\u77e5\u4e0d\u5b58\u5728")));
   }
 
   @Transactional(readOnly = true)

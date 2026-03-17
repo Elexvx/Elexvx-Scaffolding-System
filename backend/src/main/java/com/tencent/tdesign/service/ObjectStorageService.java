@@ -13,6 +13,8 @@ import com.qcloud.cos.model.PutObjectRequest;
 import com.qcloud.cos.region.Region;
 import com.tencent.tdesign.dto.StorageSettingRequest;
 import com.tencent.tdesign.entity.StorageSetting;
+import com.tencent.tdesign.exception.BusinessException;
+import com.tencent.tdesign.exception.ErrorCodes;
 import com.tencent.tdesign.mapper.StorageSettingMapper;
 import com.tencent.tdesign.vo.StorageSettingResponse;
 import java.io.FilterInputStream;
@@ -51,6 +53,10 @@ public class ObjectStorageService {
     this.clientManager = clientManager;
   }
 
+  private static BusinessException badRequest(String message) {
+    return new BusinessException(ErrorCodes.BAD_REQUEST, message);
+  }
+
   public StorageSettingResponse currentSetting() {
     return StorageSettingResponse.from(loadSetting());
   }
@@ -76,7 +82,7 @@ public class ObjectStorageService {
   }
 
   public String upload(MultipartFile file, String folder, String page) throws IOException {
-    if (file == null || file.isEmpty()) throw new IllegalArgumentException("上传文件不能为空");
+    if (file == null || file.isEmpty()) throw badRequest("上传文件不能为空");
     StorageSetting setting = loadSetting();
     if (setting.getProvider() == null) {
       setting.setProvider(StorageSetting.Provider.LOCAL.name());
@@ -93,7 +99,7 @@ public class ObjectStorageService {
   }
 
   public String uploadStream(InputStream stream, long size, String originalName, String folder, String page) throws IOException {
-    if (stream == null) throw new IllegalArgumentException("上传流不能为空");
+    if (stream == null) throw badRequest("上传流不能为空");
     StorageSetting setting = loadSetting();
     if (setting.getProvider() == null) {
       setting.setProvider(StorageSetting.Provider.LOCAL.name());
@@ -163,7 +169,7 @@ public class ObjectStorageService {
   }
 
   private void require(String value, String field) {
-    if (value == null || value.isBlank()) throw new IllegalArgumentException("字段 " + field + " 不能为空");
+    if (value == null || value.isBlank()) throw badRequest("字段 " + field + " 不能为空");
   }
 
   private String normalizeFolder(String raw) {
@@ -232,7 +238,7 @@ public class ObjectStorageService {
   private void uploadLocalStream(StorageSetting setting, InputStream stream, String objectKey) throws IOException {
     Path uploadRoot = Paths.get(System.getProperty("user.dir"), "uploads").toAbsolutePath();
     Path target = uploadRoot.resolve(objectKey).normalize();
-    if (!target.startsWith(uploadRoot)) throw new IllegalArgumentException("非法路径");
+    if (!target.startsWith(uploadRoot)) throw badRequest("非法路径");
     Files.createDirectories(target.getParent());
     Files.copy(stream, target, StandardCopyOption.REPLACE_EXISTING);
   }
@@ -258,7 +264,7 @@ public class ObjectStorageService {
   }
 
   public FileMeta stat(FileTokenService.TokenPayload payload) throws IOException {
-    if (payload == null) throw new IllegalArgumentException("Invalid file token");
+    if (payload == null) throw badRequest("Invalid file token");
     StorageSetting.Provider provider = payload.getProvider();
     StorageSetting setting = loadSetting();
     if (setting.getProvider() == null) {
@@ -275,7 +281,7 @@ public class ObjectStorageService {
   }
 
   public FileStream openStream(FileTokenService.TokenPayload payload, Long start, Long end) throws IOException {
-    if (payload == null) throw new IllegalArgumentException("Invalid file token");
+    if (payload == null) throw badRequest("Invalid file token");
     StorageSetting.Provider provider = payload.getProvider();
     StorageSetting setting = loadSetting();
     if (setting.getProvider() == null) {
@@ -311,8 +317,8 @@ public class ObjectStorageService {
   private FileStream openLocalStream(String objectKey, Long start, Long end) throws IOException {
     Path uploadRoot = Paths.get(System.getProperty("user.dir"), "uploads").toAbsolutePath().normalize();
     Path target = uploadRoot.resolve(objectKey).normalize();
-    if (!target.startsWith(uploadRoot)) throw new IllegalArgumentException("Illegal path");
-    if (!Files.exists(target)) throw new IllegalArgumentException("File not found");
+    if (!target.startsWith(uploadRoot)) throw badRequest("Illegal path");
+    if (!Files.exists(target)) throw badRequest("File not found");
     long size = Files.size(target);
     String contentType = detectContentType(target.getFileName().toString());
     if (start == null && end == null) {
@@ -332,13 +338,7 @@ public class ObjectStorageService {
       OSSObject object = client.getObject(setting.getBucket(), objectKey);
       long length = object.getObjectMetadata() == null ? -1 : object.getObjectMetadata().getContentLength();
       String contentType = object.getObjectMetadata() == null ? null : object.getObjectMetadata().getContentType();
-      InputStream input = new ManagedInputStream(object.getObjectContent(), () -> {
-        try {
-          object.close();
-        } catch (Exception ignore) {
-        }
-  
-      });
+      InputStream input = new ManagedInputStream(object.getObjectContent(), () -> closeQuietly(object, "aliyun-full", objectKey));
       return FileStream.full(input, length, defaultContentType(contentType, objectKey));
     }
 
@@ -349,13 +349,7 @@ public class ObjectStorageService {
     req.setRange(range.start(), range.end());
     OSSObject object = client.getObject(req);
     String contentType = meta == null ? null : meta.getContentType();
-    InputStream input = new ManagedInputStream(object.getObjectContent(), () -> {
-      try {
-        object.close();
-      } catch (Exception ignore) {
-      }
-
-    });
+    InputStream input = new ManagedInputStream(object.getObjectContent(), () -> closeQuietly(object, "aliyun-range", objectKey));
     return FileStream.range(input, range.length(), total, defaultContentType(contentType, objectKey));
   }
 
@@ -365,13 +359,7 @@ public class ObjectStorageService {
       COSObject object = client.getObject(setting.getBucket(), objectKey);
       long length = object.getObjectMetadata() == null ? -1 : object.getObjectMetadata().getContentLength();
       String contentType = object.getObjectMetadata() == null ? null : object.getObjectMetadata().getContentType();
-      InputStream input = new ManagedInputStream(object.getObjectContent(), () -> {
-        try {
-          object.close();
-        } catch (Exception ignore) {
-        }
-
-      });
+      InputStream input = new ManagedInputStream(object.getObjectContent(), () -> closeQuietly(object, "tencent-full", objectKey));
       return FileStream.full(input, length, defaultContentType(contentType, objectKey));
     }
 
@@ -382,20 +370,15 @@ public class ObjectStorageService {
     req.setRange(range.start(), range.end());
     COSObject object = client.getObject(req);
     String contentType = meta == null ? null : meta.getContentType();
-    InputStream input = new ManagedInputStream(object.getObjectContent(), () -> {
-      try {
-        object.close();
-      } catch (Exception ignore) {
-      }
-    });
+    InputStream input = new ManagedInputStream(object.getObjectContent(), () -> closeQuietly(object, "tencent-range", objectKey));
     return FileStream.range(input, range.length(), total, defaultContentType(contentType, objectKey));
   }
 
   private FileMeta statLocal(String objectKey) throws IOException {
     Path uploadRoot = Paths.get(System.getProperty("user.dir"), "uploads").toAbsolutePath().normalize();
     Path target = uploadRoot.resolve(objectKey).normalize();
-    if (!target.startsWith(uploadRoot)) throw new IllegalArgumentException("Illegal path");
-    if (!Files.exists(target)) throw new IllegalArgumentException("File not found");
+    if (!target.startsWith(uploadRoot)) throw badRequest("Illegal path");
+    if (!Files.exists(target)) throw badRequest("File not found");
     long size = Files.size(target);
     String contentType = detectContentType(target.getFileName().toString());
     return new FileMeta(size, contentType);
@@ -423,14 +406,14 @@ public class ObjectStorageService {
   }
 
   private Range normalizeRange(Long start, Long end, long totalLength) {
-    if (totalLength < 0) throw new IllegalArgumentException("Unknown content length");
+    if (totalLength < 0) throw badRequest("Unknown content length");
     long s = start == null ? 0 : start;
     long e = end == null ? (totalLength - 1) : end;
     if (s < 0) s = 0;
     if (e < 0) e = 0;
-    if (s >= totalLength) throw new IllegalArgumentException("Range start out of bounds");
+    if (s >= totalLength) throw badRequest("Range start out of bounds");
     if (e >= totalLength) e = totalLength - 1;
-    if (e < s) throw new IllegalArgumentException("Invalid range");
+    if (e < s) throw badRequest("Invalid range");
     return new Range(s, e);
   }
 
@@ -443,7 +426,8 @@ public class ObjectStorageService {
       if (Files.isRegularFile(target)) {
         Files.deleteIfExists(target);
       }
-    } catch (Exception ignored) {
+    } catch (Exception deleteException) {
+      log.warn("删除本地文件失败，path={}", target, deleteException);
     }
   }
 
@@ -465,7 +449,8 @@ public class ObjectStorageService {
     String type = null;
     try {
       type = Files.probeContentType(Paths.get(filename));
-    } catch (Exception ignore) {
+    } catch (Exception detectException) {
+      log.debug("探测文件 Content-Type 失败，filename={}", filename, detectException);
     }
     if (type == null) {
       type = URLConnection.guessContentTypeFromName(filename);
@@ -557,7 +542,8 @@ public class ObjectStorageService {
         if (closeable != null) {
           try {
             closeable.close();
-          } catch (Exception ignore) {
+          } catch (Exception closeException) {
+            log.debug("关闭托管输入流资源失败", closeException);
           }
         }
       }
@@ -571,7 +557,7 @@ public class ObjectStorageService {
       Files.createDirectories(root.resolve("health-check"));
     } catch (IOException e) {
       log.warn("Local storage test failed", e);
-      throw new IllegalArgumentException("本地存储测试失败: " + e.getMessage());
+      throw badRequest("本地存储测试失败: " + e.getMessage());
     }
   }
 
@@ -580,11 +566,11 @@ public class ObjectStorageService {
     OSS client = clientManager.getAliyunClient(setting, endpoint);
     try {
       if (!client.doesBucketExist(setting.getBucket())) {
-        throw new IllegalArgumentException("阿里云 OSS Bucket 不存在: " + setting.getBucket());
+        throw badRequest("阿里云 OSS Bucket 不存在: " + setting.getBucket());
       }
     } catch (Exception e) {
       log.warn("Object storage service A test failed", e);
-      throw new IllegalArgumentException("阿里云 OSS 连接失败: " + e.getMessage());
+      throw badRequest("阿里云 OSS 连接失败: " + e.getMessage());
     } finally {
 
     }
@@ -594,11 +580,11 @@ public class ObjectStorageService {
     COSClient client = clientManager.getTencentClient(setting);
     try {
       if (!client.doesBucketExist(setting.getBucket())) {
-        throw new IllegalArgumentException("腾讯云 COS Bucket 不存在: " + setting.getBucket());
+        throw badRequest("腾讯云 COS Bucket 不存在: " + setting.getBucket());
       }
     } catch (Exception e) {
       log.warn("Object storage service B test failed", e);
-      throw new IllegalArgumentException("腾讯云 COS 连接失败: " + e.getMessage());
+      throw badRequest("腾讯云 COS 连接失败: " + e.getMessage());
     } finally {
     }
   }
@@ -614,7 +600,22 @@ public class ObjectStorageService {
 
   private void safeShutdown(OSS client) {
     try {
-    } catch (Exception ignore) {
+      if (client != null) {
+        client.shutdown();
+      }
+    } catch (Exception shutdownException) {
+      log.warn("关闭 OSS 客户端失败", shutdownException);
+    }
+  }
+
+  private void closeQuietly(AutoCloseable closeable, String scene, String objectKey) {
+    if (closeable == null) {
+      return;
+    }
+    try {
+      closeable.close();
+    } catch (Exception closeException) {
+      log.debug("关闭对象流失败，scene={}, objectKey={}", scene, objectKey, closeException);
     }
   }
 

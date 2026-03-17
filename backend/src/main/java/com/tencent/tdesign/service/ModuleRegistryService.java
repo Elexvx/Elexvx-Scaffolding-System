@@ -1,6 +1,8 @@
 package com.tencent.tdesign.service;
 
 import com.tencent.tdesign.entity.ModuleRegistry;
+import com.tencent.tdesign.exception.BusinessException;
+import com.tencent.tdesign.exception.ErrorCodes;
 import com.tencent.tdesign.exception.ModuleUnavailableException;
 import com.tencent.tdesign.mapper.ModuleRegistryMapper;
 import com.tencent.tdesign.module.ModuleDefinition;
@@ -14,6 +16,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import javax.sql.DataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
@@ -22,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ModuleRegistryService {
+  private static final Logger log = LoggerFactory.getLogger(ModuleRegistryService.class);
   private static final String LICENSE_APACHE = "Apache-2.0";
   private static final String STATE_PENDING = "PENDING";
   private static final String STATE_INSTALLED = "INSTALLED";
@@ -52,6 +57,10 @@ public class ModuleRegistryService {
     this.resourceLoader = resourceLoader;
     this.modulePackageService = modulePackageService;
     this.moduleBackendProcessManager = moduleBackendProcessManager;
+  }
+
+  private static BusinessException badRequest(String message) {
+    return new BusinessException(ErrorCodes.BAD_REQUEST, message);
   }
 
   public List<ModuleDescriptor> listModules() {
@@ -98,7 +107,7 @@ public class ModuleRegistryService {
   public ModuleRegistryResponse enableModule(String moduleKey, boolean enabled) {
     ModuleRegistry registry = requireRegistry(moduleKey);
     if (!STATE_INSTALLED.equalsIgnoreCase(normalizeState(registry.getInstallState()))) {
-      throw new IllegalArgumentException("模块未安装: " + moduleKey);
+      throw badRequest("模块未安装: " + moduleKey);
     }
     if (enabled) {
       moduleBackendProcessManager.ensureRunning(registry.getModuleKey());
@@ -130,7 +139,8 @@ public class ModuleRegistryService {
     } catch (Exception ex) {
       registry.setInstallState(STATE_FAILED);
       registryMapper.update(registry);
-      throw new IllegalArgumentException("模块安装失败: " + ex.getMessage());
+      log.error("模块安装失败，moduleKey={}", registry.getModuleKey(), ex);
+      throw new BusinessException(ErrorCodes.INTERNAL_SERVER_ERROR, "模块安装失败，请稍后重试", ex);
     }
   }
 
@@ -150,7 +160,8 @@ public class ModuleRegistryService {
     } catch (Exception ex) {
       registry.setInstallState(STATE_FAILED);
       registryMapper.update(registry);
-      throw new IllegalArgumentException("模块卸载失败: " + ex.getMessage());
+      log.error("模块卸载失败，moduleKey={}", registry.getModuleKey(), ex);
+      throw new BusinessException(ErrorCodes.INTERNAL_SERVER_ERROR, "模块卸载失败，请稍后重试", ex);
     }
   }
 
@@ -174,6 +185,7 @@ public class ModuleRegistryService {
       } catch (Exception ex) {
         registry.setInstallState(STATE_FAILED);
         registryMapper.update(registry);
+        log.warn("模块自动安装失败，moduleKey={}", registry.getModuleKey(), ex);
       }
     }
   }
@@ -200,7 +212,7 @@ public class ModuleRegistryService {
   private ModuleDefinition requireDefinition(String moduleKey) {
     ModuleDefinition definition = definitionRegistry.getDefinition(moduleKey);
     if (definition == null) {
-      throw new IllegalArgumentException("模块不存在: " + moduleKey);
+      throw badRequest("模块不存在: " + moduleKey);
     }
     return definition;
   }
@@ -208,7 +220,7 @@ public class ModuleRegistryService {
   private ModuleRegistry requireRegistry(String moduleKey) {
     ModuleRegistry registry = registryMapper.selectByKey(normalizeKey(moduleKey));
     if (registry == null) {
-      throw new IllegalArgumentException("模块未安装: " + moduleKey);
+      throw badRequest("模块未安装: " + moduleKey);
     }
     return registry;
   }
@@ -310,4 +322,3 @@ public class ModuleRegistryService {
     return ClassUtils.isPresent(className, getClass().getClassLoader());
   }
 }
-

@@ -1,5 +1,7 @@
 package com.tencent.tdesign.module;
 
+import com.tencent.tdesign.exception.BusinessException;
+import com.tencent.tdesign.exception.ErrorCodes;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
@@ -19,6 +21,14 @@ public class ModuleInstallationContext {
   private final ResourceLoader resourceLoader;
   private final JdbcTemplate jdbcTemplate;
   private final Path externalRoot;
+
+  private static BusinessException badRequest(String message) {
+    return new BusinessException(ErrorCodes.BAD_REQUEST, message);
+  }
+
+  private static BusinessException badRequest(String message, Throwable cause) {
+    return new BusinessException(ErrorCodes.BAD_REQUEST, message, cause);
+  }
 
   public ModuleInstallationContext(DataSource dataSource, ResourceLoader resourceLoader, Path externalRoot) {
     this.dataSource = dataSource;
@@ -70,13 +80,13 @@ public class ModuleInstallationContext {
   public void executeSqlResource(String resourcePath) {
     Resource resource = resourceLoader.getResource(resourcePath);
     if (!resource.exists()) {
-      throw new IllegalArgumentException("安装脚本不存在: " + resourcePath);
+      throw badRequest("安装脚本不存在: " + resourcePath);
     }
     Connection connection = DataSourceUtils.getConnection(dataSource);
     try {
       ScriptUtils.executeSqlScript(connection, resource);
     } catch (Exception ex) {
-      throw new IllegalArgumentException("执行模块脚本失败: " + ex.getMessage(), ex);
+      throw badRequest("执行模块脚本失败: " + ex.getMessage(), ex);
     } finally {
       DataSourceUtils.releaseConnection(connection, dataSource);
     }
@@ -89,7 +99,7 @@ public class ModuleInstallationContext {
     try {
       ScriptUtils.executeSqlScript(connection, resource);
     } catch (Exception ex) {
-      throw new IllegalArgumentException("执行模块脚本失败: " + ex.getMessage(), ex);
+      throw badRequest("执行模块脚本失败: " + ex.getMessage(), ex);
     } finally {
       DataSourceUtils.releaseConnection(connection, dataSource);
     }

@@ -6,6 +6,8 @@ import com.tencent.tdesign.dto.UiSettingRequest;
 import com.tencent.tdesign.entity.SecuritySetting;
 import com.tencent.tdesign.entity.UiSetting;
 import com.tencent.tdesign.entity.VerificationSetting;
+import com.tencent.tdesign.exception.BusinessException;
+import com.tencent.tdesign.exception.ErrorCodes;
 import com.tencent.tdesign.security.AccessControlService;
 import com.tencent.tdesign.security.AuthContext;
 import com.tencent.tdesign.service.EmailSenderService;
@@ -23,6 +25,8 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Optional;
 import jakarta.validation.Valid;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -30,6 +34,7 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/system/ui")
 public class UiSettingController {
+  private static final Logger log = LoggerFactory.getLogger(UiSettingController.class);
   private final UiSettingService uiSettingService;
   private final OperationLogService operationLogService;
   private final ObjectStorageService storageService;
@@ -40,6 +45,10 @@ public class UiSettingController {
   private final AuthContext authContext;
   private final AccessControlService accessControlService;
   private final SecurityRateLimitService rateLimitService;
+
+  private static BusinessException badRequest(String message) {
+    return new BusinessException(ErrorCodes.BAD_REQUEST, message);
+  }
 
   public UiSettingController(
     UiSettingService uiSettingService,
@@ -264,7 +273,7 @@ public class UiSettingController {
 
   @PostMapping
   @RepeatSubmit
-  public ApiResponse<UiSettingResponse> save(@RequestBody UiSettingRequest req) {
+  public ApiResponse<UiSettingResponse> save(@RequestBody @Valid UiSettingRequest req) {
     PermissionUtil.checkAny("system:SystemVerification:update", "system:SystemPersonalize:update", "system:SystemSecurity:update");
     if (Boolean.TRUE.equals(req.getSmsEnabled())) {
       moduleRegistryService.assertModuleAvailable("sms");
@@ -287,9 +296,9 @@ public class UiSettingController {
     moduleRegistryService.assertModuleAvailable("email");
     VerificationSetting setting = verificationSettingService.getDecryptedCopy();
     if (setting == null || !Boolean.TRUE.equals(setting.getEmailEnabled())) {
-      throw new IllegalArgumentException("邮箱验证已禁用");
+      throw badRequest("邮箱验证已禁用");
     }
-    EmailSenderService sender = emailSenderService.orElseThrow(() -> new IllegalArgumentException("邮箱模块未启用或未安装"));
+    EmailSenderService sender = emailSenderService.orElseThrow(() -> badRequest("邮箱模块未启用或未安装"));
     sender.sendTest(setting, req.getEmail());
     operationLogService.log("TEST", "系统设置", "发送测试邮件");
     return ApiResponse.success(true);
@@ -305,7 +314,7 @@ public class UiSettingController {
     long userId = authContext.requireUserId();
     rateLimitService.checkUploadRequestQuota(userId);
     if (file == null || file.isEmpty()) {
-      return ApiResponse.failure(400, "上传文件不能为空");
+      return ApiResponse.failure(ErrorCodes.BAD_REQUEST, "上传文件不能为空");
     }
 
     SecurityRateLimitService.UploadQuotaLease lease = null;
@@ -313,18 +322,19 @@ public class UiSettingController {
       lease = rateLimitService.acquireUploadQuota(userId, file.getSize());
       String url = storageService.upload(file, "system", page);
       return ApiResponse.success(Map.of("url", url));
-    } catch (IllegalArgumentException e) {
+    } catch (BusinessException e) {
       if (lease != null) {
         rateLimitService.releaseUploadQuota(lease);
       }
       String msg = e.getMessage() == null ? "上传请求被拒绝" : e.getMessage();
-      int code = (msg.contains("频繁") || msg.contains("上限")) ? 429 : 400;
+      int code = (msg.contains("频繁") || msg.contains("上限")) ? ErrorCodes.TOO_MANY_REQUESTS : ErrorCodes.BAD_REQUEST;
       return ApiResponse.failure(code, msg);
     } catch (Exception e) {
       if (lease != null) {
         rateLimitService.releaseUploadQuota(lease);
       }
-      return ApiResponse.failure(500, "系统文件保存失败: " + e.getMessage());
+      log.error("系统设置文件上传失败", e);
+      return ApiResponse.failure(ErrorCodes.INTERNAL_SERVER_ERROR, "系统文件保存失败，请稍后重试");
     }
   }
 }

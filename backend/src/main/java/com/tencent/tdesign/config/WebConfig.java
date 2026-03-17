@@ -9,6 +9,8 @@ import com.tencent.tdesign.service.ModuleRegistryService;
 import com.tencent.tdesign.service.SensitiveService;
 import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -23,6 +25,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
+  private static final Logger log = LoggerFactory.getLogger(WebConfig.class);
   private final String corsAllowedOriginPatterns;
   private final ModulePackageService modulePackageService;
   private final boolean exposeUploads;
@@ -86,7 +89,9 @@ public class WebConfig implements WebMvcConfigurer {
         Files.createDirectories(uploadDir);
         Files.createDirectories(uploadDir.resolve("system"));
         Files.createDirectories(uploadDir.resolve("business"));
-      } catch (Exception ignored) {}
+      } catch (Exception createUploadDirException) {
+        log.warn("创建上传资源目录失败，path={}", uploadDir, createUploadDirException);
+      }
       String base = "file:" + uploadDir.toAbsolutePath() + "/";
       registry.addResourceHandler("/uploads/system/**").addResourceLocations(base + "system/");
       registry.addResourceHandler("/uploads/business/**").addResourceLocations(base + "business/");
@@ -95,7 +100,9 @@ public class WebConfig implements WebMvcConfigurer {
     Path moduleFrontend = modulePackageService.getFrontendDir();
     try {
       Files.createDirectories(moduleFrontend);
-    } catch (Exception ignored) {}
+    } catch (Exception createModuleFrontendDirException) {
+      log.warn("创建模块前端目录失败，path={}", moduleFrontend, createModuleFrontendDirException);
+    }
     String moduleBase = "file:" + moduleFrontend.toAbsolutePath() + "/";
     registry.addResourceHandler("/modules/**").addResourceLocations(moduleBase);
   }

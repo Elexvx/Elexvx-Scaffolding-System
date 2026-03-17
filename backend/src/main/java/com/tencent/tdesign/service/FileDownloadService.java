@@ -2,6 +2,8 @@ package com.tencent.tdesign.service;
 
 import com.tencent.tdesign.dto.FileResourceRequest;
 import com.tencent.tdesign.entity.FileResource;
+import com.tencent.tdesign.exception.BusinessException;
+import com.tencent.tdesign.exception.ErrorCodes;
 import com.tencent.tdesign.mapper.FileResourceMapper;
 import com.tencent.tdesign.security.AuthContext;
 import com.tencent.tdesign.util.PermissionUtil;
@@ -18,6 +20,9 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class FileDownloadService {
   private static final String RESOURCE_NAME = "ConsoleDownload";
+  private static BusinessException badRequest(String message) {
+    return new BusinessException(ErrorCodes.BAD_REQUEST, message);
+  }
   private final FileResourceMapper mapper;
   private final ObjectStorageService storageService;
   private final OperationLogService operationLogService;
@@ -69,7 +74,7 @@ public class FileDownloadService {
   @Transactional
   public FileResourceResponse update(Long id, FileResourceRequest req) {
     PermissionUtil.check("system:" + RESOURCE_NAME + ":update");
-    FileResource existing = Optional.ofNullable(mapper.selectById(id)).orElseThrow(() -> new IllegalArgumentException("记录不存在"));
+    FileResource existing = Optional.ofNullable(mapper.selectById(id)).orElseThrow(() -> badRequest("记录不存在"));
     String fileUrl = normalize(req.getFileUrl());
     if (!Objects.equals(existing.getFileUrl(), fileUrl)) {
       storageService.deleteByUrl(existing.getFileUrl());
@@ -87,7 +92,7 @@ public class FileDownloadService {
   @Transactional
   public boolean delete(Long id) {
     PermissionUtil.check("system:" + RESOURCE_NAME + ":delete");
-    FileResource existing = Optional.ofNullable(mapper.selectById(id)).orElseThrow(() -> new IllegalArgumentException("记录不存在"));
+    FileResource existing = Optional.ofNullable(mapper.selectById(id)).orElseThrow(() -> badRequest("记录不存在"));
     mapper.deleteById(id);
     storageService.deleteByUrl(existing.getFileUrl());
     operationLogService.log("DELETE", "文件下载", "删除文件: " + existing.getContent());

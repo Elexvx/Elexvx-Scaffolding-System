@@ -5,6 +5,8 @@ import com.tencent.tdesign.dto.SensitiveSettingsRequest;
 import com.tencent.tdesign.entity.SensitivePageSetting;
 import com.tencent.tdesign.entity.SensitiveSetting;
 import com.tencent.tdesign.entity.SensitiveWord;
+import com.tencent.tdesign.exception.BusinessException;
+import com.tencent.tdesign.exception.ErrorCodes;
 import com.tencent.tdesign.mapper.SensitivePageSettingMapper;
 import com.tencent.tdesign.mapper.SensitiveSettingMapper;
 import com.tencent.tdesign.mapper.SensitiveWordMapper;
@@ -39,6 +41,8 @@ import org.apache.poi.xssf.eventusermodel.XSSFSheetXMLHandler;
 import org.apache.poi.xssf.model.StylesTable;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.util.StringUtils;
@@ -49,6 +53,7 @@ import org.xml.sax.XMLReader;
 
 @Service
 public class SensitiveService {
+  private static final Logger log = LoggerFactory.getLogger(SensitiveService.class);
   private static final int MAX_WORD_LENGTH = 200;
   private static final int BATCH_SIZE = 1000;
   private static final int MAX_ERROR_MESSAGES = 50;
@@ -87,6 +92,10 @@ public class SensitiveService {
     this.jdbc = jdbc;
   }
 
+  private static BusinessException badRequest(String message) {
+    return new BusinessException(ErrorCodes.BAD_REQUEST, message);
+  }
+
   public List<SensitiveWord> listWords(String keyword) {
     PermissionUtil.check("system:SystemSensitive:query");
     List<SensitiveWord> list = wordMapper.selectAll();
@@ -117,14 +126,14 @@ public class SensitiveService {
     PermissionUtil.check("system:SystemSensitive:create");
     String normalized = normalizeWord(word);
     if (!StringUtils.hasText(normalized)) {
-      throw new IllegalArgumentException("Sensitive word cannot be empty.");
+      throw badRequest("Sensitive word cannot be empty.");
     }
     if (normalized.length() > MAX_WORD_LENGTH) {
-      throw new IllegalArgumentException("Sensitive word length must be <= " + MAX_WORD_LENGTH);
+      throw badRequest("Sensitive word length must be <= " + MAX_WORD_LENGTH);
     }
     SensitiveWord exists = wordMapper.selectByWord(normalized);
     if (exists != null) {
-      throw new IllegalArgumentException("Sensitive word already exists.");
+      throw badRequest("Sensitive word already exists.");
     }
     SensitiveWord w = new SensitiveWord();
     w.setWord(normalized);
@@ -140,7 +149,7 @@ public class SensitiveService {
   public boolean deleteWord(long id) {
     PermissionUtil.check("system:SystemSensitive:delete");
     SensitiveWord w = wordMapper.selectById(id);
-    if (w == null) throw new IllegalArgumentException("Sensitive word not found.");
+    if (w == null) throw badRequest("Sensitive word not found.");
     wordMapper.deleteById(w.getId());
     operationLogService.log("DELETE", "Sensitive words", "Deleted sensitive word " + w.getWord());
     return true;
@@ -171,7 +180,8 @@ public class SensitiveService {
     } finally {
       try {
         workbook.close();
-      } catch (Exception ignored) {
+      } catch (Exception closeException) {
+        log.debug("关闭敏感词模板工作簿失败", closeException);
       }
     }
   }
@@ -179,7 +189,7 @@ public class SensitiveService {
   public SensitiveImportResult importWords(MultipartFile file) {
     PermissionUtil.check("system:SystemSensitive:create");
     if (file == null || file.isEmpty()) {
-      throw new IllegalArgumentException("上传文件为空");
+      throw badRequest("上传文件为空");
     }
 
     SensitiveImportResult result = new SensitiveImportResult();
@@ -196,10 +206,10 @@ public class SensitiveService {
       } else if (lower.endsWith(".csv") || lower.endsWith(".txt")) {
         readFromCsv(file, (index, value) -> handleWordRow(index, value, stats, writer));
       } else {
-        throw new IllegalArgumentException("仅支持.xlsx/.xls/.csv/.txt 文件");
+        throw badRequest("仅支持.xlsx/.xls/.csv/.txt 文件");
       }
     } catch (Exception e) {
-      throw new IllegalArgumentException("读取敏感词文件失败: " + e.getMessage());
+      throw badRequest("读取敏感词文件失败: " + e.getMessage());
     }
 
     writer.flush();
@@ -556,5 +566,3 @@ public class SensitiveService {
   public record SensitiveHit(String fieldPath, String word) {}
 
 }
-
-

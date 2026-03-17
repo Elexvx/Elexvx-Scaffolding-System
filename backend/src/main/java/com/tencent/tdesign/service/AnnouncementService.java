@@ -2,6 +2,8 @@ package com.tencent.tdesign.service;
 
 import com.tencent.tdesign.dto.AnnouncementUpsertRequest;
 import com.tencent.tdesign.entity.Announcement;
+import com.tencent.tdesign.exception.BusinessException;
+import com.tencent.tdesign.exception.ErrorCodes;
 import com.tencent.tdesign.mapper.AnnouncementMapper;
 import com.tencent.tdesign.security.AuthContext;
 import com.tencent.tdesign.util.PermissionUtil;
@@ -49,6 +51,10 @@ public class AnnouncementService {
     this.authContext = authContext;
   }
 
+  private static BusinessException badRequest(String message) {
+    return new BusinessException(ErrorCodes.BAD_REQUEST, message);
+  }
+
   @Transactional
   public AnnouncementResponse create(AnnouncementUpsertRequest req) {
     PermissionUtil.check("system:AnnouncementTable:create");
@@ -71,7 +77,7 @@ public class AnnouncementService {
   @Transactional
   public AnnouncementResponse update(Long id, AnnouncementUpsertRequest req) {
     PermissionUtil.check("system:AnnouncementTable:update");
-    Announcement a = Optional.ofNullable(mapper.selectById(id)).orElseThrow(() -> new IllegalArgumentException("公告不存在"));
+    Announcement a = Optional.ofNullable(mapper.selectById(id)).orElseThrow(() -> badRequest("公告不存在"));
     apply(a, req);
     if (StringUtils.hasText(req.getStatus())) {
       a.setStatus(req.getStatus());
@@ -85,7 +91,7 @@ public class AnnouncementService {
   @Transactional
   public AnnouncementResponse publish(Long id, boolean publish) {
     PermissionUtil.check("system:AnnouncementTable:update");
-    Announcement a = Optional.ofNullable(mapper.selectById(id)).orElseThrow(() -> new IllegalArgumentException("公告不存在"));
+    Announcement a = Optional.ofNullable(mapper.selectById(id)).orElseThrow(() -> badRequest("公告不存在"));
     a.setStatus(publish ? "published" : "withdrawn");
     if (publish) {
       a.setPublishAt(LocalDateTime.now());
@@ -99,7 +105,7 @@ public class AnnouncementService {
   @Transactional
   public boolean delete(Long id) {
     PermissionUtil.check("system:AnnouncementTable:delete");
-    Announcement a = Optional.ofNullable(mapper.selectById(id)).orElseThrow(() -> new IllegalArgumentException("公告不存在"));
+    Announcement a = Optional.ofNullable(mapper.selectById(id)).orElseThrow(() -> badRequest("公告不存在"));
     mapper.deleteById(a.getId());
     operationLogService.log("DELETE", "公告管理", "删除公告: " + a.getTitle());
     return true;
@@ -108,7 +114,7 @@ public class AnnouncementService {
   @Transactional
   public AnnouncementResponse detail(Long id) {
     PermissionUtil.checkAny("system:AnnouncementCards:query", "system:AnnouncementTable:query");
-    return AnnouncementResponse.from(Optional.ofNullable(mapper.selectById(id)).orElseThrow(() -> new IllegalArgumentException("公告不存在")));
+    return AnnouncementResponse.from(Optional.ofNullable(mapper.selectById(id)).orElseThrow(() -> badRequest("公告不存在")));
   }
 
     @Transactional
@@ -161,9 +167,9 @@ public class AnnouncementService {
     target.setCoverUrl(req.getCoverUrl());
     String attachmentUrl = normalizeBlank(req.getAttachmentUrl());
     String attachmentName = normalizeBlank(req.getAttachmentName());
-    if (attachmentUrl == null && attachmentName != null) throw new IllegalArgumentException("附件地址不能为空");
+    if (attachmentUrl == null && attachmentName != null) throw badRequest("附件地址不能为空");
     if (attachmentUrl != null) {
-      if (attachmentName == null) throw new IllegalArgumentException("附件名称不能为空");
+      if (attachmentName == null) throw badRequest("附件名称不能为空");
       validateAttachmentName(attachmentName);
     }
     target.setAttachmentUrl(attachmentUrl);
@@ -173,7 +179,7 @@ public class AnnouncementService {
   private void validateAttachmentName(String name) {
     String ext = fileExtension(name);
     if (ext == null || !ALLOWED_ATTACHMENT_EXTENSIONS.contains(ext)) {
-      throw new IllegalArgumentException("附件格式不支持");
+      throw badRequest("附件格式不支持");
     }
   }
 

@@ -3,6 +3,7 @@ package com.tencent.tdesign.controller;
 import com.tencent.tdesign.annotation.RepeatSubmit;
 import com.tencent.tdesign.dto.FileUploadCompleteRequest;
 import com.tencent.tdesign.dto.FileUploadInitRequest;
+import com.tencent.tdesign.exception.ErrorCodes;
 import com.tencent.tdesign.security.AuthContext;
 import com.tencent.tdesign.service.FileChunkUploadService;
 import com.tencent.tdesign.service.ObjectStorageService;
@@ -73,18 +74,18 @@ public class FileUploadController {
     long userId = authContext.requireUserId();
     rateLimitService.checkUploadRequestQuota(userId);
     if (file == null || file.isEmpty()) {
-      return ApiResponse.failure(400, "上传文件不能为空");
+      return ApiResponse.failure(ErrorCodes.BAD_REQUEST, "上传文件不能为空");
     }
 
     SecurityRateLimitService.UploadQuotaLease lease = null;
     try {
       String original = file.getOriginalFilename();
       if (file.getSize() > maxFileSizeBytes) {
-        return ApiResponse.failure(413, "上传文件过大");
+        return ApiResponse.failure(ErrorCodes.PAYLOAD_TOO_LARGE, "上传文件过大");
       }
       String ext = fileExtension(original);
       if (ext == null || !ALLOWED_EXTENSIONS.contains(ext)) {
-        return ApiResponse.failure(400, "文件格式不支持");
+        return ApiResponse.failure(ErrorCodes.BAD_REQUEST, "文件格式不支持");
       }
       lease = rateLimitService.acquireUploadQuota(userId, file.getSize());
       log.info("开始处理文件上传: {}, size: {} bytes", original, file.getSize());
@@ -96,14 +97,14 @@ public class FileUploadController {
         rateLimitService.releaseUploadQuota(lease);
       }
       String msg = e.getMessage() == null ? "上传请求被拒绝" : e.getMessage();
-      int code = (msg.contains("频繁") || msg.contains("上限")) ? 429 : 400;
+      int code = (msg.contains("频繁") || msg.contains("上限")) ? ErrorCodes.TOO_MANY_REQUESTS : ErrorCodes.BAD_REQUEST;
       return ApiResponse.failure(code, msg);
     } catch (Exception e) {
       if (lease != null) {
         rateLimitService.releaseUploadQuota(lease);
       }
       log.error("文件上传过程中发生错误", e);
-      return ApiResponse.failure(500, "文件保存失败，请稍后重试");
+      return ApiResponse.failure(ErrorCodes.INTERNAL_SERVER_ERROR, "文件保存失败，请稍后重试");
     }
   }
 
@@ -114,7 +115,7 @@ public class FileUploadController {
     rateLimitService.checkUploadRequestQuota(userId);
     String ext = fileExtension(request.getFileName());
     if (ext == null || !ALLOWED_EXTENSIONS.contains(ext)) {
-      return ApiResponse.failure(400, "文件格式不支持");
+      return ApiResponse.failure(ErrorCodes.BAD_REQUEST, "文件格式不支持");
     }
     rateLimitService.checkUploadQuotaPreview(userId, request.getFileSize());
     return ApiResponse.success(chunkUploadService.initSession(request));
@@ -168,7 +169,7 @@ public class FileUploadController {
       if (raw != null) uploadId = String.valueOf(raw);
     }
     if (uploadId == null || uploadId.isBlank()) {
-      return ApiResponse.failure(400, "uploadId 不能为空");
+      return ApiResponse.failure(ErrorCodes.BAD_REQUEST, "uploadId 不能为空");
     }
     return ApiResponse.success(chunkUploadService.cancel(uploadId));
   }

@@ -2,6 +2,8 @@ package com.tencent.tdesign.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tencent.tdesign.annotation.AiFunction;
+import com.tencent.tdesign.exception.BusinessException;
+import com.tencent.tdesign.exception.ErrorCodes;
 import com.tencent.tdesign.util.PermissionUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
@@ -27,6 +29,10 @@ import java.util.Objects;
 public class AiService {
     private static final Logger log = LoggerFactory.getLogger(AiService.class);
 
+    private static BusinessException badRequest(String message) {
+        return new BusinessException(ErrorCodes.BAD_REQUEST, message);
+    }
+
     @Autowired
     private ApplicationContext applicationContext;
 
@@ -50,7 +56,7 @@ public class AiService {
                     }
                 }
             } catch (Exception e) {
-                // 忽略无法处理的 Bean
+                log.debug("Skip bean during AI function scan, beanName={}", beanName, e);
             }
         }
         log.info("AI Service initialized. Registered {} tools.", toolRegistry.size());
@@ -118,7 +124,7 @@ public class AiService {
     public Object executeTool(String toolName, Map<String, Object> args) throws Exception {
         AiToolDefinition tool = toolRegistry.get(toolName);
         if (tool == null) {
-            throw new IllegalArgumentException("Tool not found: " + toolName);
+            throw badRequest("Tool not found: " + toolName);
         }
         ensureCallable(tool);
 

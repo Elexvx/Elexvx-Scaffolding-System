@@ -16,6 +16,8 @@ import java.util.Enumeration;
 import java.util.Locale;
 import java.util.Set;
 import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -24,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/module-api")
 public class ModuleBackendProxyController {
+  private static final Logger log = LoggerFactory.getLogger(ModuleBackendProxyController.class);
   private static final Pattern MODULE_KEY_PATTERN = Pattern.compile("^[a-z0-9-]+$");
   private static final Set<String> BLOCKED_REQUEST_HEADERS = Set.of(
     "host", "content-length", "transfer-encoding", "connection", "keep-alive", "proxy-authenticate", "proxy-authorization", "te", "trailer", "upgrade"
@@ -121,8 +124,9 @@ public class ModuleBackendProxyController {
       response.setStatus(502);
       response.getWriter().write("模块后端请求中断");
     } catch (Exception e) {
+      log.error("模块后端代理失败，moduleKey={}", key, e);
       response.setStatus(502);
-      response.getWriter().write("模块后端代理失败: " + e.getMessage());
+      response.getWriter().write("模块后端代理失败，请稍后重试");
     }
   }
 

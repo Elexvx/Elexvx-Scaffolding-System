@@ -1,5 +1,7 @@
 package com.tencent.tdesign.util;
 
+import com.tencent.tdesign.exception.BusinessException;
+import com.tencent.tdesign.exception.ErrorCodes;
 import com.tencent.tdesign.security.AccessControlService;
 import com.tencent.tdesign.security.AuthContext;
 import com.tencent.tdesign.security.PermissionCache;
@@ -15,6 +17,10 @@ public final class PermissionUtil {
   private static PermissionFacade permissionFacade;
   private static AuthContext authContext;
   private static PermissionCache permissionCache;
+
+  private static BusinessException badRequest(String message) {
+    return new BusinessException(ErrorCodes.BAD_REQUEST, message);
+  }
 
   @Autowired
   public PermissionUtil(
@@ -32,7 +38,7 @@ public final class PermissionUtil {
   public static void check(String permission) {
     ensureInitialized();
     if (permission == null || permission.isBlank()) {
-      throw new IllegalArgumentException("permission 不能为空");
+      throw badRequest("permission 不能为空");
     }
     if (permissionCache.isAdmin()) return;
     accessControlService.checkPermission(permission);
@@ -41,7 +47,7 @@ public final class PermissionUtil {
   public static void checkAny(String... permissions) {
     ensureInitialized();
     if (permissions == null || permissions.length == 0) {
-      throw new IllegalArgumentException("permissions 不能为空");
+      throw badRequest("permissions 不能为空");
     }
     if (permissionCache.isAdmin()) return;
 

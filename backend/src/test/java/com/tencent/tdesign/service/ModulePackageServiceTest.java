@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tencent.tdesign.module.SmsVerificationModuleDefinition;
 import java.io.ByteArrayInputStream;
 import com.tencent.tdesign.module.ModulePackageManifest;
+import com.tencent.tdesign.exception.BusinessException;
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -44,7 +45,7 @@ public class ModulePackageServiceTest {
       writeEntry(zos, "modules/demo/mysql/install.sql", "select 1;");
     });
     MockMultipartFile file = new MockMultipartFile("file", "module.zip", "application/zip", zip);
-    assertThrows(IllegalArgumentException.class, () -> service.stagePackage(file));
+    assertThrows(BusinessException.class, () -> service.stagePackage(file));
   }
 
   @Test
@@ -59,7 +60,7 @@ public class ModulePackageServiceTest {
       writeEntry(zos, "modules/demo/mysql/install.sql", "select 1;");
     });
     MockMultipartFile file = new MockMultipartFile("file", "module.zip", "application/zip", zip);
-    assertThrows(IllegalArgumentException.class, () -> service.stagePackage(file));
+    assertThrows(BusinessException.class, () -> service.stagePackage(file));
   }
 
   @Test

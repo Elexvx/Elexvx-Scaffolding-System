@@ -10,10 +10,13 @@ import com.tencent.tdesign.entity.StorageSetting;
 import jakarta.annotation.PreDestroy;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
 public class ObjectStorageClientManager {
+  private static final Logger log = LoggerFactory.getLogger(ObjectStorageClientManager.class);
   private final AtomicReference<AliyunHolder> aliyunRef = new AtomicReference<>();
   private final AtomicReference<TencentHolder> tencentRef = new AtomicReference<>();
 
@@ -27,7 +30,7 @@ public class ObjectStorageClientManager {
     AliyunHolder updated = new AliyunHolder(fingerprint, created);
     AliyunHolder previous = aliyunRef.getAndSet(updated);
     if (previous != null) {
-      try { previous.client.shutdown(); } catch (Exception ignore) {}
+      shutdownAliyunClient(previous.client, "refresh");
     }
     return created;
   }
@@ -44,7 +47,7 @@ public class ObjectStorageClientManager {
     TencentHolder updated = new TencentHolder(fingerprint, created);
     TencentHolder previous = tencentRef.getAndSet(updated);
     if (previous != null) {
-      try { previous.client.shutdown(); } catch (Exception ignore) {}
+      shutdownTencentClient(previous.client, "refresh");
     }
     return created;
   }
@@ -52,11 +55,11 @@ public class ObjectStorageClientManager {
   public void invalidateAll() {
     AliyunHolder aliyun = aliyunRef.getAndSet(null);
     if (aliyun != null) {
-      try { aliyun.client.shutdown(); } catch (Exception ignore) {}
+      shutdownAliyunClient(aliyun.client, "invalidate");
     }
     TencentHolder tencent = tencentRef.getAndSet(null);
     if (tencent != null) {
-      try { tencent.client.shutdown(); } catch (Exception ignore) {}
+      shutdownTencentClient(tencent.client, "invalidate");
     }
   }
 
@@ -72,6 +75,22 @@ public class ObjectStorageClientManager {
       String.valueOf(setting.getSecretKey()),
       String.valueOf(setting.getBucket()),
       String.valueOf(ext));
+  }
+
+  private void shutdownAliyunClient(OSS client, String stage) {
+    try {
+      client.shutdown();
+    } catch (Exception shutdownException) {
+      log.warn("关闭阿里云 OSS 客户端失败，stage={}", stage, shutdownException);
+    }
+  }
+
+  private void shutdownTencentClient(COSClient client, String stage) {
+    try {
+      client.shutdown();
+    } catch (Exception shutdownException) {
+      log.warn("关闭腾讯云 COS 客户端失败，stage={}", stage, shutdownException);
+    }
   }
 
   private record AliyunHolder(String fingerprint, OSS client) {}

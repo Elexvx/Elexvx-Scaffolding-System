@@ -7,6 +7,7 @@ import com.tencent.tdesign.service.OperationLogService;
 import com.tencent.tdesign.util.PermissionUtil;
 import com.tencent.tdesign.vo.ApiResponse;
 import com.tencent.tdesign.vo.StorageSettingResponse;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -33,7 +34,7 @@ public class StorageController {
 
   @PostMapping
   @RepeatSubmit
-  public ApiResponse<StorageSettingResponse> save(@RequestBody StorageSettingRequest req) {
+  public ApiResponse<StorageSettingResponse> save(@RequestBody @Valid StorageSettingRequest req) {
     PermissionUtil.checkAdmin();
     var saved = storageService.save(req);
     operationLogService.log("UPDATE", "系统设置", "更新对象存储配置: " + saved.getProvider());
@@ -42,7 +43,7 @@ public class StorageController {
 
   @PostMapping("/test")
   @RepeatSubmit
-  public ApiResponse<Void> test(@RequestBody StorageSettingRequest req) {
+  public ApiResponse<Void> test(@RequestBody @Valid StorageSettingRequest req) {
     PermissionUtil.checkAdmin();
     storageService.test(req);
     return ApiResponse.success(null);

@@ -1,5 +1,7 @@
 package com.tencent.tdesign.plugin;
 
+import com.tencent.tdesign.exception.BusinessException;
+import com.tencent.tdesign.exception.ErrorCodes;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -16,6 +18,10 @@ import org.springframework.stereotype.Service;
 public class PluginLifecycleService {
   private static final Pattern PLUGIN_ID_PATTERN = Pattern.compile("^[A-Za-z0-9._-]{1,64}$");
   private static final Pattern SCHEMA_NAME_PATTERN = Pattern.compile("^[a-z0-9_]{1,64}$");
+
+  private static BusinessException badRequest(String message) {
+    return new BusinessException(ErrorCodes.BAD_REQUEST, message);
+  }
 
   private final JdbcTemplate jdbcTemplate;
   private final Map<String, PluginLifecycleState> states = new ConcurrentHashMap<>();
@@ -59,7 +65,7 @@ public class PluginLifecycleService {
   private String requirePluginId(String rawId) {
     String id = rawId == null ? "" : rawId.trim();
     if (!PLUGIN_ID_PATTERN.matcher(id).matches()) {
-      throw new IllegalArgumentException("插件 ID 非法");
+      throw badRequest("插件 ID 非法");
     }
     return id;
   }
@@ -72,7 +78,7 @@ public class PluginLifecycleService {
       .replace('.', '_');
     String schema = "plug_" + normalized;
     if (!SCHEMA_NAME_PATTERN.matcher(schema).matches()) {
-      throw new IllegalArgumentException("插件 schema 非法");
+      throw badRequest("插件 schema 非法");
     }
     return schema;
   }

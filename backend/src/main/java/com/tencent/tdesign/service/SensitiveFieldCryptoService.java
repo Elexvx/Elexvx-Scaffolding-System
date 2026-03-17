@@ -1,5 +1,7 @@
 package com.tencent.tdesign.service;
 
+import com.tencent.tdesign.exception.BusinessException;
+import com.tencent.tdesign.exception.ErrorCodes;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -21,6 +23,10 @@ public class SensitiveFieldCryptoService {
 
   private final SecretKeySpec key;
   private final SecureRandom secureRandom = new SecureRandom();
+
+  private static BusinessException badRequest(String message) {
+    return new BusinessException(ErrorCodes.BAD_REQUEST, message);
+  }
 
   public SensitiveFieldCryptoService(@Value("${tdesign.security.field-secret:}") String secret) {
     String effective = secret == null ? "" : secret.trim();
@@ -69,10 +75,10 @@ public class SensitiveFieldCryptoService {
 
   private String decrypt(String token) throws Exception {
     byte[] raw = Base64.getDecoder().decode(token);
-    if (raw.length < 1 + IV_LENGTH) throw new IllegalArgumentException("Invalid encrypted payload");
+    if (raw.length < 1 + IV_LENGTH) throw badRequest("Invalid encrypted payload");
     ByteBuffer buffer = ByteBuffer.wrap(raw);
     byte version = buffer.get();
-    if (version != VERSION) throw new IllegalArgumentException("Unsupported encrypted payload version");
+    if (version != VERSION) throw badRequest("Unsupported encrypted payload version");
     byte[] iv = new byte[IV_LENGTH];
     buffer.get(iv);
     byte[] encrypted = new byte[buffer.remaining()];

@@ -1,6 +1,8 @@
 package com.tencent.tdesign.plugin;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tencent.tdesign.exception.BusinessException;
+import com.tencent.tdesign.exception.ErrorCodes;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -26,6 +28,10 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
 public class PluginPackageService {
   private static final Pattern PLUGIN_ID_PATTERN = Pattern.compile("^[A-Za-z0-9._-]{1,64}$");
 
+  private static BusinessException badRequest(String message) {
+    return new BusinessException(ErrorCodes.BAD_REQUEST, message);
+  }
+
   private final Path packageRoot;
   private final ObjectMapper objectMapper;
 
@@ -35,7 +41,7 @@ public class PluginPackageService {
   }
 
   public PluginInstallArtifact stage(MultipartFile file) {
-    if (file == null || file.isEmpty()) throw new IllegalArgumentException("插件包不能为空");
+    if (file == null || file.isEmpty()) throw badRequest("插件包不能为空");
     String traceId = UUID.randomUUID().toString();
     Path stageDir = packageRoot.resolve(".staging").resolve(traceId).toAbsolutePath().normalize();
     try {
@@ -64,7 +70,7 @@ public class PluginPackageService {
         }
       }
     }
-    throw new IllegalArgumentException("插件包缺少 manifest.yml");
+    throw badRequest("插件包缺少 manifest.yml");
   }
 
   public static String sha256(Path file) {
@@ -79,11 +85,11 @@ public class PluginPackageService {
 
   private PluginManifest validateManifest(PluginManifest manifest) {
     if (manifest == null) {
-      throw new IllegalArgumentException("插件包 manifest 非法");
+      throw badRequest("插件包 manifest 非法");
     }
     String pluginId = manifest.getId() == null ? "" : manifest.getId().trim();
     if (!PLUGIN_ID_PATTERN.matcher(pluginId).matches()) {
-      throw new IllegalArgumentException("插件包 manifest.id 非法");
+      throw badRequest("插件包 manifest.id 非法");
     }
     manifest.setId(pluginId);
     return manifest;

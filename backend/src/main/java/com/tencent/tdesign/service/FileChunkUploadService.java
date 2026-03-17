@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tencent.tdesign.dto.FileUploadInitRequest;
+import com.tencent.tdesign.exception.BusinessException;
+import com.tencent.tdesign.exception.ErrorCodes;
 import com.tencent.tdesign.security.AuthContext;
 import com.tencent.tdesign.vo.FileUploadSessionResponse;
 import jakarta.annotation.PreDestroy;
@@ -96,6 +98,10 @@ public class FileChunkUploadService {
     cleanupExecutor.scheduleAtFixedRate(this::cleanupExpiredSessions, 10, 10, TimeUnit.MINUTES);
   }
 
+  private static BusinessException badRequest(String message) {
+    return new BusinessException(ErrorCodes.BAD_REQUEST, message);
+  }
+
   @PreDestroy
   public void shutdownCleanupExecutor() {
     cleanupExecutor.shutdownNow();
@@ -133,11 +139,11 @@ public class FileChunkUploadService {
     UploadSession session = loadSession(uploadId, userId);
     validateChunkIndex(session, chunkIndex);
     if (chunk.isEmpty()) {
-      throw new IllegalArgumentException("分片数据不能为空");
+      throw badRequest("分片数据不能为空");
     }
     long expectedSize = expectedChunkSize(session, chunkIndex);
     if (chunk.getSize() != expectedSize) {
-      throw new IllegalArgumentException("分片大小不匹配，期望 " + expectedSize + " 字节，实际 " + chunk.getSize() + " 字节");
+      throw badRequest("分片大小不匹配，期望 " + expectedSize + " 字节，实际 " + chunk.getSize() + " 字节");
     }
     Path dir = sessionDir(uploadId);
     Path chunkFile = dir.resolve(chunkFileName(chunkIndex));
@@ -184,11 +190,11 @@ public class FileChunkUploadService {
 
   private UploadSession ensureSession(FileUploadInitRequest request, long userId) {
     if (!StringUtils.hasText(request.getFingerprint())) {
-      throw new IllegalArgumentException("文件指纹不能为空");
+      throw badRequest("文件指纹不能为空");
     }
     String fingerprint = request.getFingerprint().trim();
     if (fingerprint.length() > MAX_FINGERPRINT_LENGTH) {
-      throw new IllegalArgumentException("文件指纹过长");
+      throw badRequest("文件指纹过长");
     }
     String uploadId = buildUploadId(userId, fingerprint);
     Path dir = sessionDir(uploadId);
@@ -197,13 +203,13 @@ public class FileChunkUploadService {
       int chunkSize = normalizeChunkSize(request.getChunkSize());
       long fileSize = request.getFileSize();
       if (fileSize <= 0) {
-        throw new IllegalArgumentException("文件大小必须大于 0");
+        throw badRequest("文件大小必须大于 0");
       }
       if (fileSize > maxFileSizeBytes) {
-        throw new IllegalArgumentException("上传文件过大");
+        throw badRequest("上传文件过大");
       }
       if (existing != null && existing.getOwnerUserId() != userId) {
-        throw new IllegalArgumentException("上传会话无权限访问: " + uploadId);
+        throw badRequest("上传会话无权限访问: " + uploadId);
       }
       if (existing != null && (!existing.matches(request.getFileName(), fileSize, chunkSize))) {
         deleteSessionDir(dir);
@@ -233,17 +239,17 @@ public class FileChunkUploadService {
     Path dir = sessionDir(uploadId);
     UploadSession session = loadSessionIfExists(dir);
     if (session == null) {
-      throw new IllegalArgumentException("上传会话不存在: " + uploadId);
+      throw badRequest("上传会话不存在: " + uploadId);
     }
     if (isExpired(session)) {
       synchronized (lockFor(uploadId)) {
         deleteSessionDir(dir);
         sessionLocks.remove(uploadId);
       }
-      throw new IllegalArgumentException("上传会话已过期: " + uploadId);
+      throw badRequest("上传会话已过期: " + uploadId);
     }
     if (session.getOwnerUserId() != userId) {
-      throw new IllegalArgumentException("上传会话无权限访问: " + uploadId);
+      throw badRequest("上传会话无权限访问: " + uploadId);
     }
     return session;
   }
@@ -277,14 +283,14 @@ public class FileChunkUploadService {
     validateUploadId(uploadId);
     Path dir = chunkRoot.resolve(uploadId).normalize();
     if (!dir.startsWith(chunkRoot)) {
-      throw new IllegalArgumentException("非法上传会话");
+      throw badRequest("非法上传会话");
     }
     return dir;
   }
 
   private void validateUploadId(String uploadId) {
     if (!StringUtils.hasText(uploadId) || !UPLOAD_ID_PATTERN.matcher(uploadId).matches()) {
-      throw new IllegalArgumentException("非法 uploadId");
+      throw badRequest("非法 uploadId");
     }
   }
 
@@ -363,7 +369,7 @@ public class FileChunkUploadService {
 
   private void validateChunkIndex(UploadSession session, int chunkIndex) {
     if (chunkIndex < 0 || chunkIndex >= session.getTotalChunks()) {
-      throw new IllegalArgumentException("分片索引越界: " + chunkIndex);
+      throw badRequest("分片索引越界: " + chunkIndex);
     }
   }
 
@@ -371,7 +377,7 @@ public class FileChunkUploadService {
     long start = (long) chunkIndex * session.getChunkSize();
     long remaining = session.getFileSize() - start;
     if (remaining <= 0) {
-      throw new IllegalArgumentException("分片索引越界: " + chunkIndex);
+      throw badRequest("分片索引越界: " + chunkIndex);
     }
     return Math.min(session.getChunkSize(), remaining);
   }
@@ -397,7 +403,8 @@ public class FileChunkUploadService {
         .forEach((path) -> {
           try {
             Files.deleteIfExists(path);
-          } catch (IOException ignored) {
+          } catch (IOException deleteException) {
+            log.debug("删除分片文件失败，path={}", path, deleteException);
           }
         });
       return true;
@@ -425,7 +432,8 @@ public class FileChunkUploadService {
   private void cleanupExpiredSessions() {
     try (Stream<Path> stream = Files.list(chunkRoot)) {
       stream.filter(Files::isDirectory).forEach(this::cleanupIfExpired);
-    } catch (IOException ignored) {
+    } catch (IOException listException) {
+      log.warn("扫描过期上传会话失败，chunkRoot={}", chunkRoot, listException);
     }
   }
 

@@ -1,5 +1,6 @@
 package com.tencent.tdesign.service;
 
+import com.tencent.tdesign.exception.BusinessException;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -15,7 +16,7 @@ public class UserAdminServiceTest {
   @Test
   void rootAdminCannotBeManagedByOtherAdminWhenNotAllowed() {
     assertThrows(
-      IllegalArgumentException.class,
+      BusinessException.class,
       () -> UserAdminService.validateManageableTarget(2L, 1L, "ADMIN", true, true, false)
     );
   }
@@ -28,7 +29,7 @@ public class UserAdminServiceTest {
   @Test
   void adminRoleUserCannotBeManagedByNonAdmin() {
     assertThrows(
-      IllegalArgumentException.class,
+      BusinessException.class,
       () -> UserAdminService.validateManageableTarget(2L, 1L, "alice", true, false, false)
     );
   }
@@ -38,4 +39,3 @@ public class UserAdminServiceTest {
     assertDoesNotThrow(() -> UserAdminService.validateManageableTarget(1L, 1L, "alice", true, false, false));
   }
 }
-

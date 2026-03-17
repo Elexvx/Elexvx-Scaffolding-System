@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tencent.tdesign.dto.AiProviderRequest;
 import com.tencent.tdesign.entity.AiProviderSetting;
+import com.tencent.tdesign.exception.BusinessException;
+import com.tencent.tdesign.exception.ErrorCodes;
 import com.tencent.tdesign.mapper.AiProviderMapper;
 import com.tencent.tdesign.util.PermissionUtil;
 import com.tencent.tdesign.vo.AiChatResult;
@@ -39,6 +41,10 @@ public class AiProviderService {
   private final AiProviderMapper mapper;
   private final ObjectMapper objectMapper;
 
+  private static BusinessException badRequest(String message) {
+    return new BusinessException(ErrorCodes.BAD_REQUEST, message);
+  }
+
   public AiProviderService(AiProviderMapper mapper, ObjectMapper objectMapper) {
     this.mapper = mapper;
     this.objectMapper = objectMapper;
@@ -56,7 +62,7 @@ public class AiProviderService {
     }
     AiProviderSetting found = mapper.selectById(id);
     if (found == null) {
-      throw new IllegalArgumentException("指定的 AI 配置不存在");
+      throw badRequest("指定的 AI 配置不存在");
     }
     return found;
   }
@@ -140,7 +146,7 @@ public class AiProviderService {
   public AiTestResult testSaved(Long id) {
     PermissionUtil.check("system:SystemAi:update");
     AiProviderSetting saved = java.util.Optional.ofNullable(mapper.selectById(id))
-      .orElseThrow(() -> new IllegalArgumentException("AI 配置不存在或已被删除"));
+      .orElseThrow(() -> badRequest("AI 配置不存在或已被删除"));
     AiTestResult result = doTest(saved, "已保存配置测试");
     saved.setLastTestStatus(result.isSuccess() ? "SUCCESS" : "FAILED");
     saved.setLastTestMessage(result.getMessage());

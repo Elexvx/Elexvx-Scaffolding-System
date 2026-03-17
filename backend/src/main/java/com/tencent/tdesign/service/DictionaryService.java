@@ -6,6 +6,8 @@ import com.tencent.tdesign.dto.DictionaryItemUpdateRequest;
 import com.tencent.tdesign.dto.DictionaryUpdateRequest;
 import com.tencent.tdesign.entity.SysDict;
 import com.tencent.tdesign.entity.SysDictItem;
+import com.tencent.tdesign.exception.BusinessException;
+import com.tencent.tdesign.exception.ErrorCodes;
 import com.tencent.tdesign.mapper.SysDictMapper;
 import com.tencent.tdesign.util.ExcelExportUtil;
 import com.tencent.tdesign.util.PermissionUtil;
@@ -27,6 +29,8 @@ import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,6 +39,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class DictionaryService {
+  private static final Logger log = LoggerFactory.getLogger(DictionaryService.class);
   private static final int MAX_IMPORT_ERRORS = 50;
   private static final Pattern CODE_PATTERN = Pattern.compile("^[a-z0-9_]+$");
   private static final String ADDRESS_DISTRICT_CODE = "address_district";
@@ -75,6 +80,10 @@ public class DictionaryService {
     this.operationLogService = operationLogService;
   }
 
+  private static BusinessException badRequest(String message) {
+    return new BusinessException(ErrorCodes.BAD_REQUEST, message);
+  }
+
   public PageResult<SysDict> page(String keyword, Integer status, int page, int size) {
     PermissionUtil.check("system:SystemDict:query");
     ensureBuiltinDictionaryMetadata();
@@ -91,7 +100,7 @@ public class DictionaryService {
     PermissionUtil.check("system:SystemDict:query");
     SysDict dict = dictMapper.selectById(id);
     if (dict == null) {
-      throw new IllegalArgumentException("Dictionary not found.");
+      throw badRequest("Dictionary not found.");
     }
     return dict;
   }
@@ -101,7 +110,7 @@ public class DictionaryService {
     PermissionUtil.check("system:SystemDict:create");
     String code = normalizeCode(req.getCode());
     if (dictMapper.selectByCode(code) != null) {
-      throw new IllegalArgumentException("Dictionary code already exists.");
+      throw badRequest("Dictionary code already exists.");
     }
 
     SysDict dict = new SysDict();
@@ -124,7 +133,7 @@ public class DictionaryService {
     PermissionUtil.check("system:SystemDict:update");
     SysDict dict = dictMapper.selectById(id);
     if (dict == null) {
-      throw new IllegalArgumentException("Dictionary not found.");
+      throw badRequest("Dictionary not found.");
     }
 
     String previousCode = dict.getCode();
@@ -136,7 +145,7 @@ public class DictionaryService {
       String code = normalizeCode(req.getCode());
       SysDict exists = dictMapper.selectByCode(code);
       if (exists != null && !Objects.equals(exists.getId(), id)) {
-        throw new IllegalArgumentException("Dictionary code already exists.");
+        throw badRequest("Dictionary code already exists.");
       }
       if (!code.equals(previousCode)) {
         itemTableService.renameDictTable(dict, code);
@@ -179,7 +188,7 @@ public class DictionaryService {
     ensureBuiltinDictionaryMetadata();
     SysDict dict = dictMapper.selectById(dictId);
     if (dict == null) {
-      throw new IllegalArgumentException("Dictionary not found.");
+      throw badRequest("Dictionary not found.");
     }
     int safePage = Math.max(page, 0);
     int safeSize = Math.min(Math.max(size, 1), 200);
@@ -210,13 +219,13 @@ public class DictionaryService {
     PermissionUtil.check("system:SystemDict:create");
     SysDict dict = dictMapper.selectById(dictId);
     if (dict == null) {
-      throw new IllegalArgumentException("Dictionary not found.");
+      throw badRequest("Dictionary not found.");
     }
 
     String value = req.getValue().trim();
     SysDictItem existing = itemTableService.selectByDictValue(dict, value);
     if (existing != null) {
-      throw new IllegalArgumentException("Dictionary value already exists.");
+      throw badRequest("Dictionary value already exists.");
     }
 
     SysDictItem item = new SysDictItem();
@@ -250,7 +259,7 @@ public class DictionaryService {
       String value = req.getValue().trim();
       SysDictItem existing = itemTableService.selectByDictValue(dict, value);
       if (existing != null && !Objects.equals(existing.getId(), item.getId())) {
-        throw new IllegalArgumentException("Dictionary value already exists.");
+        throw badRequest("Dictionary value already exists.");
       }
       item.setValue(value);
     }
@@ -304,10 +313,10 @@ public class DictionaryService {
     PermissionUtil.check("system:SystemDict:create");
     SysDict dict = dictMapper.selectById(dictId);
     if (dict == null) {
-      throw new IllegalArgumentException("Dictionary not found.");
+      throw badRequest("Dictionary not found.");
     }
     if (file == null || file.isEmpty()) {
-      throw new IllegalArgumentException("Uploaded file is empty.");
+      throw badRequest("Uploaded file is empty.");
     }
 
     DictionaryImportResult result = new DictionaryImportResult();
@@ -320,10 +329,10 @@ public class DictionaryService {
       } else if (lower.endsWith(".csv") || lower.endsWith(".txt")) {
         rows = readFromCsv(file);
       } else {
-        throw new IllegalArgumentException("Only .xlsx/.xls/.csv/.txt files are supported.");
+        throw badRequest("Only .xlsx/.xls/.csv/.txt files are supported.");
       }
     } catch (Exception e) {
-      throw new IllegalArgumentException("Failed to read dictionary file: " + e.getMessage());
+      throw badRequest("Failed to read dictionary file: " + e.getMessage());
     }
 
     int total = 0;
@@ -358,7 +367,7 @@ public class DictionaryService {
         item.setDistrict(normalizeText(row.district));
         try {
           validateAreaItemFields(dict, item.getProvince(), item.getCity(), item.getDistrict());
-        } catch (IllegalArgumentException ex) {
+        } catch (BusinessException ex) {
           failed += 1;
           if (result.getErrors().size() < MAX_IMPORT_ERRORS) {
             result.addError("Row " + total + " " + ex.getMessage());
@@ -388,7 +397,7 @@ public class DictionaryService {
         }
         try {
           validateAreaItemFields(dict, existing.getProvince(), existing.getCity(), existing.getDistrict());
-        } catch (IllegalArgumentException ex) {
+        } catch (BusinessException ex) {
           failed += 1;
           if (result.getErrors().size() < MAX_IMPORT_ERRORS) {
             result.addError("Row " + total + " " + ex.getMessage());
@@ -414,7 +423,7 @@ public class DictionaryService {
     PermissionUtil.check("system:SystemDict:query");
     SysDict dict = dictMapper.selectById(dictId);
     if (dict == null) {
-      throw new IllegalArgumentException("Dictionary not found.");
+      throw badRequest("Dictionary not found.");
     }
 
     List<SysDictItem> items = itemTableService.selectByDict(dict);
@@ -452,7 +461,8 @@ public class DictionaryService {
     } finally {
       try {
         workbook.close();
-      } catch (Exception ignored) {
+      } catch (Exception closeException) {
+        log.debug("关闭字典导出工作簿失败", closeException);
       }
     }
   }
@@ -502,7 +512,8 @@ public class DictionaryService {
     } finally {
       try {
         workbook.close();
-      } catch (Exception ignored) {
+      } catch (Exception closeException) {
+        log.debug("关闭字典模板工作簿失败", closeException);
       }
     }
   }
@@ -510,7 +521,7 @@ public class DictionaryService {
   private DictItemLocation requireItemLocation(long id) {
     DictItemLocation location = findItemLocation(id);
     if (location == null) {
-      throw new IllegalArgumentException("Dictionary item not found.");
+      throw badRequest("Dictionary item not found.");
     }
     return location;
   }
@@ -530,8 +541,8 @@ public class DictionaryService {
         if (item != null) {
           return new DictItemLocation(dict, item);
         }
-      } catch (Exception ignored) {
-        // Skip broken dictionary tables and continue searching.
+      } catch (Exception queryException) {
+        log.warn("查询字典项位置失败，dictCode={}, itemId={}", dict.getCode(), id, queryException);
       }
     }
     return null;
@@ -539,14 +550,14 @@ public class DictionaryService {
 
   private String normalizeCode(String code) {
     if (code == null) {
-      throw new IllegalArgumentException("Dictionary code is required.");
+      throw badRequest("Dictionary code is required.");
     }
     String value = code.trim().toLowerCase(Locale.ROOT);
     if (value.isEmpty()) {
-      throw new IllegalArgumentException("Dictionary code is required.");
+      throw badRequest("Dictionary code is required.");
     }
     if (!CODE_PATTERN.matcher(value).matches()) {
-      throw new IllegalArgumentException("Dictionary code only allows letters, numbers, and underscore.");
+      throw badRequest("Dictionary code only allows letters, numbers, and underscore.");
     }
     return value;
   }
@@ -614,8 +625,8 @@ public class DictionaryService {
     }
     try {
       itemTableService.dropDictTable(OBSOLETE_TEAM_CODE);
-    } catch (Exception ignored) {
-      // keep going: dictionary row should still be removed even if table is already missing
+    } catch (Exception dropException) {
+      log.warn("删除废弃字典表失败，dictCode={}", OBSOLETE_TEAM_CODE, dropException);
     }
     dictMapper.deleteById(obsolete.getId());
   }
@@ -628,7 +639,7 @@ public class DictionaryService {
       return;
     }
     if (!StringUtils.hasText(province) || !StringUtils.hasText(city) || !StringUtils.hasText(district)) {
-      throw new IllegalArgumentException("address_district dictionary items require province/city/district.");
+      throw badRequest("address_district dictionary items require province/city/district.");
     }
   }
 

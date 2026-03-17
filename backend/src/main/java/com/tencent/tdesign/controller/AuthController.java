@@ -12,6 +12,8 @@ import com.tencent.tdesign.dto.ChangePasswordRequest;
 import com.tencent.tdesign.dto.ForgotPasswordRequest;
 import com.tencent.tdesign.dto.RoleSwitchRequest;
 import com.tencent.tdesign.annotation.RepeatSubmit;
+import com.tencent.tdesign.exception.BusinessException;
+import com.tencent.tdesign.exception.ErrorCodes;
 import com.tencent.tdesign.service.AuthService;
 import com.tencent.tdesign.service.SecurityRateLimitService;
 import com.tencent.tdesign.vo.ApiResponse;
@@ -31,6 +33,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
+  private static BusinessException badRequest(String message) {
+    return new BusinessException(ErrorCodes.BAD_REQUEST, message);
+  }
   private final AuthService authService;
   private final SecurityRateLimitService rateLimitService;
 
@@ -46,9 +51,9 @@ public class AuthController {
       LoginResponse response = authService.login(req);
       rateLimitService.clearLoginFailures(req.getAccount());
       return ApiResponse.success(response);
-    } catch (IllegalArgumentException ex) {
+    } catch (BusinessException ex) {
       rateLimitService.recordLoginFailure(req.getAccount());
-      throw new IllegalArgumentException("账号或密码错误");
+      throw badRequest("账号或密码错误");
     }
   }
 
@@ -100,7 +105,7 @@ public class AuthController {
 
   @PutMapping("/profile")
   @RepeatSubmit
-  public ApiResponse<UserProfileResponse> updateProfile(@RequestBody UserProfileUpdateRequest req) {
+  public ApiResponse<UserProfileResponse> updateProfile(@RequestBody @Valid UserProfileUpdateRequest req) {
     return ApiResponse.success(authService.updateCurrentUserProfile(req));
   }
 
@@ -124,7 +129,7 @@ public class AuthController {
 
   @PostMapping("/assume-role")
   @RepeatSubmit
-  public ApiResponse<UserInfoResponse> switchRole(@RequestBody RoleSwitchRequest req) {
+  public ApiResponse<UserInfoResponse> switchRole(@RequestBody @Valid RoleSwitchRequest req) {
     return ApiResponse.success(authService.switchRoles(req));
   }
 

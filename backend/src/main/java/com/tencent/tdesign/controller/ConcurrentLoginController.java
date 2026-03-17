@@ -2,6 +2,8 @@ package com.tencent.tdesign.controller;
 
 import com.tencent.tdesign.annotation.RepeatSubmit;
 import com.tencent.tdesign.dto.ConcurrentLoginDecisionRequest;
+import com.tencent.tdesign.exception.BusinessException;
+import com.tencent.tdesign.exception.ErrorCodes;
 import com.tencent.tdesign.security.AuthContext;
 import com.tencent.tdesign.service.ConcurrentLoginService;
 import com.tencent.tdesign.service.AuthTokenService;
@@ -19,6 +21,9 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @RestController
 @RequestMapping("/auth")
 public class ConcurrentLoginController {
+  private static BusinessException badRequest(String message) {
+    return new BusinessException(ErrorCodes.BAD_REQUEST, message);
+  }
   private final ConcurrentLoginService concurrentLoginService;
   private final AuthContext authContext;
   private final AuthTokenService authTokenService;
@@ -47,7 +52,7 @@ public class ConcurrentLoginController {
     boolean approve;
     if ("approve".equalsIgnoreCase(action)) approve = true;
     else if ("reject".equalsIgnoreCase(action)) approve = false;
-    else throw new IllegalArgumentException("action仅支持 approve 或 reject");
+    else throw badRequest("action仅支持 approve 或 reject");
 
     if (approve) {
       concurrentLoginService.publishForceLogout(userId, "\u5f53\u524d\u767b\u5f55\u72b6\u6001\u5df2\u5931\u6548\uff0c\u8bf7\u91cd\u65b0\u767b\u5f55");

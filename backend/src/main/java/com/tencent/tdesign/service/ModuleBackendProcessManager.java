@@ -1,5 +1,7 @@
 package com.tencent.tdesign.service;
 
+import com.tencent.tdesign.exception.BusinessException;
+import com.tencent.tdesign.exception.ErrorCodes;
 import com.tencent.tdesign.module.ModulePackageManifest;
 import java.io.File;
 import java.io.IOException;
@@ -14,12 +16,15 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 @Service
 public class ModuleBackendProcessManager {
   private static final DateTimeFormatter LOG_TS = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
+  private static final Logger log = LoggerFactory.getLogger(ModuleBackendProcessManager.class);
   private final ModulePackageService modulePackageService;
   private final Environment environment;
   private final Map<String, RunningProcess> running = new ConcurrentHashMap<>();
@@ -27,6 +32,10 @@ public class ModuleBackendProcessManager {
   public ModuleBackendProcessManager(ModulePackageService modulePackageService, Environment environment) {
     this.modulePackageService = modulePackageService;
     this.environment = environment;
+  }
+
+  private static BusinessException badRequest(String message) {
+    return new BusinessException(ErrorCodes.BAD_REQUEST, message);
   }
 
   public boolean isRunning(String moduleKey) {
@@ -69,10 +78,10 @@ public class ModuleBackendProcessManager {
 
     Path dir = modulePackageService.getBackendDir().resolve(key).toAbsolutePath().normalize();
     if (!Files.isDirectory(dir)) {
-      throw new IllegalArgumentException("模块后端目录不存在: " + key);
+      throw badRequest("模块后端目录不存在: " + key);
     }
     if (!Files.exists(dir.resolve("package.json"))) {
-      throw new IllegalArgumentException("模块后端缺少 package.json: " + key);
+      throw badRequest("模块后端缺少 package.json: " + key);
     }
     ensureNodeDependencies(dir, backend);
   }
@@ -84,20 +93,31 @@ public class ModuleBackendProcessManager {
     try {
       proc.process.destroy();
       proc.process.waitFor();
-    } catch (Exception ignored) {
+    } catch (InterruptedException interruptedException) {
+      Thread.currentThread().interrupt();
+      log.warn("停止模块后端进程被中断，moduleKey={}", key, interruptedException);
       try {
         proc.process.destroyForcibly();
-      } catch (Exception ignored2) {}
+      } catch (Exception forceKillException) {
+        log.warn("强制停止模块后端进程失败，moduleKey={}", key, forceKillException);
+      }
+    } catch (Exception destroyException) {
+      log.warn("优雅停止模块后端进程失败，尝试强制停止，moduleKey={}", key, destroyException);
+      try {
+        proc.process.destroyForcibly();
+      } catch (Exception forceKillException) {
+        log.warn("强制停止模块后端进程失败，moduleKey={}", key, forceKillException);
+      }
     }
   }
 
   private void startNodeBackend(String key, ModulePackageManifest.BackendSpec backend) {
     Path dir = modulePackageService.getBackendDir().resolve(key).toAbsolutePath().normalize();
     if (!Files.isDirectory(dir)) {
-      throw new IllegalArgumentException("模块后端目录不存在: " + key);
+      throw badRequest("模块后端目录不存在: " + key);
     }
     if (!Files.exists(dir.resolve("package.json"))) {
-      throw new IllegalArgumentException("模块后端缺少 package.json: " + key);
+      throw badRequest("模块后端缺少 package.json: " + key);
     }
 
     ensureNodeDependencies(dir, backend);
@@ -109,7 +129,9 @@ public class ModuleBackendProcessManager {
     Path logDir = dir.resolve("logs").toAbsolutePath().normalize();
     try {
       Files.createDirectories(logDir);
-    } catch (IOException ignored) {}
+    } catch (IOException createLogDirException) {
+      log.warn("创建模块日志目录失败，moduleKey={}, path={}", key, logDir, createLogDirException);
+    }
     Path logFile = logDir.resolve("run-" + LOG_TS.format(LocalDateTime.now()) + ".log");
 
     ProcessBuilder pb = new ProcessBuilder("npm", "run", startScript);
@@ -137,7 +159,8 @@ public class ModuleBackendProcessManager {
       waitPortReady(port, 15_000);
       running.put(key, new RunningProcess(process, port));
     } catch (Exception e) {
-      throw new IllegalArgumentException("启动模块后端失败: " + e.getMessage());
+      log.error("启动模块后端失败，moduleKey={}, port={}, logFile={}", key, port, logFile, e);
+      throw badRequest("启动模块后端失败，请检查模块日志");
     }
   }
 
@@ -161,13 +184,13 @@ public class ModuleBackendProcessManager {
       Process proc = pb.start();
       int code = proc.waitFor();
       if (code != 0) {
-        throw new IllegalArgumentException("模块依赖安装失败，请查看: " + log.getAbsolutePath());
+        throw badRequest("模块依赖安装失败，请查看: " + log.getAbsolutePath());
       }
     } catch (IOException e) {
-      throw new IllegalArgumentException("执行 npm 失败，请确认服务器已安装 Node.js/npm");
+      throw badRequest("执行 npm 失败，请确认服务器已安装 Node.js/npm");
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
-      throw new IllegalArgumentException("模块依赖安装被中断");
+      throw badRequest("模块依赖安装被中断");
     }
   }
 
@@ -180,11 +203,13 @@ public class ModuleBackendProcessManager {
 
   private void waitPortReady(int port, long timeoutMs) {
     long end = System.currentTimeMillis() + timeoutMs;
+    IOException lastConnectException = null;
     while (System.currentTimeMillis() < end) {
       try (Socket socket = new Socket()) {
         socket.connect(new InetSocketAddress("127.0.0.1", port), 500);
         return;
-      } catch (Exception ignored) {
+      } catch (IOException connectException) {
+        lastConnectException = connectException;
         try {
           Thread.sleep(250);
         } catch (InterruptedException e) {
@@ -193,7 +218,10 @@ public class ModuleBackendProcessManager {
         }
       }
     }
-    throw new IllegalArgumentException("模块后端端口未就绪: " + port);
+    if (lastConnectException == null) {
+      throw badRequest("模块后端端口未就绪: " + port);
+    }
+    throw badRequest("模块后端端口未就绪: " + port);
   }
 
   private String normalizeKey(String moduleKey) {
@@ -208,7 +236,8 @@ public class ModuleBackendProcessManager {
   private int parsePort(String value, int defaultValue) {
     try {
       return Integer.parseInt(value);
-    } catch (Exception ignored) {
+    } catch (NumberFormatException numberFormatException) {
+      log.debug("端口配置解析失败，使用默认值，value={}, default={}", value, defaultValue, numberFormatException);
       return defaultValue;
     }
   }
@@ -221,7 +250,7 @@ public class ModuleBackendProcessManager {
         socket.setReuseAddress(true);
         return socket.getLocalPort();
       } catch (IOException e) {
-        throw new IllegalArgumentException("无法分配端口: " + e.getMessage());
+        throw badRequest("无法分配端口: " + e.getMessage());
       }
     }
   }

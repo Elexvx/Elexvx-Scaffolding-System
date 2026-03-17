@@ -48,7 +48,7 @@ public class SystemRoleController {
   @PutMapping("/{id}")
   @RepeatSubmit
   @PagePerm(routeName = "SystemRole", action = "update")
-  public ApiResponse<RoleResponse> update(@PathVariable long id, @RequestBody RoleUpsertRequest req) {
+  public ApiResponse<RoleResponse> update(@PathVariable long id, @RequestBody @Valid RoleUpsertRequest req) {
     return ApiResponse.success(roleAdminService.update(id, req));
   }
 

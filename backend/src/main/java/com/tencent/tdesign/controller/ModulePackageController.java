@@ -2,6 +2,8 @@ package com.tencent.tdesign.controller;
 
 import com.tencent.tdesign.module.ModuleDefinition;
 import com.tencent.tdesign.module.ModuleDefinitionRegistry;
+import com.tencent.tdesign.exception.BusinessException;
+import com.tencent.tdesign.exception.ErrorCodes;
 import com.tencent.tdesign.service.ModuleBackendProcessManager;
 import com.tencent.tdesign.service.ModulePackageService;
 import com.tencent.tdesign.service.ModuleRegistryService;
@@ -9,6 +11,8 @@ import com.tencent.tdesign.util.PermissionUtil;
 import com.tencent.tdesign.vo.ApiResponse;
 import com.tencent.tdesign.vo.ModuleRegistryResponse;
 import java.nio.charset.StandardCharsets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -25,8 +29,12 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/system/modules")
 public class ModulePackageController {
+  private static final Logger log = LoggerFactory.getLogger(ModulePackageController.class);
   private static final String PERM_QUERY = "system:SystemModule:query";
-  private static final String PERM_UPDATE = "system:SystemModule:update";
+
+  private static BusinessException badRequest(String message) {
+    return new BusinessException(ErrorCodes.BAD_REQUEST, message);
+  }
 
   private final ModuleDefinitionRegistry definitionRegistry;
   private final ModulePackageService modulePackageService;
@@ -50,7 +58,7 @@ public class ModulePackageController {
     PermissionUtil.check(PERM_QUERY);
     ModuleDefinition definition = definitionRegistry.getDefinition(moduleKey);
     if (definition == null) {
-      throw new IllegalArgumentException("模块不存在: " + moduleKey);
+      throw badRequest("模块不存在: " + moduleKey);
     }
     byte[] zip = modulePackageService.buildPackage(definition);
     String filename = "module-" + definition.getKey().trim().toLowerCase() + ".zip";
@@ -75,7 +83,9 @@ public class ModulePackageController {
       modulePackageService.rollbackCommit(commit);
       try {
         moduleRegistryService.uninstallModule(key);
-      } catch (Exception ignored) {}
+      } catch (Exception uninstallException) {
+        log.warn("模块安装失败后的卸载回滚失败，moduleKey={}", key, uninstallException);
+      }
       throw ex;
     }
   }

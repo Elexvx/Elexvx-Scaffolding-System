@@ -1,6 +1,8 @@
 package com.tencent.tdesign.service;
 
 import com.tencent.tdesign.entity.StorageSetting;
+import com.tencent.tdesign.exception.BusinessException;
+import com.tencent.tdesign.exception.ErrorCodes;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -23,6 +25,10 @@ public class FileTokenService {
   private static final byte TOKEN_VERSION = 1;
   private static final int IV_SIZE = 12;
   private static final int KEY_SIZE_BYTES = 32;
+
+  private static BusinessException badRequest(String message) {
+    return new BusinessException(ErrorCodes.BAD_REQUEST, message);
+  }
 
   private final SecretKeySpec key;
   private final SecureRandom random = new SecureRandom();
@@ -68,7 +74,8 @@ public class FileTokenService {
         URI uri = new URI(clean);
         if (uri.getPath() != null) clean = uri.getPath();
       }
-    } catch (Exception ignore) {
+    } catch (Exception parseUriException) {
+      log.debug("解析文件访问 URL 失败，按原始路径继续，url={}", clean, parseUriException);
     }
     int idx = clean.indexOf("/files/");
     if (idx >= 0) {
@@ -78,31 +85,31 @@ public class FileTokenService {
   }
 
   public TokenPayload decrypt(String token) {
-    if (token == null || token.isBlank()) throw new IllegalArgumentException("Empty file token");
-    byte[] raw = Base64.getUrlDecoder().decode(token);
-    ByteBuffer buffer = ByteBuffer.wrap(raw);
-    byte version = buffer.get();
-    if (version != TOKEN_VERSION) {
-      throw new IllegalArgumentException("Unsupported token version");
-    }
-    byte[] iv = new byte[IV_SIZE];
-    buffer.get(iv);
-    byte[] encrypted = new byte[buffer.remaining()];
-    buffer.get(encrypted);
+    if (token == null || token.isBlank()) throw badRequest("Empty file token");
     try {
+      byte[] raw = Base64.getUrlDecoder().decode(token);
+      ByteBuffer buffer = ByteBuffer.wrap(raw);
+      byte version = buffer.get();
+      if (version != TOKEN_VERSION) {
+        throw badRequest("Unsupported token version");
+      }
+      byte[] iv = new byte[IV_SIZE];
+      buffer.get(iv);
+      byte[] encrypted = new byte[buffer.remaining()];
+      buffer.get(encrypted);
       Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
       cipher.init(Cipher.DECRYPT_MODE, key, new GCMParameterSpec(128, iv));
       byte[] plain = cipher.doFinal(encrypted);
       String payload = new String(plain, StandardCharsets.UTF_8);
       TokenPayload parsed = TokenPayload.fromToken(payload);
       if (parsed.isExpired()) {
-        throw new IllegalArgumentException("File token expired");
+        throw badRequest("File token expired");
       }
       return parsed;
-    } catch (IllegalArgumentException e) {
+    } catch (BusinessException e) {
       throw e;
     } catch (Exception e) {
-      throw new IllegalArgumentException("Invalid file token");
+      throw badRequest("Invalid file token");
     }
   }
 
@@ -139,7 +146,7 @@ public class FileTokenService {
 
     public TokenPayload(StorageSetting.Provider provider, String objectKey, long expiresAt) {
       if (provider == null || objectKey == null || objectKey.isBlank()) {
-        throw new IllegalArgumentException("Invalid token payload");
+        throw badRequest("Invalid token payload");
       }
       this.provider = provider;
       this.objectKey = objectKey;
@@ -171,7 +178,7 @@ public class FileTokenService {
     private static TokenPayload fromToken(String raw) {
       String[] parts = raw.split("\\|", 4);
       if (parts.length != 4 || !"v1".equals(parts[0])) {
-        throw new IllegalArgumentException("Invalid token payload");
+        throw badRequest("Invalid token payload");
       }
       StorageSetting.Provider provider = StorageSetting.Provider.valueOf(parts[1]);
       long expiresAt = Long.parseLong(parts[2]);

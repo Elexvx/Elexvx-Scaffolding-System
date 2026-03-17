@@ -3,6 +3,8 @@ package com.tencent.tdesign.service;
 import com.tencent.tdesign.dao.AuthQueryDao;
 import com.tencent.tdesign.dto.RoleUpsertRequest;
 import com.tencent.tdesign.entity.RoleEntity;
+import com.tencent.tdesign.exception.BusinessException;
+import com.tencent.tdesign.exception.ErrorCodes;
 import com.tencent.tdesign.mapper.MenuItemMapper;
 import com.tencent.tdesign.mapper.RoleMapper;
 import com.tencent.tdesign.vo.RoleResponse;
@@ -38,6 +40,10 @@ public class RoleAdminService {
     this.operationLogService = operationLogService;
   }
 
+  private static BusinessException badRequest(String message) {
+    return new BusinessException(ErrorCodes.BAD_REQUEST, message);
+  }
+
   public List<RoleResponse> list() {
     List<RoleEntity> roles = roleMapper.selectAll();
     List<RoleResponse> out = new ArrayList<>();
@@ -54,7 +60,7 @@ public class RoleAdminService {
   }
 
   public RoleResponse get(long id) {
-    RoleEntity r = Optional.ofNullable(roleMapper.selectById(id)).orElseThrow(() -> new IllegalArgumentException("角色不存在"));
+    RoleEntity r = Optional.ofNullable(roleMapper.selectById(id)).orElseThrow(() -> badRequest("角色不存在"));
     RoleResponse rr = new RoleResponse();
     rr.setId(r.getId());
     rr.setName(r.getName());
@@ -66,7 +72,7 @@ public class RoleAdminService {
 
   @Transactional
   public RoleResponse create(RoleUpsertRequest req) {
-    if (roleMapper.countByName(req.getName()) > 0) throw new IllegalArgumentException("角色已存在");
+    if (roleMapper.countByName(req.getName()) > 0) throw badRequest("角色已存在");
     RoleEntity r = new RoleEntity();
     r.setName(req.getName());
     r.setDescription(req.getDescription());
@@ -79,12 +85,12 @@ public class RoleAdminService {
 
   @Transactional
   public RoleResponse update(long id, RoleUpsertRequest req) {
-    RoleEntity r = Optional.ofNullable(roleMapper.selectById(id)).orElseThrow(() -> new IllegalArgumentException("角色不存在"));
+    RoleEntity r = Optional.ofNullable(roleMapper.selectById(id)).orElseThrow(() -> badRequest("角色不存在"));
     if ("admin".equals(r.getName()) && req.getName() != null && !"admin".equals(req.getName())) {
-      throw new IllegalArgumentException("不允许修改 admin 角色名");
+      throw badRequest("不允许修改 admin 角色名");
     }
     if (req.getName() != null && !req.getName().equals(r.getName()) && roleMapper.countByName(req.getName()) > 0) {
-      throw new IllegalArgumentException("角色名已存在");
+      throw badRequest("角色名已存在");
     }
     if (req.getName() != null) r.setName(req.getName());
     if (req.getDescription() != null) r.setDescription(req.getDescription());
@@ -102,8 +108,8 @@ public class RoleAdminService {
 
   @Transactional
   public boolean delete(long id) {
-    RoleEntity r = Optional.ofNullable(roleMapper.selectById(id)).orElseThrow(() -> new IllegalArgumentException("角色不存在"));
-    if ("admin".equals(r.getName())) throw new IllegalArgumentException("不允许删除 admin 角色");
+    RoleEntity r = Optional.ofNullable(roleMapper.selectById(id)).orElseThrow(() -> badRequest("角色不存在"));
+    if ("admin".equals(r.getName())) throw badRequest("不允许删除 admin 角色");
     roleMapper.deleteById(id);
     operationLogService.log("DELETE", "角色管理", "删除角色: " + r.getName());
     return true;

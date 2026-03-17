@@ -1,6 +1,8 @@
 package com.tencent.tdesign.service;
 
 import com.tencent.tdesign.entity.SecuritySetting;
+import com.tencent.tdesign.exception.BusinessException;
+import com.tencent.tdesign.exception.ErrorCodes;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -8,6 +10,10 @@ import org.springframework.stereotype.Service;
 @Service
 public class PasswordPolicyService {
   private static final int DEFAULT_MIN_LENGTH = 6;
+
+  private static BusinessException badRequest(String message) {
+    return new BusinessException(ErrorCodes.BAD_REQUEST, message);
+  }
 
   private final SecuritySettingService securitySettingService;
 
@@ -47,7 +53,7 @@ public class PasswordPolicyService {
     }
 
     if (!violations.isEmpty()) {
-      throw new IllegalArgumentException("密码需满足：" + String.join("、", violations));
+      throw badRequest("密码需满足：" + String.join("、", violations));
     }
   }
 

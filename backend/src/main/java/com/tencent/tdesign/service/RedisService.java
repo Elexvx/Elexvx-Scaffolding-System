@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.data.redis.RedisConnectionFailureException;
 import org.springframework.data.redis.core.RedisCallback;
@@ -15,6 +17,7 @@ import org.springframework.stereotype.Service;
 @Service
 @ConditionalOnProperty(name = "tdesign.redis.enabled", havingValue = "true")
 public class RedisService {
+  private static final Logger log = LoggerFactory.getLogger(RedisService.class);
 
   private final RedisTemplate<String, Object> redisTemplate;
 
@@ -56,9 +59,10 @@ public class RedisService {
       redisInfoVO.setKeyspace(keyspaceInfos);
       long totalKeys = 0;
       for (RedisInfoVO.KeyspaceInfo ks : keyspaceInfos) {
-        try {
-          totalKeys += Long.parseLong(ks.getKeys());
-        } catch (Exception ignored) {}
+        Long keyCount = parseLong(ks.getKeys());
+        if (keyCount != null) {
+          totalKeys += keyCount;
+        }
       }
       redisInfoVO.setKeyCount(totalKeys);
     } catch (RedisConnectionFailureException e) {
@@ -120,7 +124,7 @@ public class RedisService {
         }
       }
     } catch (Exception e) {
-      // 忽略异常，返回空列表
+      log.warn("读取 Redis commandstats 失败，返回空统计", e);
     }
     
     return commandStats;
@@ -167,7 +171,7 @@ public class RedisService {
         }
       }
     } catch (Exception e) {
-      // 忽略异常，返回空列表
+      log.warn("读取 Redis keyspace 失败，返回空统计", e);
     }
     
     return keyspaceInfos;

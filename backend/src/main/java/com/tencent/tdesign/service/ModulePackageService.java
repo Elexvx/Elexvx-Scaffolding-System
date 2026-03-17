@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tencent.tdesign.module.ExternalScriptModuleDefinition;
 import com.tencent.tdesign.module.ModuleDefinition;
 import com.tencent.tdesign.module.ModulePackageManifest;
+import com.tencent.tdesign.exception.BusinessException;
+import com.tencent.tdesign.exception.ErrorCodes;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -21,6 +23,8 @@ import java.util.UUID;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
@@ -30,6 +34,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 public class ModulePackageService {
   private static final List<String> SUPPORTED_DATABASES = List.of("mysql", "postgresql", "oracle", "sqlserver");
+  private static final Logger log = LoggerFactory.getLogger(ModulePackageService.class);
   private final ObjectMapper objectMapper;
   private final ResourceLoader resourceLoader;
   private final Path externalRoot;
@@ -66,6 +71,10 @@ public class ModulePackageService {
     return backendDir;
   }
 
+  private static BusinessException badRequest(String message) {
+    return new BusinessException(ErrorCodes.BAD_REQUEST, message);
+  }
+
   public ModulePackageManifest readInstalledManifest(String moduleKey) {
     String key = normalizeKey(moduleKey);
     Path file = manifestDir.resolve(key + ".json").toAbsolutePath().normalize();
@@ -82,15 +91,15 @@ public class ModulePackageService {
         if (manifest == null || manifest.getKey() == null || manifest.getKey().isBlank()) continue;
         defs.add(new ExternalScriptModuleDefinition(manifest));
       }
-    } catch (IOException ignored) {
-      return defs;
+    } catch (IOException listException) {
+      log.warn("扫描外部模块清单失败，manifestDir={}", manifestDir, listException);
     }
     return defs;
   }
 
   public byte[] buildPackage(ModuleDefinition definition) {
     if (definition == null || definition.getKey() == null || definition.getKey().isBlank()) {
-      throw new IllegalArgumentException("模块不存在");
+      throw badRequest("模块不存在");
     }
     String key = definition.getKey().trim().toLowerCase(Locale.ROOT);
     ModulePackageManifest installedManifest = readInstalledManifest(key);
@@ -114,10 +123,10 @@ public class ModulePackageService {
         }
       }
       if (installCount == 0) {
-        throw new IllegalArgumentException("模块包缺少 install.sql");
+        throw badRequest("模块包缺少 install.sql");
       }
       if (sqlCount == 0) {
-        throw new IllegalArgumentException("模块包缺少 SQL 脚本");
+        throw badRequest("模块包缺少 SQL 脚本");
       }
       String index = manifest.getFrontend() == null
         ? "index.html"
@@ -137,7 +146,7 @@ public class ModulePackageService {
       } else if (builtin) {
         writeBuiltinFrontend(zos, manifest, definition);
       } else {
-        throw new IllegalArgumentException("模块包缺少前端入口文件: " + index);
+        throw badRequest("模块包缺少前端入口文件: " + index);
       }
 
       if (hasBackend) {
@@ -145,24 +154,24 @@ public class ModulePackageService {
       } else if (builtin) {
         writeBuiltinBackend(zos, manifest, definition);
       } else {
-        throw new IllegalArgumentException("模块包缺少后端 package.json");
+        throw badRequest("模块包缺少后端 package.json");
       }
       zos.finish();
       return bos.toByteArray();
     } catch (IOException e) {
-      throw new IllegalArgumentException("生成模块包失败: " + e.getMessage());
+      throw badRequest("生成模块包失败: " + e.getMessage());
     }
   }
 
   public StagedModulePackage stagePackage(MultipartFile file) {
     if (file == null || file.isEmpty()) {
-      throw new IllegalArgumentException("模块包不能为空");
+      throw badRequest("模块包不能为空");
     }
     Path stageRoot = stagingDir.resolve(UUID.randomUUID().toString()).toAbsolutePath().normalize();
     try {
       Files.createDirectories(stageRoot);
     } catch (IOException e) {
-      throw new IllegalArgumentException("创建临时目录失败: " + e.getMessage());
+      throw badRequest("创建临时目录失败: " + e.getMessage());
     }
 
     ModulePackageManifest manifest = null;
@@ -191,7 +200,7 @@ public class ModulePackageService {
 
         Path target = stageRoot.resolve(name).toAbsolutePath().normalize();
         if (!target.startsWith(stageRoot)) {
-          throw new IllegalArgumentException("模块包文件路径非法: " + name);
+          throw badRequest("模块包文件路径非法: " + name);
         }
         Files.createDirectories(target.getParent());
         Files.write(target, zis.readAllBytes());
@@ -204,31 +213,31 @@ public class ModulePackageService {
       }
     } catch (Exception e) {
       safeDeleteDir(stageRoot);
-      throw new IllegalArgumentException("解析模块包失败: " + e.getMessage());
+      throw badRequest("解析模块包失败: " + e.getMessage());
     }
 
     if (manifest == null || manifest.getKey() == null || manifest.getKey().isBlank()) {
       safeDeleteDir(stageRoot);
-      throw new IllegalArgumentException("模块包缺少 module.json 或 key");
+      throw badRequest("模块包缺少 module.json 或 key");
     }
 
     String key = normalizeKey(manifest.getKey());
     manifest.setKey(key);
     if (installSqlCount == 0) {
       safeDeleteDir(stageRoot);
-      throw new IllegalArgumentException("模块包缺少 install.sql");
+      throw badRequest("模块包缺少 install.sql");
     }
     if (sqlCount == 0) {
       safeDeleteDir(stageRoot);
-      throw new IllegalArgumentException("模块包必须包含 SQL 脚本");
+      throw badRequest("模块包必须包含 SQL 脚本");
     }
     if (frontendCount == 0) {
       safeDeleteDir(stageRoot);
-      throw new IllegalArgumentException("模块包必须包含 frontend");
+      throw badRequest("模块包必须包含 frontend");
     }
     if (backendCount == 0) {
       safeDeleteDir(stageRoot);
-      throw new IllegalArgumentException("模块包必须包含 backend");
+      throw badRequest("模块包必须包含 backend");
     }
     manifest = applyDefaults(manifest, null, key);
     validateStagedPackage(stageRoot, manifest);
@@ -272,12 +281,12 @@ public class ModulePackageService {
 
   public CommitResult commitStagedPackage(StagedModulePackage staged) {
     if (staged == null || staged.manifest == null || staged.stagingRoot == null) {
-      throw new IllegalArgumentException("模块包状态非法");
+      throw badRequest("模块包状态非法");
     }
     String key = normalizeKey(staged.manifest.getKey());
     Path stageRoot = staged.stagingRoot.toAbsolutePath().normalize();
     if (!stageRoot.startsWith(stagingDir) || !Files.isDirectory(stageRoot)) {
-      throw new IllegalArgumentException("模块包临时目录不存在");
+      throw badRequest("模块包临时目录不存在");
     }
 
     Path backupRoot = rollbackDir.resolve(UUID.randomUUID().toString()).resolve(key).toAbsolutePath().normalize();
@@ -285,13 +294,13 @@ public class ModulePackageService {
       Files.createDirectories(backupRoot);
     } catch (IOException e) {
       safeDeleteDir(stageRoot);
-      throw new IllegalArgumentException("创建回滚目录失败: " + e.getMessage());
+      throw badRequest("创建回滚目录失败: " + e.getMessage());
     }
 
     Path targetManifestFile = manifestDir.resolve(key + ".json").toAbsolutePath().normalize();
     if (!targetManifestFile.startsWith(manifestDir)) {
       safeDeleteDir(stageRoot);
-      throw new IllegalArgumentException("模块 key 非法");
+      throw badRequest("模块 key 非法");
     }
 
     Path stageModulesDir = stageRoot.resolve("modules").resolve(key).toAbsolutePath().normalize();
@@ -304,7 +313,7 @@ public class ModulePackageService {
 
     if (!targetModulesDir.startsWith(moduleScriptDir) || !targetFrontendDir.startsWith(frontendDir) || !targetBackendDir.startsWith(backendDir)) {
       safeDeleteDir(stageRoot);
-      throw new IllegalArgumentException("模块 key 非法");
+      throw badRequest("模块 key 非法");
     }
 
     Map<Path, Path> moved = new java.util.LinkedHashMap<>();
@@ -355,7 +364,7 @@ public class ModulePackageService {
     } catch (Exception e) {
       rollbackCommit(new CommitResult(key, backupRoot, moved, created));
       safeDeleteDir(stageRoot);
-      throw new IllegalArgumentException("安装模块包失败: " + e.getMessage());
+      throw badRequest("安装模块包失败: " + e.getMessage());
     }
   }
 
@@ -367,7 +376,9 @@ public class ModulePackageService {
       if (Files.isRegularFile(created)) {
         try {
           Files.deleteIfExists(created);
-        } catch (Exception ignored) {}
+        } catch (Exception deleteException) {
+          log.warn("删除回滚创建文件失败，path={}", created, deleteException);
+        }
         continue;
       }
       if (Files.isDirectory(created)) {
@@ -385,7 +396,9 @@ public class ModulePackageService {
           Files.createDirectories(target.getParent());
           Files.move(backup, target);
         }
-      } catch (Exception ignored) {}
+      } catch (Exception restoreException) {
+        log.warn("恢复回滚备份失败，target={}, backup={}", target, backup, restoreException);
+      }
     }
   }
 
@@ -396,7 +409,8 @@ public class ModulePackageService {
       if (manifest == null) return null;
       if (manifest.getKey() != null) manifest.setKey(manifest.getKey().trim().toLowerCase(Locale.ROOT));
       return manifest;
-    } catch (Exception ignored) {
+    } catch (Exception parseException) {
+      log.warn("解析模块清单失败，file={}", file, parseException);
       return null;
     }
   }
@@ -409,7 +423,9 @@ public class ModulePackageService {
       Files.createDirectories(manifestDir);
       Files.createDirectories(stagingDir);
       Files.createDirectories(rollbackDir);
-    } catch (IOException ignored) {}
+    } catch (IOException createDirException) {
+      log.warn("初始化模块目录失败，externalRoot={}", externalRoot, createDirException);
+    }
   }
 
   private void validateStagedPackage(Path stageRoot, ModulePackageManifest manifest) {
@@ -421,23 +437,23 @@ public class ModulePackageService {
           Path rel = modules.relativize(file.toAbsolutePath().normalize());
           String normalized = rel.toString().replace('\\', '/').toLowerCase(Locale.ROOT);
           if (!normalized.startsWith(key + "/")) {
-            throw new IllegalArgumentException("模块脚本路径非法: " + normalized);
+            throw badRequest("模块脚本路径非法: " + normalized);
           }
           String[] parts = normalized.split("/");
           if (parts.length != 3) {
-            throw new IllegalArgumentException("模块脚本路径非法: " + normalized);
+            throw badRequest("模块脚本路径非法: " + normalized);
           }
           String db = parts[1];
           if (!SUPPORTED_DATABASES.contains(db)) {
-            throw new IllegalArgumentException("不支持的数据库脚本目录: " + db);
+            throw badRequest("不支持的数据库脚本目录: " + db);
           }
           String filename = parts[2];
           if (!"install.sql".equals(filename) && !"uninstall.sql".equals(filename)) {
-            throw new IllegalArgumentException("不支持的脚本文件: " + filename);
+            throw badRequest("不支持的脚本文件: " + filename);
           }
         }
       } catch (IOException e) {
-        throw new IllegalArgumentException("校验模块脚本失败: " + e.getMessage());
+        throw badRequest("校验模块脚本失败: " + e.getMessage());
       }
     }
 
@@ -446,20 +462,20 @@ public class ModulePackageService {
       .trim()
       .toLowerCase(Locale.ROOT);
     if (!frontendType.isEmpty() && !"static".equals(frontendType)) {
-      throw new IllegalArgumentException("不支持的前端类型: " + frontendType);
+      throw badRequest("不支持的前端类型: " + frontendType);
     }
     String index = String.valueOf(frontend == null || frontend.getIndex() == null ? "" : frontend.getIndex()).trim();
     if (index.isEmpty()) index = "index.html";
     Path frontendRoot = stageRoot.resolve("frontend").toAbsolutePath().normalize();
     if (!Files.isDirectory(frontendRoot)) {
-      throw new IllegalArgumentException("模块包缺少 frontend");
+      throw badRequest("模块包缺少 frontend");
     }
     Path indexFile = frontendRoot.resolve(index).toAbsolutePath().normalize();
     if (!indexFile.startsWith(frontendRoot)) {
-      throw new IllegalArgumentException("模块前端入口文件路径非法");
+      throw badRequest("模块前端入口文件路径非法");
     }
     if (!Files.exists(indexFile)) {
-      throw new IllegalArgumentException("模块前端缺少入口文件: " + index);
+      throw badRequest("模块前端缺少入口文件: " + index);
     }
 
     ModulePackageManifest.BackendSpec backend = manifest == null ? null : manifest.getBackend();
@@ -467,18 +483,18 @@ public class ModulePackageService {
       .trim()
       .toLowerCase(Locale.ROOT);
     if (!backendType.isEmpty() && !"node".equals(backendType)) {
-      throw new IllegalArgumentException("不支持的后端类型: " + backendType);
+      throw badRequest("不支持的后端类型: " + backendType);
     }
     Path backendRoot = stageRoot.resolve("backend").toAbsolutePath().normalize();
     if (!Files.isDirectory(backendRoot)) {
-      throw new IllegalArgumentException("模块包缺少 backend");
+      throw badRequest("模块包缺少 backend");
     }
     Path pkg = backendRoot.resolve("package.json").toAbsolutePath().normalize();
     if (!pkg.startsWith(backendRoot)) {
-      throw new IllegalArgumentException("模块后端路径非法");
+      throw badRequest("模块后端路径非法");
     }
     if (!Files.exists(pkg)) {
-      throw new IllegalArgumentException("模块后端缺少 package.json");
+      throw badRequest("模块后端缺少 package.json");
     }
   }
 
@@ -502,7 +518,7 @@ public class ModulePackageService {
 
   private void writeDirectoryRequired(ZipOutputStream zos, Path dir, String zipPrefix, String errorMessage) throws IOException {
     if (!Files.isDirectory(dir)) {
-      throw new IllegalArgumentException(errorMessage);
+      throw badRequest(errorMessage);
     }
     boolean wrote = false;
     try (var stream = Files.walk(dir)) {
@@ -514,7 +530,7 @@ public class ModulePackageService {
       }
     }
     if (!wrote) {
-      throw new IllegalArgumentException(errorMessage);
+      throw badRequest(errorMessage);
     }
   }
 
@@ -527,7 +543,9 @@ public class ModulePackageService {
       for (Path file : stream.sorted(Comparator.reverseOrder()).toList()) {
         Files.deleteIfExists(file);
       }
-    } catch (Exception ignored) {}
+    } catch (Exception deleteException) {
+      log.warn("删除目录失败，path={}", normalized, deleteException);
+    }
   }
 
   private String normalizeKey(String key) {

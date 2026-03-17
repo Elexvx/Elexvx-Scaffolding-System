@@ -1,6 +1,7 @@
 package com.tencent.tdesign.controller;
 
 import com.tencent.tdesign.dto.AiProviderRequest;
+import com.tencent.tdesign.exception.ErrorCodes;
 import com.tencent.tdesign.service.AiProviderService;
 import com.tencent.tdesign.service.AiService;
 import com.tencent.tdesign.service.ModuleRegistryService;
@@ -10,12 +11,16 @@ import com.tencent.tdesign.vo.AiProviderResponse;
 import com.tencent.tdesign.vo.AiTestResult;
 import com.tencent.tdesign.vo.ApiResponse;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,6 +38,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 @RestController
 @RequestMapping("/ai")
 public class AiController {
+  private static final Logger log = LoggerFactory.getLogger(AiController.class);
   private final AiService aiService;
   private final AiProviderService providerService;
   private final ModuleRegistryService moduleRegistryService;
@@ -92,7 +98,7 @@ public class AiController {
   }
 
   @PostMapping(value = "/chat/sse", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-  public SseEmitter chatSse(@RequestBody AiChatRequest request) {
+  public SseEmitter chatSse(@RequestBody @Valid AiChatRequest request) {
     requireModule();
     requireAiQueryPermission();
     SseEmitter emitter = new SseEmitter(0L);
@@ -112,7 +118,7 @@ public class AiController {
   }
 
   @PostMapping("/chat")
-  public ApiResponse<AiChatResult> chat(@RequestBody AiChatRequest request) throws Exception {
+  public ApiResponse<AiChatResult> chat(@RequestBody @Valid AiChatRequest request) throws Exception {
     requireModule();
     requireAiQueryPermission();
     var provider = providerService.requireProvider(request.getProviderId());
@@ -122,14 +128,15 @@ public class AiController {
   }
 
   @PostMapping("/execute")
-  public ApiResponse<Object> executeTool(@RequestBody AiExecuteRequest request) {
+  public ApiResponse<Object> executeTool(@RequestBody @Valid AiExecuteRequest request) {
     requireModule();
     requireAiQueryPermission();
     try {
       Object result = aiService.executeTool(request.getToolName(), request.getArgs());
       return ApiResponse.success(result);
     } catch (Exception e) {
-      return ApiResponse.failure(500, "AI 执行工具失败: " + e.getMessage());
+      log.error("AI 工具执行失败，toolName={}", request.getToolName(), e);
+      return ApiResponse.failure(ErrorCodes.INTERNAL_SERVER_ERROR, "AI 执行工具失败，请稍后重试");
     }
   }
 
@@ -139,9 +146,14 @@ public class AiController {
   }
 
   private void safeError(SseEmitter emitter, Exception e) {
+    String clientMessage = e instanceof IllegalArgumentException
+      ? (e.getMessage() == null ? "AI 请求参数非法" : e.getMessage())
+      : "AI 请求处理失败";
     try {
-      sendSseEvent(emitter, "error", e.getMessage());
-    } catch (IOException ignored) {}
+      sendSseEvent(emitter, "error", clientMessage);
+    } catch (IOException sendException) {
+      log.debug("发送 AI SSE 错误事件失败", sendException);
+    }
     emitter.completeWithError(e);
   }
 
@@ -163,7 +175,9 @@ public class AiController {
   }
 
   public static class AiChatRequest {
+    @NotBlank(message = "message 不能为空")
     private String message;
+    @NotNull(message = "providerId 不能为空")
     private Long providerId;
     private String systemPrompt;
 
@@ -193,7 +207,9 @@ public class AiController {
   }
 
   public static class AiExecuteRequest {
+    @NotBlank(message = "toolName 不能为空")
     private String toolName;
+    @NotNull(message = "args 不能为空")
     private Map<String, Object> args;
 
     public String getToolName() {

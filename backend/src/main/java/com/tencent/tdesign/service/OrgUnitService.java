@@ -6,6 +6,8 @@ import com.tencent.tdesign.entity.OrgUnitEntity;
 import com.tencent.tdesign.entity.UserEntity;
 import com.tencent.tdesign.entity.UserOrgUnitRelation;
 import com.tencent.tdesign.enums.OrgUnitType;
+import com.tencent.tdesign.exception.BusinessException;
+import com.tencent.tdesign.exception.ErrorCodes;
 import com.tencent.tdesign.mapper.OrgUnitLeaderMapper;
 import com.tencent.tdesign.mapper.OrgUnitMapper;
 import com.tencent.tdesign.mapper.UserOrgUnitMapper;
@@ -43,6 +45,10 @@ public class OrgUnitService {
     this.userOrgUnitMapper = userOrgUnitMapper;
   }
 
+  private static BusinessException badRequest(String message) {
+    return new BusinessException(ErrorCodes.BAD_REQUEST, message);
+  }
+
   public List<OrgUnitNode> tree() {
     List<OrgUnitEntity> entities = orgUnitMapper.selectAll();
     Map<Long, OrgUnitNode> nodeMap = new LinkedHashMap<>();
@@ -71,7 +77,7 @@ public class OrgUnitService {
 
   public OrgUnitNode get(long id) {
     OrgUnitEntity entity = orgUnitMapper.selectById(id);
-    if (entity == null) throw new IllegalArgumentException("机构不存在");
+    if (entity == null) throw badRequest("机构不存在");
     OrgUnitNode node = toNode(entity);
     Map<Long, OrgUnitNode> nodeMap = Map.of(id, node);
     attachLeaderInfo(nodeMap);
@@ -91,7 +97,7 @@ public class OrgUnitService {
   @Transactional
   public OrgUnitNode update(long id, OrgUnitUpsertRequest req) {
     OrgUnitEntity entity = orgUnitMapper.selectById(id);
-    if (entity == null) throw new IllegalArgumentException("机构不存在");
+    if (entity == null) throw badRequest("机构不存在");
     apply(entity, req);
     orgUnitMapper.update(entity);
     replaceLeaders(id, req.getLeaderIds());
@@ -103,9 +109,9 @@ public class OrgUnitService {
     List<OrgUnitReorderRequest.Item> items = req.getItems();
     Set<Long> ids = new HashSet<>();
     for (OrgUnitReorderRequest.Item it : items) {
-      if (!ids.add(it.getId())) throw new IllegalArgumentException("items 存在重复 id");
+      if (!ids.add(it.getId())) throw badRequest("items 存在重复 id");
       if (it.getParentId() != null && Objects.equals(it.getId(), it.getParentId())) {
-        throw new IllegalArgumentException("parentId 不能指向自己");
+        throw badRequest("parentId 不能指向自己");
       }
     }
 
@@ -118,10 +124,10 @@ public class OrgUnitService {
     }
 
     for (OrgUnitReorderRequest.Item it : items) {
-      if (!allMap.containsKey(it.getId())) throw new IllegalArgumentException("存在无效机构 id");
+      if (!allMap.containsKey(it.getId())) throw badRequest("存在无效机构 id");
       Long pid = it.getParentId();
       if (pid != null && pid == 0) pid = null;
-      if (pid != null && !allMap.containsKey(pid)) throw new IllegalArgumentException("parentId 无效: " + pid);
+      if (pid != null && !allMap.containsKey(pid)) throw badRequest("parentId 无效: " + pid);
       parentMap.put(it.getId(), pid);
     }
 
@@ -138,7 +144,7 @@ public class OrgUnitService {
   @Transactional
   public boolean delete(long id) {
     if (orgUnitMapper.countChildren(id) > 0) {
-      throw new IllegalArgumentException("请先删除子级机构");
+      throw badRequest("请先删除子级机构");
     }
     leaderMapper.deleteByOrgUnitId(id);
     orgUnitMapper.deleteById(id);
@@ -148,7 +154,7 @@ public class OrgUnitService {
   @Transactional
   public boolean addUsers(long orgUnitId, List<Long> userIds) {
     OrgUnitEntity entity = orgUnitMapper.selectById(orgUnitId);
-    if (entity == null) throw new IllegalArgumentException("机构不存在");
+    if (entity == null) throw badRequest("机构不存在");
     List<Long> cleaned = Stream.ofNullable(userIds)
       .flatMap(List::stream)
       .filter(Objects::nonNull)
@@ -159,7 +165,7 @@ public class OrgUnitService {
     List<UserEntity> existingUsers = userMapper.selectByIds(cleaned);
     Set<Long> existingUserIds = existingUsers.stream().map(UserEntity::getId).filter(Objects::nonNull).collect(Collectors.toSet());
     List<Long> invalid = cleaned.stream().filter((id) -> !existingUserIds.contains(id)).toList();
-    if (!invalid.isEmpty()) throw new IllegalArgumentException("存在无效用户: " + invalid);
+    if (!invalid.isEmpty()) throw badRequest("存在无效用户: " + invalid);
 
     Set<Long> alreadyInOrg = new HashSet<>(userOrgUnitMapper.selectUserIdsByOrgUnitId(orgUnitId));
     List<Long> toInsert = cleaned.stream().filter((uid) -> !alreadyInOrg.contains(uid)).toList();
@@ -174,7 +180,7 @@ public class OrgUnitService {
     entity.setName(req.getName());
     entity.setShortName(req.getShortName());
     OrgUnitType type = OrgUnitType.fromValue(req.getType());
-    if (type == null) throw new IllegalArgumentException("机构类型不合法");
+    if (type == null) throw badRequest("机构类型不合法");
     entity.setType(type.name());
     Integer sortOrder = req.getSortOrder();
     if (sortOrder == null) {
@@ -200,7 +206,7 @@ public class OrgUnitService {
       visiting.clear();
       while (cur != null) {
         if (!parentMap.containsKey(cur)) break;
-        if (!visiting.add(cur)) throw new IllegalArgumentException("检测到循环引用");
+        if (!visiting.add(cur)) throw badRequest("检测到循环引用");
         cur = parentMap.get(cur);
       }
       visited.addAll(visiting);

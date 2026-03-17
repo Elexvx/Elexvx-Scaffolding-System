@@ -1,6 +1,7 @@
 package com.tencent.tdesign.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tencent.tdesign.exception.ErrorCodes;
 import com.tencent.tdesign.service.ModuleRegistryService;
 import com.tencent.tdesign.service.SensitiveService;
 import com.tencent.tdesign.vo.ApiResponse;
@@ -131,7 +132,7 @@ public class SensitiveWordFilter extends OncePerRequestFilter {
     String message = word.isBlank()
       ? "字段 " + field + " 包含敏感词，提交已被拒绝"
       : "字段 " + field + " 包含敏感词“" + word + "”，提交已被拒绝";
-    ApiResponse<Object> api = ApiResponse.failure(422, message);
+    ApiResponse<Object> api = ApiResponse.failure(ErrorCodes.UNPROCESSABLE_ENTITY, message);
     response.getWriter().write(objectMapper.writeValueAsString(api));
   }
 }

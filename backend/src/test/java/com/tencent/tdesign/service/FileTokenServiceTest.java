@@ -1,6 +1,7 @@
 package com.tencent.tdesign.service;
 
 import com.tencent.tdesign.entity.StorageSetting;
+import com.tencent.tdesign.exception.BusinessException;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -12,6 +13,6 @@ class FileTokenServiceTest {
     String url = service.buildAccessUrl(StorageSetting.Provider.LOCAL, "business/2026/a.pdf");
     String token = service.extractToken(url);
     Thread.sleep(1100);
-    assertThrows(IllegalArgumentException.class, () -> service.decrypt(token));
+    assertThrows(BusinessException.class, () -> service.decrypt(token));
   }
 }

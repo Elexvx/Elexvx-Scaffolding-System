@@ -5,6 +5,8 @@ import com.tencent.tdesign.dto.MenuItemCreateRequest;
 import com.tencent.tdesign.dto.MenuItemReorderRequest;
 import com.tencent.tdesign.dto.MenuItemUpdateRequest;
 import com.tencent.tdesign.entity.MenuItemEntity;
+import com.tencent.tdesign.exception.BusinessException;
+import com.tencent.tdesign.exception.ErrorCodes;
 import com.tencent.tdesign.mapper.MenuItemMapper;
 import com.tencent.tdesign.security.AuthContext;
 import com.tencent.tdesign.vo.MenuItemTreeNode;
@@ -53,6 +55,10 @@ public class MenuItemService {
     this.permissionFacade = permissionFacade;
     this.authContext = authContext;
     this.moduleRegistryService = moduleRegistryService;
+  }
+
+  private static BusinessException badRequest(String message) {
+    return new BusinessException(ErrorCodes.BAD_REQUEST, message);
   }
 
   public boolean isConfigured() {
@@ -155,7 +161,7 @@ public class MenuItemService {
       // 确保 admin 拥有新菜单权限
       authDao.ensureAdminHasAllMenus();
     } catch (DataIntegrityViolationException ex) {
-      throw new IllegalArgumentException("routeName 重复或数据不合法");
+      throw badRequest("routeName 重复或数据不合法");
     }
     operationLogService.log("CREATE", "菜单管理", "创建菜单: " + describeMenu(e));
     return toNode(e);
@@ -163,9 +169,9 @@ public class MenuItemService {
 
   @Transactional
   public MenuItemTreeNode update(long id, MenuItemUpdateRequest req) {
-    MenuItemEntity e = Optional.ofNullable(menuItemMapper.selectById(id)).orElseThrow(() -> new IllegalArgumentException("节点不存在"));
+    MenuItemEntity e = Optional.ofNullable(menuItemMapper.selectById(id)).orElseThrow(() -> badRequest("节点不存在"));
     if (!Objects.equals(req.getVersion(), e.getVersion())) {
-      throw new IllegalArgumentException("数据已变更，请刷新后重试");
+      throw badRequest("数据已变更，请刷新后重试");
     }
 
     if (req.isParentIdSet()) e.setParentId(req.getParentId());
@@ -189,7 +195,7 @@ public class MenuItemService {
     try {
       e = saveMenuItem(e);
     } catch (DataIntegrityViolationException ex) {
-      throw new IllegalArgumentException("routeName 重复或数据不合法");
+      throw badRequest("routeName 重复或数据不合法");
     }
     operationLogService.log("UPDATE", "菜单管理", "更新菜单: " + describeMenu(e));
     return toNode(e);
@@ -203,13 +209,13 @@ public class MenuItemService {
     // 保护系统关键菜单，防止误删导致无法管理系统
     String rn = target.getRouteName();
     if ("system".equalsIgnoreCase(rn) || "SystemMenu".equalsIgnoreCase(rn) || "SystemRole".equalsIgnoreCase(rn) || "SystemUser".equalsIgnoreCase(rn)) {
-      throw new IllegalArgumentException("系统核心菜单不允许删除");
+      throw badRequest("系统核心菜单不允许删除");
     }
 
     List<MenuItemEntity> all = menuItemMapper.selectAll();
     Map<Long, List<MenuItemEntity>> children = groupByParent(all);
     if (!cascade && children.containsKey(id) && !children.get(id).isEmpty()) {
-      throw new IllegalArgumentException("目录下存在子节点，无法删除");
+      throw badRequest("目录下存在子节点，无法删除");
     }
     Set<Long> ids = new HashSet<>();
     ArrayDeque<Long> q = new ArrayDeque<>();
@@ -271,9 +277,9 @@ public class MenuItemService {
     List<MenuItemReorderRequest.Item> items = req.getItems();
     Set<Long> ids = new HashSet<>();
     for (MenuItemReorderRequest.Item it : items) {
-      if (!ids.add(it.getId())) throw new IllegalArgumentException("items 存在重复 id");
+      if (!ids.add(it.getId())) throw badRequest("items 存在重复 id");
       if (it.getParentId() != null && Objects.equals(it.getId(), it.getParentId())) {
-        throw new IllegalArgumentException("parentId 不能指向自己");
+        throw badRequest("parentId 不能指向自己");
       }
     }
 
@@ -288,14 +294,14 @@ public class MenuItemService {
     List<MenuItemEntity> targets = new ArrayList<>();
     for (Long id : ids) {
       MenuItemEntity e = allMap.get(id);
-      if (e == null) throw new IllegalArgumentException("存在无效节点 id");
+      if (e == null) throw badRequest("存在无效节点 id");
       targets.add(e);
     }
 
     for (MenuItemReorderRequest.Item it : items) {
       MenuItemEntity e = allMap.get(it.getId());
       if (it.getVersion() != null && !Objects.equals(it.getVersion(), e.getVersion())) {
-        throw new IllegalArgumentException("数据已变更，请刷新后重试");
+        throw badRequest("数据已变更，请刷新后重试");
       }
       parentMap.put(it.getId(), it.getParentId());
     }
@@ -304,16 +310,16 @@ public class MenuItemService {
     for (MenuItemReorderRequest.Item it : items) {
       if (it.getParentId() == null) continue;
       MenuItemEntity parent = allMap.get(it.getParentId());
-      if (parent == null) throw new IllegalArgumentException("parentId 无效: " + it.getParentId());
+      if (parent == null) throw badRequest("parentId 无效: " + it.getParentId());
 
       MenuItemEntity me = allMap.get(it.getId());
       String pNt = normalizeNodeType(parent.getNodeType());
       String myNt = normalizeNodeType(me.getNodeType());
 
       if ("PAGE".equals(pNt)) {
-        if (!"BTN".equals(myNt)) throw new IllegalArgumentException("页面节点下仅允许添加按钮");
+        if (!"BTN".equals(myNt)) throw badRequest("页面节点下仅允许添加按钮");
       } else if (!"DIR".equals(pNt)) {
-        throw new IllegalArgumentException("父节点必须为目录或页面");
+        throw badRequest("父节点必须为目录或页面");
       }
     }
 
@@ -330,10 +336,10 @@ public class MenuItemService {
       if ("PAGE".equalsIgnoreCase(parent.getNodeType())) {
         MenuItemEntity child = allMap.get(id);
         if (child != null && !"BTN".equalsIgnoreCase(normalizeNodeType(child.getNodeType()))) {
-          throw new IllegalArgumentException("页面节点仅能包含按钮作为子节点");
+          throw badRequest("页面节点仅能包含按钮作为子节点");
         }
       } else if ("BTN".equalsIgnoreCase(parent.getNodeType())) {
-        throw new IllegalArgumentException("按钮节点不能包含子节点");
+        throw badRequest("按钮节点不能包含子节点");
       }
     }
 
@@ -374,7 +380,7 @@ public class MenuItemService {
       visiting.clear();
       while (cur != null) {
         if (!parentMap.containsKey(cur)) break;
-        if (!visiting.add(cur)) throw new IllegalArgumentException("检测到循环引用");
+        if (!visiting.add(cur)) throw badRequest("检测到循环引用");
         cur = parentMap.get(cur);
       }
       visited.addAll(visiting);
@@ -393,13 +399,13 @@ public class MenuItemService {
   }
 
   private void validateUpsert(MenuItemEntity e, Long selfId) {
-    if (e.getNodeType() == null || e.getNodeType().isBlank()) throw new IllegalArgumentException("nodeType 不能为空");
+    if (e.getNodeType() == null || e.getNodeType().isBlank()) throw badRequest("nodeType 不能为空");
     String nt = normalizeNodeType(e.getNodeType());
     e.setNodeType(nt);
 
-    if (e.getRouteName() == null || e.getRouteName().isBlank()) throw new IllegalArgumentException("routeName 不能为空");
-    if (e.getPath() == null || e.getPath().isBlank()) throw new IllegalArgumentException("path 不能为空");
-    if (e.getTitleZhCn() == null || e.getTitleZhCn().isBlank()) throw new IllegalArgumentException("titleZhCn 不能为空");
+    if (e.getRouteName() == null || e.getRouteName().isBlank()) throw badRequest("routeName 不能为空");
+    if (e.getPath() == null || e.getPath().isBlank()) throw badRequest("path 不能为空");
+    if (e.getTitleZhCn() == null || e.getTitleZhCn().isBlank()) throw badRequest("titleZhCn 不能为空");
 
     // 检查 routeName 是否重复
     Optional<MenuItemEntity> existing = Optional.ofNullable(menuItemMapper.selectByRouteName(e.getRouteName()));
@@ -407,28 +413,28 @@ public class MenuItemService {
       Long existingId = existing.get().getId();
       // 如果是更新操作，允许保持自己原来的 routeName
       if (selfId == null || !existingId.equals(selfId)) {
-        throw new IllegalArgumentException("路由Name(" + e.getRouteName() + ")已存在，请修改为其他名称");
+        throw badRequest("路由Name(" + e.getRouteName() + ")已存在，请修改为其他名称");
       }
     }
 
     if ("PAGE".equalsIgnoreCase(nt)) {
-      if (e.getComponent() == null || e.getComponent().isBlank()) throw new IllegalArgumentException("页面 component 不能为空");
+      if (e.getComponent() == null || e.getComponent().isBlank()) throw badRequest("页面 component 不能为空");
     }
 
     if (e.getParentId() == null) {
-      if (!e.getPath().startsWith("/")) throw new IllegalArgumentException("根节点 path 必须以 / 开头");
+      if (!e.getPath().startsWith("/")) throw badRequest("根节点 path 必须以 / 开头");
       if ("DIR".equalsIgnoreCase(nt) && (e.getComponent() == null || e.getComponent().isBlank())) {
         e.setComponent("LAYOUT");
       }
     } else {
-      if (e.getPath().startsWith("/")) throw new IllegalArgumentException("非根节点 path 不能以 / 开头");
-      MenuItemEntity parent = Optional.ofNullable(menuItemMapper.selectById(e.getParentId())).orElseThrow(() -> new IllegalArgumentException("parentId 无效"));
+      if (e.getPath().startsWith("/")) throw badRequest("非根节点 path 不能以 / 开头");
+      MenuItemEntity parent = Optional.ofNullable(menuItemMapper.selectById(e.getParentId())).orElseThrow(() -> badRequest("parentId 无效"));
       
       String pNt = normalizeNodeType(parent.getNodeType());
       if ("PAGE".equals(pNt)) {
-        if (!"BTN".equalsIgnoreCase(nt)) throw new IllegalArgumentException("页面节点下仅允许添加按钮");
+        if (!"BTN".equalsIgnoreCase(nt)) throw badRequest("页面节点下仅允许添加按钮");
       } else if (!"DIR".equals(pNt)) {
-        throw new IllegalArgumentException("父节点必须为目录或页面");
+        throw badRequest("父节点必须为目录或页面");
       }
     }
 
@@ -436,7 +442,7 @@ public class MenuItemService {
       Long id = (selfId == null) ? e.getId() : selfId;
       if (id != null) {
         for (MenuItemEntity c : menuItemMapper.selectAll()) {
-          if (Objects.equals(c.getParentId(), id)) throw new IllegalArgumentException("按钮不能包含子节点");
+          if (Objects.equals(c.getParentId(), id)) throw badRequest("按钮不能包含子节点");
         }
       }
     } else if ("PAGE".equalsIgnoreCase(nt)) {
@@ -445,7 +451,7 @@ public class MenuItemService {
         for (MenuItemEntity c : menuItemMapper.selectAll()) {
           if (Objects.equals(c.getParentId(), id)) {
             if (!"BTN".equalsIgnoreCase(normalizeNodeType(c.getNodeType()))) {
-              throw new IllegalArgumentException("页面节点仅能包含按钮作为子节点");
+              throw badRequest("页面节点仅能包含按钮作为子节点");
             }
           }
         }
@@ -706,7 +712,7 @@ public class MenuItemService {
   private String normalizeNodeType(String nodeType) {
     String nt = nodeType.trim().toUpperCase(Locale.ROOT);
     if (!"DIR".equals(nt) && !"PAGE".equals(nt) && !"BTN".equals(nt) && !"BUTTON".equals(nt)) {
-      throw new IllegalArgumentException("nodeType 仅支持 DIR/PAGE/BTN");
+      throw badRequest("nodeType 仅支持 DIR/PAGE/BTN");
     }
     if ("BUTTON".equals(nt)) nt = "BTN";
     return nt;
@@ -797,7 +803,7 @@ public class MenuItemService {
     Integer currentVersion = menuItem.getVersion();
     int updated = menuItemMapper.update(menuItem);
     if (updated == 0) {
-      throw new IllegalArgumentException("数据已变更，请刷新后重试");
+      throw badRequest("数据已变更，请刷新后重试");
     }
     if (currentVersion != null) {
       menuItem.setVersion(currentVersion + 1);

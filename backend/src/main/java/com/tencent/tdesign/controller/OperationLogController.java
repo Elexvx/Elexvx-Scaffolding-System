@@ -11,6 +11,8 @@ import com.tencent.tdesign.vo.PageResult;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,6 +27,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 @RequestMapping("/system/log")
 public class OperationLogController {
   private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+  private static final Logger log = LoggerFactory.getLogger(OperationLogController.class);
   private final OperationLogService service;
   private final AuthContext authContext;
   private final AccessControlService accessControlService;
@@ -100,7 +103,8 @@ public class OperationLogController {
     } finally {
       try {
         workbook.close();
-      } catch (Exception ignored) {
+      } catch (Exception closeException) {
+        log.debug("关闭操作日志导出工作簿失败", closeException);
       }
     }
   }

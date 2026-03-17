@@ -1,14 +1,19 @@
 package com.tencent.tdesign.service;
 
+import com.tencent.tdesign.exception.BusinessException;
+import com.tencent.tdesign.exception.ErrorCodes;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Duration;
 import java.time.LocalDate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 @Service
 public class SecurityRateLimitService {
+  private static final Logger log = LoggerFactory.getLogger(SecurityRateLimitService.class);
   private final RedisTemplate<String, Object> redisTemplate;
   private final HttpServletRequest request;
   private final int loginPerMinute;
@@ -41,6 +46,10 @@ public class SecurityRateLimitService {
     this.uploadBytesPerDay = Math.max(0L, uploadBytesPerDayMb) * 1024L * 1024L;
   }
 
+  private static BusinessException badRequest(String message) {
+    return new BusinessException(ErrorCodes.BAD_REQUEST, message);
+  }
+
   public void checkLoginAttempt(String account) {
     String ip = clientIp();
     requireQuota("sec:login:ip:" + ip, loginPerMinute, Duration.ofMinutes(1), "登录过于频繁，请稍后重试");
@@ -48,7 +57,7 @@ public class SecurityRateLimitService {
 
     long failCount = getCount("sec:login:fail:" + ip + ":" + normalize(account));
     if (failCount >= loginFailThreshold) {
-      throw new IllegalArgumentException("账号或密码错误");
+      throw badRequest("账号或密码错误");
     }
   }
 
@@ -91,13 +100,13 @@ public class SecurityRateLimitService {
     if (uploadFilesPerDay > 0) {
       long currentFiles = getCount(uploadDailyFilesKey(userId, day));
       if (currentFiles + 1 > uploadFilesPerDay) {
-        throw new IllegalArgumentException("今日上传文件数已达上限");
+        throw badRequest("今日上传文件数已达上限");
       }
     }
     if (uploadBytesPerDay > 0) {
       long currentBytes = getCount(uploadDailyBytesKey(userId, day));
       if (safeAdd(currentBytes, bytes) > uploadBytesPerDay) {
-        throw new IllegalArgumentException("今日上传总流量已达上限");
+        throw badRequest("今日上传总流量已达上限");
       }
     }
   }
@@ -117,9 +126,9 @@ public class SecurityRateLimitService {
     if (exceedsFiles || exceedsBytes) {
       releaseUploadQuota(lease);
       if (exceedsFiles) {
-        throw new IllegalArgumentException("今日上传文件数已达上限");
+        throw badRequest("今日上传文件数已达上限");
       }
-      throw new IllegalArgumentException("今日上传总流量已达上限");
+      throw badRequest("今日上传总流量已达上限");
     }
     return lease;
   }
@@ -129,7 +138,8 @@ public class SecurityRateLimitService {
     try {
       redisTemplate.opsForValue().increment(lease.filesKey, -1L);
       redisTemplate.opsForValue().increment(lease.bytesKey, -lease.bytes);
-    } catch (Exception ignored) {
+    } catch (Exception releaseException) {
+      log.warn("释放上传配额失败，filesKey={}, bytesKey={}", lease.filesKey, lease.bytesKey, releaseException);
     } finally {
       lease.released = true;
     }
@@ -139,7 +149,7 @@ public class SecurityRateLimitService {
     if (limit <= 0) return;
     long count = increment(key, window);
     if (count > limit) {
-      throw new IllegalArgumentException(message);
+      throw badRequest(message);
     }
   }
 
@@ -164,7 +174,8 @@ public class SecurityRateLimitService {
     if (v == null) return 0L;
     try {
       return Long.parseLong(String.valueOf(v));
-    } catch (Exception ignore) {
+    } catch (Exception parseException) {
+      log.debug("限流计数解析失败，key={}, rawValue={}", key, v, parseException);
       return 0L;
     }
   }
@@ -185,7 +196,7 @@ public class SecurityRateLimitService {
 
   private void validateUploadBytes(long bytes) {
     if (bytes <= 0) {
-      throw new IllegalArgumentException("上传文件大小无效");
+      throw badRequest("上传文件大小无效");
     }
   }
 

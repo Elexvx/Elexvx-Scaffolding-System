@@ -1,5 +1,7 @@
 package com.tencent.tdesign.service;
 
+import com.tencent.tdesign.exception.BusinessException;
+import com.tencent.tdesign.exception.ErrorCodes;
 import com.tencent.tdesign.vo.ConcurrentLoginDecisionEvent;
 import com.tencent.tdesign.vo.ConcurrentLoginEvent;
 import com.github.benmanes.caffeine.cache.Cache;
@@ -15,6 +17,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -32,6 +36,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
  * </ul>
  */
 public class ConcurrentLoginService {
+  private static final Logger log = LoggerFactory.getLogger(ConcurrentLoginService.class);
   public static final long PENDING_TTL_MS = 2 * 60 * 1000L;
   private static final long LOGIN_HEARTBEAT_INTERVAL_SECONDS = 15L;
   private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -48,6 +53,10 @@ public class ConcurrentLoginService {
 
   public ConcurrentLoginService(VerificationCacheService verificationCacheService) {
     this.pendingLogins = verificationCacheService.pendingLoginCache();
+  }
+
+  private static BusinessException badRequest(String message) {
+    return new BusinessException(ErrorCodes.BAD_REQUEST, message);
   }
 
   @PreDestroy
@@ -131,7 +140,7 @@ public class ConcurrentLoginService {
     try {
       publishLoginNotice(loginId, pending);
     } catch (Exception ex) {
-      // SSE client may disconnect; ignore to avoid blocking login flow
+      log.debug("推送并发登录通知失败，保持登录流程继续，loginId={}", loginId, ex);
     }
     return pending;
   }
@@ -144,11 +153,11 @@ public class ConcurrentLoginService {
   public SseEmitter subscribeDecision(String requestId, String requestKey) {
     PendingLogin pending = getPending(requestId);
     if (pending == null || !pending.requestKey.equals(requestKey)) {
-      throw new IllegalArgumentException("等待确认已失效，请重新登录");
+      throw badRequest("等待确认已失效，请重新登录");
     }
     if (pending.isExpired()) {
       pendingLogins.invalidate(requestId);
-      throw new IllegalArgumentException("等待确认已过期，请重新登录");
+      throw badRequest("等待确认已过期，请重新登录");
     }
 
     SseEmitter emitter = new SseEmitter(PENDING_TTL_MS);
@@ -169,14 +178,14 @@ public class ConcurrentLoginService {
   public PendingLogin decide(long loginId, String requestId, boolean approve) {
     PendingLogin pending = getPending(requestId);
     if (pending == null) {
-      throw new IllegalArgumentException("等待确认已失效，请重新登录");
+      throw badRequest("等待确认已失效，请重新登录");
     }
     if (pending.loginId != loginId) {
-      throw new IllegalArgumentException("无权处理该登录请求");
+      throw badRequest("无权处理该登录请求");
     }
     if (pending.isExpired()) {
       pendingLogins.invalidate(requestId);
-      throw new IllegalArgumentException("等待确认已过期，请重新登录");
+      throw badRequest("等待确认已过期，请重新登录");
     }
     if (pending.decision != Decision.PENDING) {
       return pending;
@@ -194,17 +203,17 @@ public class ConcurrentLoginService {
   public PendingLogin consumeApproved(String requestId, String requestKey) {
     PendingLogin pending = getPending(requestId);
     if (pending == null || !pending.requestKey.equals(requestKey)) {
-      throw new IllegalArgumentException("等待确认已失效，请重新登录");
+      throw badRequest("等待确认已失效，请重新登录");
     }
     if (pending.isExpired()) {
       pendingLogins.invalidate(requestId);
-      throw new IllegalArgumentException("等待确认已过期，请重新登录");
+      throw badRequest("等待确认已过期，请重新登录");
     }
     if (pending.decision == Decision.REJECTED) {
-      throw new IllegalArgumentException("该次登录已被拒绝");
+      throw badRequest("该次登录已被拒绝");
     }
     if (pending.decision != Decision.APPROVED) {
-      throw new IllegalArgumentException("等待对方确认中");
+      throw badRequest("等待对方确认中");
     }
     pendingLogins.invalidate(requestId);
     return pending;
@@ -242,7 +251,10 @@ public class ConcurrentLoginService {
       String status = decision == Decision.APPROVED ? "approved" : "rejected";
       emitter.send(SseEmitter.event().name("decision").data(new ConcurrentLoginDecisionEvent(status)));
       emitter.complete();
-    } catch (Exception ignored) {}
+    } catch (Exception ex) {
+      log.debug("发送并发登录决策事件失败，decision={}", decision, ex);
+      emitter.completeWithError(ex);
+    }
   }
 
   private void removeLoginEmitter(long loginId, SseEmitter emitter) {

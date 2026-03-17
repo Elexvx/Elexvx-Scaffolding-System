@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 /**
@@ -15,6 +17,7 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class PermissionCodeService {
+  private static final Logger log = LoggerFactory.getLogger(PermissionCodeService.class);
   private final ObjectMapper objectMapper;
 
   public PermissionCodeService(ObjectMapper objectMapper) {
@@ -42,8 +45,8 @@ public class PermissionCodeService {
       try {
         List<String> values = objectMapper.readValue(text, new TypeReference<List<String>>() {});
         return normalizeActions(values);
-      } catch (Exception ignored) {
-        // JSON 解析失败时回退为逗号分隔解析
+      } catch (Exception parseException) {
+        log.debug("解析 actions JSON 失败，回退为逗号分隔，raw={}", text, parseException);
       }
     }
 

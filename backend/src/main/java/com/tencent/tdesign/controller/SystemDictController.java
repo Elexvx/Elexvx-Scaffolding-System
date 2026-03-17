@@ -61,7 +61,7 @@ public class SystemDictController {
 
   @PutMapping("/{id}")
   @RepeatSubmit
-  public ApiResponse<SysDict> update(@PathVariable long id, @RequestBody DictionaryUpdateRequest req) {
+  public ApiResponse<SysDict> update(@PathVariable long id, @RequestBody @Valid DictionaryUpdateRequest req) {
     PermissionUtil.check("system:SystemDict:update");
     return ApiResponse.success(dictionaryService.update(id, req));
   }
@@ -99,7 +99,7 @@ public class SystemDictController {
 
   @PutMapping("/items/{id}")
   @RepeatSubmit
-  public ApiResponse<SysDictItem> updateItem(@PathVariable long id, @RequestBody DictionaryItemUpdateRequest req) {
+  public ApiResponse<SysDictItem> updateItem(@PathVariable long id, @RequestBody @Valid DictionaryItemUpdateRequest req) {
     PermissionUtil.check("system:SystemDict:update");
     return ApiResponse.success(dictionaryService.updateItem(id, req));
   }

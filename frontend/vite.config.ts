@@ -90,7 +90,7 @@ export default ({ mode }: ConfigEnv): UserConfig => {
       allowedHosts: true,
       proxy: {
         [VITE_API_URL_PREFIX]: {
-          target: VITE_API_URL || 'http://127.0.0.1:8080/',
+          target: VITE_API_URL || 'http://127.0.0.1:9999/',
           // Keep original Host so backend can treat proxied dev requests as same-origin.
           changeOrigin: false,
         },

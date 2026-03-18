@@ -1,6 +1,6 @@
 server:
   # 服务端口（HTTP）
-  port: 8080 # 默认 8080
+  port: 9999 # 默认 9999
   servlet:
     # 应用上下文路径（统一前缀），前端接口统一以 /api 开头
     context-path: /api

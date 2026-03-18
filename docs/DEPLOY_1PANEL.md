@@ -66,7 +66,7 @@
         ```bash
         java -jar tdesign-backend-0.0.1-SNAPSHOT.jar
         ```
-    *   **端口**：8080 (默认)
+    *   **端口**：9999 (默认)
 
     点击确认启动，并查看日志确保启动成功。
 
@@ -102,12 +102,12 @@
     在网站设置 -> **反向代理** 中，添加一条规则：
     *   **名称**：API 代理
     *   **路径**：`/api`
-    *   **代理地址**：`http://127.0.0.1:8080` (后端服务的地址)
+    *   **代理地址**：`http://127.0.0.1:9999` (后端服务的地址)
 
     *或者直接修改 Nginx 配置文件 (网站设置 -> 配置文件)*：
     ```nginx
     location /api {
-        proxy_pass http://127.0.0.1:8080;
+        proxy_pass http://127.0.0.1:9999;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;

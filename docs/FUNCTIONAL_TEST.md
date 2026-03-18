@@ -7,7 +7,7 @@
 | 项 | 值 |
 | --- | --- |
 | 项目 | Elexvx-Scaffolding-System |
-| 后端 | Spring Boot（默认端口 8080，上下文路径 `/api`） |
+| 后端 | Spring Boot（默认端口 9999，上下文路径 `/api`） |
 | 前端 | Vue3（开发默认 `http://localhost:3002`） |
 | 测试类型 | 功能测试（接口 + 页面联动） |
 
@@ -37,7 +37,7 @@
 
 - 数据库：MySQL 8.x（主测）；其他数据库用于脚本导入验证
 - Redis：可选（若启用，将影响 token 会话、在线用户、Redis 监控能力）
-- 后端基础地址：`http://localhost:8080/api`
+- 后端基础地址：`http://localhost:9999/api`
 - 前端地址：`http://localhost:3002`
 
 ### 3.2 数据初始化
@@ -251,4 +251,3 @@
 - 401/403 错误提示与 [SecurityConfig.java](file:///c:/Users/Administrator/Documents/GitHub/Elexvx-Scaffolding-System/backend/src/main/java/com/tencent/tdesign/config/SecurityConfig.java#L64-L88) 一致
 - 已覆盖带 `@RepeatSubmit` 的写接口重复提交场景（详见 [API_SECURITY_SPEC.md](file:///c:/Users/Administrator/Documents/GitHub/Elexvx-Scaffolding-System/docs/API_SECURITY_SPEC.md#L18-L83)）
 - 文件上传得到的 `url` 能通过 `/files/{token}` 访问，并支持 Range
-

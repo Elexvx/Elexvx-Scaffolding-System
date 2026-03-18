@@ -151,7 +151,7 @@ public class ModuleBackendProcessManager {
     }
     String contextPath = getEnv("server.servlet.context-path", "/api");
     if (!contextPath.startsWith("/")) contextPath = "/" + contextPath;
-    int serverPort = parsePort(getEnv("server.port", "8080"), 8080);
+    int serverPort = parsePort(getEnv("server.port", "9999"), 9999);
     env.put("TDESIGN_CORE_API_BASE", "http://127.0.0.1:" + serverPort + contextPath);
 
     try {

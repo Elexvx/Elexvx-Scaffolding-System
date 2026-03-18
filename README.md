@@ -29,7 +29,7 @@ cd backend
 mvn spring-boot:run
 ```
 
-- 默认端口：`8080`
+- 默认端口：`9999`
 - 上下文路径：`/api`
 - 数据库配置：`backend/src/main/resources/application.yml`
 - 可用环境变量覆盖：`TDESIGN_DB_URL`、`TDESIGN_DB_USER`、`TDESIGN_DB_PASSWORD`（也可使用 `TDESIGN_DB_DRIVER`、`TDESIGN_DB_TYPE` 等进行多数据库切换）
@@ -43,7 +43,7 @@ npm run dev
 ```
 
 - 访问：`http://localhost:3002`
-- 开发环境 `/api` 会代理到 `http://127.0.0.1:8080`
+- 开发环境 `/api` 会代理到 `http://127.0.0.1:9999`
 
 ### 生产构建（可选）
 

@@ -2,13 +2,9 @@ package com.tencent.tdesign.security;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
-import com.tencent.tdesign.entity.SecuritySetting;
-import com.tencent.tdesign.service.AuthTokenService;
-import com.tencent.tdesign.service.SecuritySettingService;
+import com.tencent.tdesign.service.ConcurrentLoginService;
+import com.tencent.tdesign.service.VerificationCacheService;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -17,52 +13,56 @@ import org.springframework.test.util.ReflectionTestUtils;
 class AuthTokenFilterTest {
 
   @Test
-  void resolveTokenWithoutQueryParamSkipsSecuritySettingLookup() {
-    AuthTokenService tokenService = org.mockito.Mockito.mock(AuthTokenService.class);
-    SecuritySettingService securitySettingService = org.mockito.Mockito.mock(SecuritySettingService.class);
-    AuthTokenFilter filter = new AuthTokenFilter(tokenService, securitySettingService);
+  void resolveTokenWithoutAuthorizationHeaderSkipsConcurrentLoginLookup() {
+    ConcurrentLoginService concurrentLoginService = new ConcurrentLoginService(new VerificationCacheService());
+    try {
+      AuthTokenFilter filter = new AuthTokenFilter(null, concurrentLoginService);
 
-    MockHttpServletRequest request = new MockHttpServletRequest();
-    request.setRequestURI("/api/system/user/page");
+      MockHttpServletRequest request = new MockHttpServletRequest();
+      request.setRequestURI("/api/system/user/page");
 
-    String token = (String) ReflectionTestUtils.invokeMethod(filter, "resolveToken", request);
+      String token = (String) ReflectionTestUtils.invokeMethod(filter, "resolveToken", request);
 
-    assertNull(token);
-    verify(securitySettingService, never()).getOrCreate();
+      assertNull(token);
+    } finally {
+      concurrentLoginService.shutdownHeartbeatExecutor();
+    }
   }
 
   @Test
-  void resolveTokenWithQueryParamChecksSecuritySetting() {
-    AuthTokenService tokenService = org.mockito.Mockito.mock(AuthTokenService.class);
-    SecuritySettingService securitySettingService = org.mockito.Mockito.mock(SecuritySettingService.class);
-    SecuritySetting setting = new SecuritySetting();
-    setting.setAllowUrlTokenParam(true);
-    when(securitySettingService.getOrCreate()).thenReturn(setting);
-    AuthTokenFilter filter = new AuthTokenFilter(tokenService, securitySettingService);
+  void resolveTokenWithAuthorizationHeaderReturnsBearerToken() {
+    ConcurrentLoginService concurrentLoginService = new ConcurrentLoginService(new VerificationCacheService());
+    try {
+      AuthTokenFilter filter = new AuthTokenFilter(null, concurrentLoginService);
 
-    MockHttpServletRequest request = new MockHttpServletRequest();
-    request.setRequestURI("/api/system/user/page");
-    request.setParameter("token", "abc");
+      MockHttpServletRequest request = new MockHttpServletRequest();
+      request.setRequestURI("/api/system/user/page");
+      request.addHeader(HttpHeaders.AUTHORIZATION, "Bearer abc");
 
-    String token = (String) ReflectionTestUtils.invokeMethod(filter, "resolveToken", request);
+      String token = (String) ReflectionTestUtils.invokeMethod(filter, "resolveToken", request);
 
-    assertEquals("abc", token);
-    verify(securitySettingService).getOrCreate();
+      assertEquals("abc", token);
+    } finally {
+      concurrentLoginService.shutdownHeartbeatExecutor();
+    }
   }
 
   @Test
-  void concurrentStreamAllowsQueryTokenWithoutSecuritySetting() {
-    AuthTokenService tokenService = org.mockito.Mockito.mock(AuthTokenService.class);
-    SecuritySettingService securitySettingService = org.mockito.Mockito.mock(SecuritySettingService.class);
-    AuthTokenFilter filter = new AuthTokenFilter(tokenService, securitySettingService);
+  void concurrentStreamResolvesTokenFromTicket() {
+    ConcurrentLoginService concurrentLoginService = new ConcurrentLoginService(new VerificationCacheService());
+    try {
+      String ticket = concurrentLoginService.issueConcurrentStreamTicket("Bearer abc");
+      AuthTokenFilter filter = new AuthTokenFilter(null, concurrentLoginService);
 
-    MockHttpServletRequest request = new MockHttpServletRequest();
-    request.setRequestURI("/api/auth/concurrent/stream");
-    request.setParameter(HttpHeaders.AUTHORIZATION, "Bearer abc");
+      MockHttpServletRequest request = new MockHttpServletRequest();
+      request.setRequestURI("/api/auth/concurrent/stream");
+      request.setParameter("ticket", ticket);
 
-    String token = (String) ReflectionTestUtils.invokeMethod(filter, "resolveToken", request);
+      String token = (String) ReflectionTestUtils.invokeMethod(filter, "resolveToken", request);
 
-    assertEquals("abc", token);
-    verify(securitySettingService, never()).getOrCreate();
+      assertEquals("abc", token);
+    } finally {
+      concurrentLoginService.shutdownHeartbeatExecutor();
+    }
   }
 }

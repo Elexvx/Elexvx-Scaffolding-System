@@ -2,11 +2,11 @@ import { computed, ref } from 'vue';
 
 export const useMenuDialog = () => {
   const drawerVisible = ref(false);
-  const editingId = ref<number | null>(null);
-  const drawerTitle = computed(() => (editingId.value ? '编辑菜单' : '新增菜单'));
+  const mode = ref<'create' | 'edit'>('create');
+  const drawerTitle = computed(() => (mode.value === 'create' ? '添加菜单' : '编辑菜单'));
   return {
     drawerVisible,
-    editingId,
+    mode,
     drawerTitle,
   };
 };

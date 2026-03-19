@@ -1,5 +1,5 @@
 import { computed, ref } from 'vue';
-import type { Mode, UserRow } from '../schema';
+import type { Mode, UserRow } from '../types';
 
 export const useUserDialog = () => {
   const drawerVisible = ref(false);

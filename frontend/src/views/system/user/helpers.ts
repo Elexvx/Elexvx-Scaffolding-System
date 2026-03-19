@@ -1,20 +1,4 @@
-export interface OrgUnitNode {
-  id: number;
-  parentId?: number | null;
-  name: string;
-  type?: string;
-  typeLabel?: string;
-  disabled?: boolean;
-  children?: OrgUnitNode[];
-}
-
-export interface AreaOption {
-  label: string;
-  value: number | string;
-  level?: number;
-  zipCode?: string | null;
-  children?: AreaOption[] | boolean;
-}
+import type { AreaOption, OrgUnitNode } from './types';
 
 const ORG_UNIT_TYPES = new Set(['UNIT']);
 const DEPARTMENT_TYPES = new Set(['DEPARTMENT', 'SECTION', 'TEAM']);

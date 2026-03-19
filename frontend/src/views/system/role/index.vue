@@ -1,6 +1,6 @@
 <template>
-  <page />
+  <role-page-main />
 </template>
 <script setup lang="ts">
-import Page from '@/pages/system/role/index.vue';
+import RolePageMain from './components/RolePageMain.vue';
 </script>

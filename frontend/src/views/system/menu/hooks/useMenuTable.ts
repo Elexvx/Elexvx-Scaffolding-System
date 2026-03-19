@@ -1,5 +1,5 @@
 import { ref } from 'vue';
-import type { MenuNode } from '../helpers';
+import type { MenuNode } from '../types';
 
 export const useMenuTable = () => {
   const keyword = ref('');

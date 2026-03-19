@@ -1,6 +1,7 @@
 <template>
-  <page />
+  <user-page-main />
 </template>
+
 <script setup lang="ts">
-import Page from '@/pages/system/user/index.vue';
+import UserPageMain from './components/UserPageMain.vue';
 </script>

@@ -55,6 +55,7 @@ public class ModulePackageController {
 
   @GetMapping("/{moduleKey}/package")
   public ResponseEntity<ByteArrayResource> downloadPackage(@PathVariable String moduleKey) {
+    // 安装包下载为二进制文件响应，需要保留原生 Content-Disposition 与字节流。
     PermissionUtil.check(PERM_QUERY);
     ModuleDefinition definition = definitionRegistry.getDefinition(moduleKey);
     if (definition == null) {

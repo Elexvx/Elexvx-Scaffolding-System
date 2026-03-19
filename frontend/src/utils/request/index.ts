@@ -53,6 +53,22 @@ const isSilent403Path = (url?: string) => {
   return pure.endsWith('/system/ui');
 };
 
+const extractApiEnvelope = (payload: any) => {
+  if (!payload || typeof payload !== 'object') return null;
+  const code = Number.isFinite(Number(payload.code)) ? Number(payload.code) : undefined;
+  const success = typeof payload.success === 'boolean' ? payload.success : undefined;
+  const message = typeof payload.message === 'string' ? payload.message : '';
+  const userTip = typeof payload.userTip === 'string' ? payload.userTip : '';
+  return { code, success, message, userTip, data: payload.data };
+};
+
+const getBestErrorText = (payload: any, fallback = '') => {
+  const envelope = extractApiEnvelope(payload);
+  if (envelope?.userTip) return envelope.userTip;
+  if (envelope?.message) return envelope.message;
+  return fallback;
+};
+
 const transform: AxiosTransform = {
   transformRequestHook: (res, options) => {
     const { isTransformResponse, isReturnNativeResponse } = options;
@@ -74,15 +90,21 @@ const transform: AxiosTransform = {
       throw new Error('Request interface error');
     }
 
-    const { code, message } = data;
-
-    const hasSuccess = data && code === 0;
-    if (hasSuccess) {
-      return data.data;
+    const envelope = extractApiEnvelope(data);
+    if (!envelope) {
+      return data;
     }
-
-    const errorMsg = message || `请求失败, 错误码: ${code}`;
-    throw new Error(`${errorMsg} [${code}]`);
+    const code = envelope.code ?? -1;
+    const isSuccess = envelope.success === true || (envelope.success == null && code === 0);
+    if (isSuccess) {
+      return envelope.data;
+    }
+    const errorMsg = envelope.userTip || envelope.message || `请求失败, 错误码: ${code}`;
+    const error: any = new Error(`${errorMsg} [${code}]`);
+    error.bizCode = code;
+    error.userTip = envelope.userTip;
+    error.diagnosticMessage = envelope.message;
+    throw error;
   },
 
   requestCatchHook: async (e) => {
@@ -93,9 +115,12 @@ const transform: AxiosTransform = {
     const msg = String(e?.message || '');
     const axiosError = axios.isAxiosError(e) ? e : null;
     const responseStatus = axiosError?.response?.status as number | undefined;
-    const responseMessage = String(axiosError?.response?.data?.message || '').trim();
+    const responseData = axiosError?.response?.data;
+    const envelope = extractApiEnvelope(responseData);
+    const responseMessage = String(envelope?.message || responseData?.message || '').trim();
+    const responseUserTip = String((e as any)?.userTip || envelope?.userTip || '').trim();
     const m = msg.match(/\[(\d{3})\]/) || msg.match(/status\s*(\d{3})/i);
-    const code = m ? Number(m[1]) : responseStatus;
+    const code = Number((e as any)?.bizCode) || envelope?.code || (m ? Number(m[1]) : responseStatus);
 
     if (code === 401) {
       const user = useUserStore();
@@ -123,7 +148,7 @@ const transform: AxiosTransform = {
 
       return Promise.reject(new Error(UNAUTHORIZED_SENTINEL));
     } else if (code === 403) {
-      const humanMsg = responseMessage || msg.replace(/\s*\[\d{3}\]\s*$/, '').trim();
+      const humanMsg = responseUserTip || responseMessage || msg.replace(/\s*\[\d{3}\]\s*$/, '').trim();
       const url = String(axiosError?.config?.url || '');
       if (!isSilent403Path(url)) {
         MessagePlugin.error(
@@ -131,12 +156,15 @@ const transform: AxiosTransform = {
         );
       }
     } else if (code === 422) {
-      const humanMsg = responseMessage || msg.replace(/\s*\[\d{3}\]\s*$/, '').trim();
+      const humanMsg = responseUserTip || responseMessage || msg.replace(/\s*\[\d{3}\]\s*$/, '').trim();
       if (humanMsg) {
         MessagePlugin.warning(humanMsg);
       }
+    } else if (code === 429) {
+      const humanMsg = responseUserTip || responseMessage || msg.replace(/\s*\[\d{3}\]\s*$/, '').trim();
+      MessagePlugin.warning(humanMsg || '请求过于频繁，请稍后重试');
     } else if (code != null && code >= 500) {
-      const humanMsg = responseMessage || msg.replace(/\s*\[\d{3}\]\s*$/, '').trim();
+      const humanMsg = responseUserTip || responseMessage || msg.replace(/\s*\[\d{3}\]\s*$/, '').trim();
       MessagePlugin.error(humanMsg || '\u670D\u52A1\u5668\u9519\u8BEF\uFF0C\u8BF7\u7A0D\u540E\u91CD\u8BD5');
     }
     return Promise.reject(e);
@@ -227,7 +255,7 @@ const transform: AxiosTransform = {
     }
 
     if (status === 403) {
-      const serverMsg = error?.response?.data?.message;
+      const serverMsg = getBestErrorText(error?.response?.data, '');
       const url = String(error?.config?.url || '');
       if (!isSilent403Path(url)) {
         MessagePlugin.error(
@@ -237,7 +265,20 @@ const transform: AxiosTransform = {
     }
 
     if (status && status >= 400 && status < 500) {
+      if (status === 422) {
+        const msg422 = getBestErrorText(error?.response?.data, '请求参数校验失败');
+        MessagePlugin.warning(msg422);
+      }
+      if (status === 429) {
+        const msg429 = getBestErrorText(error?.response?.data, '请求过于频繁，请稍后重试');
+        MessagePlugin.warning(msg429);
+      }
       return Promise.reject(error);
+    }
+
+    if (status && status >= 500) {
+      const msg5xx = getBestErrorText(error?.response?.data, '服务器错误，请稍后重试');
+      MessagePlugin.error(msg5xx);
     }
 
     if (!config || !config.requestOptions.retry) return Promise.reject(error);

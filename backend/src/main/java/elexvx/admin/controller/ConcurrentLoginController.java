@@ -41,6 +41,7 @@ public class ConcurrentLoginController {
 
   @GetMapping(value = "/concurrent/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
   public SseEmitter subscribeConcurrentLogin() {
+    // SSE 是持续流响应，不能包裹为 ApiResponse，否则会破坏事件流格式。
     long userId = authContext.requireUserId();
     return concurrentLoginService.subscribeLoginNotice(userId);
   }
@@ -77,6 +78,7 @@ public class ConcurrentLoginController {
     @RequestParam String requestId,
     @RequestParam String requestKey
   ) {
+    // SSE 是持续流响应，不能包裹为 ApiResponse，否则会破坏事件流格式。
     return concurrentLoginService.subscribeDecision(requestId, requestKey);
   }
 }

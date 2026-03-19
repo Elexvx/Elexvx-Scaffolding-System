@@ -1,85 +1,57 @@
-# 架构与实现说明
+# 架构与实现说明（当前状态）
 
 ## 总体架构
 
-系统采用前后端分离：
+- 前后端分离：前端基于 Vue 3 + TDesign，后端基于 Spring Boot + MyBatis。
+- 数据与缓存：关系型数据库（默认 MySQL，多库脚本保留）+ Redis（会话与运行态能力）。
+- 数据库演进入口已切换为 Flyway，`database/*.sql` 为历史参考。
 
-- 前端（Vue 3）负责：登录/路由守卫、动态菜单渲染、业务页面与交互
-- 后端（Spring Boot）负责：鉴权、权限校验、业务 API、数据持久化、文件/对象存储与第三方能力集成
-- 数据层：关系型数据库（默认 MySQL；同时提供多数据库脚本）+ Redis（Token 会话与部分运维能力）
+## 后端分层
 
-## 后端代码组织（分层）
+- Controller：接口入口、参数校验、协议适配。
+- Service：业务编排与子域实现。
+- Mapper/DAO：持久化访问、批量与组合查询。
+- DTO/VO/Entity：输入、输出、持久化模型分层。
+- Config/Web：安全链路、过滤器、统一异常与响应写出。
 
-典型调用链为 Controller → Service → Mapper/DAO → DB/外部服务：
+## 统一响应与链路追踪
 
-- controller：REST API 入口，负责参数校验与返回统一响应
-- service：核心业务逻辑编排（鉴权/权限、菜单、系统配置、文件、消息等）
-- mapper：MyBatis Mapper（与 mappers/*.xml 对应），负责数据访问
-- dao：偏组合查询/批量操作的 DAO（如权限关联维护）
-- dto/vo/entity：入参 DTO、出参 VO、持久化实体 Entity
-- config：Spring 配置（Security、Redis、Netty 等）
+- 统一响应结构：`success/code/message/userTip/data/requestId/timestamp/path`。
+- 统一响应工厂：`backend/src/main/java/elexvx/admin/web/ApiResponses.java`。
+- 统一异常收口：`GlobalExceptionHandler` + `SecurityConfig.writeError`。
+- requestId 链路：`RequestIdFilter` 负责请求头读取/生成、响应头回写、MDC 注入与清理。
 
-统一响应结构见 [ApiResponse](backend/src/main/java/elexvx/admin/vo/ApiResponse.java)。
+## 认证域（Phase 1）
 
-## 鉴权与安全
-
-### Token 模型（无状态 + Redis 会话）
-
-- 登录成功后，后端生成随机 token，并将会话（AuthSession）序列化存入 Redis，带 TTL
-- 客户端请求通过 Authorization 头携带 Bearer token
-- 过滤器 [AuthTokenFilter](backend/src/main/java/elexvx/admin/security/AuthTokenFilter.java) 从请求解析 token → 查询 Redis 会话 → 写入 SecurityContext
-- 业务侧通过 [AuthContext](backend/src/main/java/elexvx/admin/security/AuthContext.java) 获取当前 userId/token
-
-对应安全配置见 [SecurityConfig](backend/src/main/java/elexvx/admin/config/SecurityConfig.java)（白名单接口、401/403 统一返回、Filter 链顺序等）。
-
-### 并发登录处理（可选流程）
-
-登录服务会根据 UI/安全设置决定是否允许多端同时在线；不允许时：
-
-- 若存在“审批监听者”，可能返回 pending（需要确认）
-- 否则撤销旧 token，再继续创建新 token
-
-实现入口见 [AuthService](backend/src/main/java/elexvx/admin/service/AuthService.java) 的 completeLogin 相关逻辑。
+- `AuthService` 已收敛为轻量门面，控制器入口保持不变。
+- 子服务拆分：
+  - `AuthLoginService`
+  - `ConcurrentLoginOrchestrator`
+  - `AuthRegisterService`
+  - `PasswordResetService`
+  - `CurrentUserProfileService`
+- auth 域模型示范：`service/auth/model/{req,resp,command,query}`。
 
 ## 权限与动态菜单
 
-### 后端：菜单数据由数据库驱动
+- 菜单接口：`GET /get-menu-list-i18n`。
+- 前端守卫：首次加载用户与菜单后动态 `addRoute`。
+- 动态组件解析支持 `pages/views` 双目录；当前默认优先 `views`，`pages` 作为兼容回退。
 
-- 后端提供菜单路由接口：GET /get-menu-list-i18n（见 [MenuController](backend/src/main/java/elexvx/admin/controller/MenuController.java)）
-- [MenuItemService](backend/src/main/java/elexvx/admin/service/MenuItemService.java) 从菜单表读取全量菜单 → 根据当前用户权限过滤 → 输出 RouteItem 树
+## 前端页面结构（Phase 1）
 
-### 前端：路由守卫触发动态路由加载
-
-- 路由守卫见 [permission.ts](frontend/src/permission.ts)
-- 首次进入/刷新时：
-  - 拉取用户信息：GET /auth/user（见 [user.ts](frontend/src/store/modules/user.ts)）
-  - 拉取菜单路由：GET /get-menu-list-i18n（见 [permission.ts](frontend/src/store/modules/permission.ts)）
-  - 转换为 Vue Router 结构并 addRoute，驱动侧边栏/页面权限
+- `system/user` 与 `system/menu` 主实现迁移到 `src/views/system/**`。
+- 页面拆分骨架：`index.vue` + `components/*` + `hooks/*` + `schema.ts`。
+- `src/pages` 保留兼容入口，避免历史菜单 component 配置失效。
 
 ## 文件与对象存储
 
-[ObjectStorageService](backend/src/main/java/elexvx/admin/service/ObjectStorageService.java) 统一封装文件上传与读取，支持：
+- 统一由 `ObjectStorageService` 封装本地与云对象存储。
+- 下载/流式/SSE/代理透传接口保留原始协议，不强制套统一响应体。
 
-- LOCAL：落盘到 uploads/ 目录
-- ALIYUN：阿里云 OSS
-- TENCENT：腾讯云 COS
+## 迁移文档索引
 
-上传完成后返回“可访问 URL”，通常由 FileTokenService 生成带签名的访问地址（避免直接暴露内部对象 Key）。
-
-## 可插拔模块（短信/邮箱/验证码）
-
-系统通过“模块开关 + Provider Registry”实现可插拔能力：
-
-- module_registry 记录模块启用状态与配置
-- VerificationProviderRegistry 统一管理发送验证码的实现（短信/邮箱等）
-- 业务侧（如 AuthService）在调用前做模块可用性校验与配置完整性校验
-
-## 运维与审计
-
-- Redis/健康检查：提供运维 API（例如 Redis 信息、健康检查）
-- 操作审计：OperationLogService 记录关键操作（登录、菜单变更等），落表 operation_logs
-
-## 图表
-
-类图与时序图汇总见 [DIAGRAMS.md](docs/DIAGRAMS.md)。
-
+- `docs/refactor/response-contract.md`
+- `docs/refactor/database-migration.md`
+- `docs/refactor/auth-refactor-phase1.md`
+- `docs/refactor/frontend-structure-phase1.md`

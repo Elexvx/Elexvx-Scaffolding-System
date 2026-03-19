@@ -58,6 +58,7 @@ public class ModuleBackendProxyController {
 
   @RequestMapping("/{moduleKey}/**")
   public void proxy(@PathVariable String moduleKey, HttpServletRequest request, HttpServletResponse response) throws IOException {
+    // 代理接口透传模块后端原始响应（含流/二进制/自定义头），不能统一包装为 ApiResponse。
     if (requireModuleQueryPermission) {
       PermissionUtil.check("system:SystemModule:query");
     }

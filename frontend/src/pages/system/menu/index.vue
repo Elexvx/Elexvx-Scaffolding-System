@@ -141,35 +141,28 @@ import { computed, onMounted, reactive, ref, watch } from 'vue';
 
 import ConfirmDrawer from '@/components/ConfirmDrawer.vue';
 import { useDictionary } from '@/hooks/useDictionary';
+import {
+  EXPANDED_STORAGE_KEY,
+  LEGACY_EXPANDED_STORAGE_KEY,
+  buildPageComponentOptions,
+  buildReorderItems,
+  normalizeParentId,
+  persistExpanded,
+  readExpandedFromStorage as readExpandedStateFromStorage,
+  sanitizeExpanded,
+  toRouteName,
+  toSlug,
+  treeFilter,
+  type MenuNode,
+  type NodeType,
+} from '@/pages/system/menu/helpers';
 import { getPermissionStore, useUserStore } from '@/store';
 import { buildDictOptions, resolveLabel } from '@/utils/dict';
 import { hasPerm } from '@/utils/permission';
 import { request } from '@/utils/request';
 import { migrateLocalStorageKey } from '@/utils/storage/compat';
 
-type NodeType = 'DIR' | 'PAGE' | 'BTN';
 type OpenType = 'internal' | 'iframe' | 'external';
-
-interface MenuNode {
-  id: number;
-  parentId: number | null;
-  nodeType: NodeType;
-  path: string;
-  routeName: string;
-  component?: string;
-  redirect?: string;
-  titleZhCn: string;
-  titleEnUs?: string;
-  icon?: string;
-  hidden?: boolean;
-  frameSrc?: string;
-  frameBlank?: boolean;
-  enabled?: boolean;
-  orderNo?: number;
-  version?: number;
-  actions?: string;
-  children?: MenuNode[];
-}
 
 interface RoleRow {
   id: number;
@@ -268,52 +261,10 @@ watch(
   { deep: true },
 );
 
-const EXPANDED_STORAGE_KEY = 'elexvx.menu.tree.expanded';
-const LEGACY_EXPANDED_STORAGE_KEY = 'tdesign.menu.tree.expanded';
-
-const normalizeExpanded = (values: Array<string | number>) => {
-  const seen = new Set<string>();
-  const out: Array<string | number> = [];
-  values.forEach((val) => {
-    const key = String(val);
-    if (!key || seen.has(key)) return;
-    seen.add(key);
-    out.push(val);
-  });
-  return out;
-};
-
-const collectNodeIds = (nodes: MenuNode[], out: Set<string>) => {
-  (nodes || []).forEach((node) => {
-    if (node?.id != null) out.add(String(node.id));
-    if (node?.children?.length) collectNodeIds(node.children, out);
-  });
-};
-
-const readExpandedFromStorage = () => {
-  if (typeof window === 'undefined') return [] as Array<string | number>;
-  try {
-    migrateLocalStorageKey(EXPANDED_STORAGE_KEY, [LEGACY_EXPANDED_STORAGE_KEY]);
-    const raw = window.localStorage.getItem(EXPANDED_STORAGE_KEY);
-    if (!raw) return [] as Array<string | number>;
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? normalizeExpanded(parsed) : [];
-  } catch {
-    return [] as Array<string | number>;
-  }
-};
-
-const persistExpanded = (values: Array<string | number>) => {
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.setItem(EXPANDED_STORAGE_KEY, JSON.stringify(normalizeExpanded(values)));
-  } catch {}
-};
-
-const sanitizeExpanded = (values: Array<string | number>, nodes: MenuNode[]) => {
-  const ids = new Set<string>();
-  collectNodeIds(nodes, ids);
-  return normalizeExpanded(values).filter((val) => ids.has(String(val)));
+const loadExpandedFromStorage = () => {
+  return readExpandedStateFromStorage(() =>
+    migrateLocalStorageKey(EXPANDED_STORAGE_KEY, [LEGACY_EXPANDED_STORAGE_KEY]),
+  );
 };
 
 const roles = ref<RoleRow[]>([]);
@@ -357,14 +308,7 @@ const renderIconValue = (_h: any, ctx: { value?: unknown }) => {
   );
 };
 
-const viewModules = import.meta.glob('/src/pages/**/*.vue');
-const pageComponentOptions = computed<SelectOption[]>(() => {
-  return Object.keys(viewModules)
-    .map((k) => k.replace(/^\.\.\//, '/').replace(/\.vue$/, ''))
-    .filter((k) => k !== '/system/menu/index')
-    .sort()
-    .map((k) => ({ label: k, value: k }));
-});
+const pageComponentOptions = computed<SelectOption[]>(() => buildPageComponentOptions());
 
 const _layoutOptions: SelectOption[] = [
   { label: 'LAYOUT（标准布局）', value: 'LAYOUT' },
@@ -400,33 +344,6 @@ const getOpenTypeLabel = (row: MenuNode) => {
   if (row.nodeType === 'BTN') return '按钮';
   if (row.frameSrc) return row.frameBlank ? '外链' : '内嵌';
   return '内部';
-};
-
-const treeFilter = (nodes: MenuNode[], kw: string): MenuNode[] => {
-  const keyword = kw.trim().toLowerCase();
-  if (!keyword) return nodes;
-
-  const hit = (n: MenuNode) => {
-    return (
-      (n.titleZhCn || '').toLowerCase().includes(keyword) ||
-      (n.titleEnUs || '').toLowerCase().includes(keyword) ||
-      (n.path || '').toLowerCase().includes(keyword) ||
-      (n.routeName || '').toLowerCase().includes(keyword)
-    );
-  };
-
-  const walk = (list: MenuNode[]): MenuNode[] => {
-    const out: MenuNode[] = [];
-    for (const n of list) {
-      const children = n.children?.length ? walk(n.children) : [];
-      if (hit(n) || children.length) {
-        out.push({ ...n, children });
-      }
-    }
-    return out;
-  };
-
-  return walk(nodes);
 };
 
 const filteredData = computed(() => treeFilter(data.value, keyword.value));
@@ -470,7 +387,7 @@ const reload = async () => {
   loading.value = true;
   try {
     data.value = await request.get<MenuNode[]>({ url: '/system/menu/tree' });
-    const storedExpanded = readExpandedFromStorage();
+    const storedExpanded = loadExpandedFromStorage();
     expandedTreeNodes.value = sanitizeExpanded(storedExpanded, data.value);
     expandAll.value = false;
     dirty.value = false;
@@ -482,18 +399,6 @@ const reload = async () => {
 const onExpandAllToggle = () => {
   expandAll.value = !expandAll.value;
   expandAll.value ? tableRef.value?.expandAll() : tableRef.value?.foldAll();
-};
-
-const buildReorderItems = (tree: MenuNode[]) => {
-  const items: Array<{ id: number; parentId: number | null; orderNo: number; version?: number }> = [];
-  const walk = (nodes: MenuNode[], parentId: number | null) => {
-    nodes.forEach((n, idx) => {
-      items.push({ id: n.id, parentId, orderNo: idx, version: n.version });
-      if (n.children?.length) walk(n.children, n.id);
-    });
-  };
-  walk(tree, null);
-  return items;
 };
 
 const saveOrder = async () => {
@@ -889,12 +794,6 @@ const resetForm = () => {
   form.actions = ['query', 'create', 'update', 'delete'];
 };
 
-const normalizeParentId = (v: unknown): number | null => {
-  if (v == null || v === '') return null;
-  const n = typeof v === 'number' ? v : Number(v);
-  return Number.isFinite(n) ? n : null;
-};
-
 const onParentIdChange = (v: unknown) => {
   form.parentId = normalizeParentId(v);
 };
@@ -966,26 +865,6 @@ const normalizePathByParent = () => {
   } else {
     form.path = p.replace(/^\/+/, '');
   }
-};
-
-const toSlug = (input: string) => {
-  const raw = String(input || '')
-    .trim()
-    .toLowerCase();
-  if (!raw) return '';
-  return raw
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9-_]/g, '')
-    .replace(/-+/g, '-')
-    .replace(/^[-_]+|[-_]+$/g, '');
-};
-
-const toRouteName = (slug: string) => {
-  const parts = String(slug || '')
-    .split(/[-_]/)
-    .filter(Boolean);
-  if (!parts.length) return '';
-  return parts.map((s) => s.charAt(0).toUpperCase() + s.slice(1)).join('');
 };
 
 const ensureRouteFields = () => {

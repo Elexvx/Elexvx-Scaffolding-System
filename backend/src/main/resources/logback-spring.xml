@@ -15,7 +15,7 @@
                 ERROR -> \033[31m (红色)
                 类名   -> \033[36m (青色/Cyan)
             -->
-            <pattern>%d{HH:mm:ss.SSS} %replace(%replace(%replace(%5level){'INFO', "\033[34minfo\033[0m"}){'WARN', "\033[33mwarning\033[0m"}){'ERROR', "\033[31merror\033[0m"} %clr(%-40.40logger{39}){cyan} : %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}</pattern>
+            <pattern>%d{HH:mm:ss.SSS} [%X{requestId:-no-request-id}] %replace(%replace(%replace(%5level){'INFO', "\033[34minfo\033[0m"}){'WARN', "\033[33mwarning\033[0m"}){'ERROR', "\033[31merror\033[0m"} %clr(%-40.40logger{39}){cyan} : %m%n${LOG_EXCEPTION_CONVERSION_WORD:-%wEx}</pattern>
         </encoder>
     </appender>
 

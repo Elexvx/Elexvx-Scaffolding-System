@@ -44,7 +44,7 @@ let viewModulesByDir: Record<ViewDir, Map<string, ViewModuleLoader>> | undefined
 function getPreferredViewDir(): ViewDir {
   const raw = import.meta.env.VITE_ROUTE_VIEW_DIR;
   const value = typeof raw === 'string' ? raw.toLowerCase() : '';
-  return value === 'views' ? 'views' : 'pages';
+  return value === 'pages' ? 'pages' : 'views';
 }
 
 function getViewModulesByDir() {

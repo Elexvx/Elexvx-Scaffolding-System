@@ -7,6 +7,7 @@ import elexvx.admin.exception.ModuleUnavailableException;
 import elexvx.admin.exception.RepeatSubmitException;
 import elexvx.admin.mapper.MenuItemMapper;
 import elexvx.admin.entity.MenuItemEntity;
+import elexvx.admin.web.ApiResponses;
 import elexvx.admin.vo.ApiResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
@@ -72,7 +73,8 @@ public class GlobalExceptionHandler {
       String payload = "event: unauthorized\ndata: " + escapeSseData(msg) + "\n\n";
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).contentType(SSE_MEDIA_TYPE).body(payload);
     }
-    return ApiResponse.failure(ErrorCodes.UNAUTHORIZED, msg);
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+      .body(ApiResponses.unauthorized("UNAUTHORIZED", msg));
   }
 
   /**
@@ -83,53 +85,56 @@ public class GlobalExceptionHandler {
     log.warn("权限不足: {}", e.getMessage());
     String message = buildPermissionMessage(e.getMessage());
     return ResponseEntity.status(HttpStatus.FORBIDDEN)
-      .body(ApiResponse.failure(ErrorCodes.FORBIDDEN, message));
+      .body(ApiResponses.forbidden("FORBIDDEN", message));
   }
 
   @ExceptionHandler(ModuleUnavailableException.class)
   public ResponseEntity<ApiResponse<Void>> handleModuleUnavailableException(ModuleUnavailableException e) {
     String msg = e.getMessage() == null || e.getMessage().isBlank() ? "模块不可用" : e.getMessage();
     return ResponseEntity.status(HttpStatus.FORBIDDEN)
-      .body(ApiResponse.failure(ErrorCodes.FORBIDDEN, msg));
+      .body(ApiResponses.forbidden("MODULE_UNAVAILABLE", msg));
   }
 
   /**
    * 处理参数校验异常 (Bean Validation)
    */
   @ExceptionHandler(MethodArgumentNotValidException.class)
-  public ApiResponse<Void> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
+  public ResponseEntity<ApiResponse<Void>> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
     String message = e.getBindingResult().getFieldErrors().stream()
       .map(FieldError::getDefaultMessage)
       .collect(Collectors.joining("; "));
     log.debug("参数校验失败: {}", message);
-    return ApiResponse.failure(ErrorCodes.BAD_REQUEST, "参数校验失败: " + message);
+    return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+      .body(ApiResponses.validationError("VALIDATION_ERROR", "参数校验失败: " + message));
   }
 
   /**
    * 处理参数绑定异常
    */
   @ExceptionHandler(BindException.class)
-  public ApiResponse<Void> handleBindException(BindException e) {
+  public ResponseEntity<ApiResponse<Void>> handleBindException(BindException e) {
     String message = e.getBindingResult().getFieldErrors().stream()
       .map(FieldError::getDefaultMessage)
       .collect(Collectors.joining("; "));
     log.debug("参数绑定失败: {}", message);
-    return ApiResponse.failure(ErrorCodes.BAD_REQUEST, "参数绑定失败: " + message);
+    return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+      .body(ApiResponses.validationError("VALIDATION_ERROR", "参数绑定失败: " + message));
   }
 
   /**
    * 处理多设备登录异常
    */
   @ExceptionHandler(ConcurrentLoginException.class)
-  public ApiResponse<Void> handleConcurrentLoginException(ConcurrentLoginException e) {
+  public ResponseEntity<ApiResponse<Void>> handleConcurrentLoginException(ConcurrentLoginException e) {
     log.debug("检测到多设备登录: {}", e.getMessage());
-    return ApiResponse.failure(ErrorCodes.CONFLICT, e.getMessage());
+    return ResponseEntity.status(HttpStatus.CONFLICT)
+      .body(ApiResponses.conflict("CONCURRENT_LOGIN_CONFLICT", e.getMessage()));
   }
 
   @ExceptionHandler(RepeatSubmitException.class)
   public ResponseEntity<ApiResponse<Void>> handleRepeatSubmitException(RepeatSubmitException e) {
     return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
-      .body(ApiResponse.failure(ErrorCodes.TOO_MANY_REQUESTS, e.getMessage()));
+      .body(ApiResponses.rateLimit("REPEAT_SUBMIT", e.getMessage()));
   }
 
   @ExceptionHandler(BusinessException.class)
@@ -145,38 +150,42 @@ public class GlobalExceptionHandler {
     } else {
       log.warn("业务异常(code={}): {}", code, message);
     }
-    return ResponseEntity.status(status).body(ApiResponse.failure(code, message));
+    return ResponseEntity.status(status).body(ApiResponses.failure(code, "BUSINESS_EXCEPTION", message));
   }
 
   /**
    * 处理非法参数异常
    */
   @ExceptionHandler(IllegalArgumentException.class)
-  public ApiResponse<Void> handleIllegalArgumentException(IllegalArgumentException e) {
+  public ResponseEntity<ApiResponse<Void>> handleIllegalArgumentException(IllegalArgumentException e) {
     log.debug("非法参数: {}", e.getMessage());
-    return ApiResponse.failure(ErrorCodes.BAD_REQUEST, e.getMessage());
+    return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+      .body(ApiResponses.validationError("INVALID_ARGUMENT", e.getMessage()));
   }
 
   /**
    * 处理请求体解析异常（如日期格式、JSON 格式错误等）
    */
   @ExceptionHandler(HttpMessageNotReadableException.class)
-  public ApiResponse<Void> handleHttpMessageNotReadableException(@NonNull HttpMessageNotReadableException e) {
+  public ResponseEntity<ApiResponse<Void>> handleHttpMessageNotReadableException(@NonNull HttpMessageNotReadableException e) {
     Throwable root = NestedExceptionUtils.getMostSpecificCause(e);
     if (root instanceof DateTimeParseException) {
-      return ApiResponse.failure(ErrorCodes.BAD_REQUEST, "日期格式错误，应为 yyyy-MM-dd");
+      return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+        .body(ApiResponses.validationError("INVALID_DATE_TIME", "日期格式错误，应为 yyyy-MM-dd"));
     }
     log.debug("请求体解析失败: {}", root != null ? root.getMessage() : e.getMessage());
-    return ApiResponse.failure(ErrorCodes.BAD_REQUEST, "请求体格式错误");
+    return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+      .body(ApiResponses.validationError("INVALID_REQUEST_BODY", "请求体格式错误"));
   }
 
   /**
    * 处理所有未捕获的异常
    */
   @ExceptionHandler(MaxUploadSizeExceededException.class)
-  public ApiResponse<Void> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException e) {
+  public ResponseEntity<ApiResponse<Void>> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException e) {
     log.debug("上传文件超限: {}", e.getMessage());
-    return ApiResponse.failure(ErrorCodes.PAYLOAD_TOO_LARGE, "上传文件过大，请压缩后重试");
+    return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+      .body(ApiResponses.payloadTooLarge("PAYLOAD_TOO_LARGE", "上传文件过大，请压缩后重试"));
   }
 
   @ExceptionHandler(AsyncRequestTimeoutException.class)
@@ -212,13 +221,15 @@ public class GlobalExceptionHandler {
         .contentType(SSE_MEDIA_TYPE)
         .body(payload);
     }
-    return ApiResponse.failure(ErrorCodes.INTERNAL_SERVER_ERROR, "服务器内部错误，请联系管理员");
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+      .body(ApiResponses.internalError("INTERNAL_IO_ERROR", "服务器内部错误，请联系管理员"));
   }
 
   @ExceptionHandler(NoResourceFoundException.class)
-  public ResponseEntity<Void> handleNoResourceFoundException(NoResourceFoundException e) {
+  public ResponseEntity<ApiResponse<Void>> handleNoResourceFoundException(NoResourceFoundException e) {
     log.debug("静态资源不存在: {}", e.getMessage());
-    return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+      .body(ApiResponses.notFound("RESOURCE_NOT_FOUND", "请求资源不存在"));
   }
 
   @ExceptionHandler(Exception.class)
@@ -230,7 +241,8 @@ public class GlobalExceptionHandler {
         .contentType(SSE_MEDIA_TYPE)
         .body(payload);
     }
-    return ApiResponse.failure(ErrorCodes.INTERNAL_SERVER_ERROR, "服务器内部错误，请联系管理员");
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+      .body(ApiResponses.internalError("INTERNAL_SERVER_ERROR", "服务器内部错误，请联系管理员"));
   }
 
   private String buildPermissionMessage(String permission) {

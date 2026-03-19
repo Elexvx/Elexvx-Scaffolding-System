@@ -2,6 +2,7 @@ package elexvx.admin.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import elexvx.admin.security.AuthTokenFilter;
+import elexvx.admin.web.ApiResponses;
 import elexvx.admin.vo.ApiResponse;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletResponse;
@@ -127,11 +128,10 @@ public class SecurityConfig {
 
   private void writeError(HttpServletResponse response, HttpStatus status) throws IOException {
     if (response.isCommitted()) return;
-    response.setStatus(status.value());
-    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-    ApiResponse<Void> body = ApiResponse.failure(status.value(), status == HttpStatus.UNAUTHORIZED
-      ? "未登录或登录已失效，请重新登录"
-      : "权限不足，请联系管理员开通");
-    objectMapper.writeValue(response.getOutputStream(), body);
+    boolean unauthorized = status == HttpStatus.UNAUTHORIZED;
+    ApiResponse<Void> body = unauthorized
+      ? ApiResponses.unauthorized("UNAUTHORIZED", "未登录或登录已失效，请重新登录")
+      : ApiResponses.forbidden("FORBIDDEN", "权限不足，请联系管理员开通权限后重试");
+    ApiResponses.writeJson(response, status, body, objectMapper);
   }
 }

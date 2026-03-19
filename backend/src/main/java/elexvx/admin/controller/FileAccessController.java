@@ -47,6 +47,7 @@ public class FileAccessController {
 
   @RequestMapping(value = "/{token}", method = RequestMethod.HEAD)
   public ResponseEntity<Void> head(@PathVariable("token") String token) {
+    // 文件探测接口返回的是 HTTP 头语义，不适合包装 ApiResponse。
     try {
       FileTokenService.TokenPayload payload = tokenService.decrypt(token);
       authorize(payload);
@@ -73,6 +74,7 @@ public class FileAccessController {
     @PathVariable("token") String token,
     @RequestHeader(value = HttpHeaders.RANGE, required = false) String rangeHeader
   ) {
+    // 文件预览/下载需要原生二进制与分片响应头，不能包装为 ApiResponse。
     try {
       FileTokenService.TokenPayload payload = tokenService.decrypt(token);
       authorize(payload);

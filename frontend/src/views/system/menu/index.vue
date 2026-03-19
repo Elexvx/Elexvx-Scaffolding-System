@@ -1,6 +1,7 @@
 <template>
-  <page />
+  <menu-page-main />
 </template>
+
 <script setup lang="ts">
-import Page from '@/pages/system/menu/index.vue';
+import MenuPageMain from './components/MenuPageMain.vue';
 </script>

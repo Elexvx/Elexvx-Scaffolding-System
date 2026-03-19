@@ -21,9 +21,8 @@
     *   用户：`tdesign` (或自定义)
     *   权限：读写
 3.  进入数据库管理页面 (phpMyAdmin 或 1Panel 自带的 SQL 导入功能)。
-4.  依次导入项目根目录下的 SQL 脚本：
-    1.  `database/tdesign_init.sql` (MySQL 初始化结构和数据)
-    2.  `database/tdesign_migration_v2.sql` (增量更新，如有)
+4.  当前版本推荐直接使用 Flyway 自动迁移，无需手工导入 SQL。
+5.  如需手工排障导入，可参考 `database/tdesign_init.sql`（历史脚本），但正式版本演进以 `backend/src/main/resources/db/migration/mysql/` 下 Flyway 脚本为准。
 
 ---
 

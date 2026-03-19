@@ -120,12 +120,14 @@ public class SystemDictController {
 
   @GetMapping("/{dictId}/items/export")
   public ResponseEntity<byte[]> exportItems(@PathVariable long dictId) {
+    // 导出接口返回二进制文件，不能包装为 ApiResponse。
     PermissionUtil.check("system:SystemDict:query");
     return dictionaryService.exportItems(dictId);
   }
 
   @GetMapping("/items/template")
   public void downloadTemplate(jakarta.servlet.http.HttpServletResponse response) {
+    // 模板下载直接写入响应流，不能包装为 ApiResponse。
     PermissionUtil.check("system:SystemDict:query");
     dictionaryService.downloadTemplateXlsx(response);
   }

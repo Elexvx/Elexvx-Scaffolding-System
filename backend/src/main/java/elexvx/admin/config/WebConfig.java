@@ -67,6 +67,14 @@ public class WebConfig implements WebMvcConfigurer {
   }
 
   @Bean
+  public FilterRegistrationBean<RequestIdFilter> requestIdFilterRegistration() {
+    FilterRegistrationBean<RequestIdFilter> registration = new FilterRegistrationBean<>(new RequestIdFilter());
+    registration.setAsyncSupported(true);
+    registration.setOrder(Ordered.HIGHEST_PRECEDENCE + 1);
+    return registration;
+  }
+
+  @Bean
   public FilterRegistrationBean<SensitiveWordFilter> sensitiveWordFilterRegistration(
     SensitiveService sensitiveService,
     ObjectMapper objectMapper

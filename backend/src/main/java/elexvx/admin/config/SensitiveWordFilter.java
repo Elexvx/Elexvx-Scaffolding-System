@@ -3,6 +3,7 @@ package elexvx.admin.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import elexvx.admin.exception.ErrorCodes;
 import elexvx.admin.service.SensitiveService;
+import elexvx.admin.web.ApiResponses;
 import elexvx.admin.vo.ApiResponse;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -11,6 +12,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.lang.NonNull;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -117,14 +119,12 @@ public class SensitiveWordFilter extends OncePerRequestFilter {
   }
 
   private void respondViolation(HttpServletResponse response, SensitiveService.SensitiveHit hit) throws IOException {
-    response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
     String field = (hit.fieldPath() == null || hit.fieldPath().isBlank()) ? "输入内容" : hit.fieldPath();
     String word = hit.word() == null ? "" : hit.word();
-    String message = word.isBlank()
+    String userTip = word.isBlank()
       ? "字段 " + field + " 包含敏感词，提交已被拒绝"
       : "字段 " + field + " 包含敏感词“" + word + "”，提交已被拒绝";
-    ApiResponse<Object> api = ApiResponse.failure(ErrorCodes.UNPROCESSABLE_ENTITY, message);
-    response.getWriter().write(objectMapper.writeValueAsString(api));
+    ApiResponse<Void> api = ApiResponses.failure(ErrorCodes.UNPROCESSABLE_ENTITY, "SENSITIVE_WORD_HIT", userTip);
+    ApiResponses.writeJson(response, HttpStatus.UNPROCESSABLE_ENTITY, api, objectMapper);
   }
 }

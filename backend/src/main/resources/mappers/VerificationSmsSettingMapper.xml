@@ -2,8 +2,8 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="top.elexvx.admin.mapper.VerificationSmsSettingMapper">
-  <select id="selectTop" resultType="top.elexvx.admin.entity.VerificationSmsSetting">
+<mapper namespace="elexvx.admin.mapper.VerificationSmsSettingMapper">
+  <select id="selectTop" resultType="elexvx.admin.entity.VerificationSmsSetting">
     SELECT id, sms_enabled, sms_provider, sms_aliyun_enabled, sms_aliyun_access_key_id, sms_aliyun_access_key_secret, sms_aliyun_sign_name, sms_aliyun_template_code, sms_aliyun_region_id, sms_aliyun_endpoint, sms_tencent_enabled, sms_tencent_secret_id, sms_tencent_secret_key, sms_tencent_sign_name, sms_tencent_template_id, sms_tencent_region, sms_tencent_endpoint, sms_sdk_app_id
     FROM verification_sms_settings
     ORDER BY id ASC
@@ -20,7 +20,7 @@
     </choose>
   </select>
 
-  <insert id="insert" parameterType="top.elexvx.admin.entity.VerificationSmsSetting" useGeneratedKeys="true" keyProperty="id">
+  <insert id="insert" parameterType="elexvx.admin.entity.VerificationSmsSetting" useGeneratedKeys="true" keyProperty="id">
     INSERT INTO verification_sms_settings (
       sms_enabled, sms_provider, sms_aliyun_enabled, sms_aliyun_access_key_id, sms_aliyun_access_key_secret, sms_aliyun_sign_name, sms_aliyun_template_code, sms_aliyun_region_id, sms_aliyun_endpoint, sms_tencent_enabled, sms_tencent_secret_id, sms_tencent_secret_key, sms_tencent_sign_name, sms_tencent_template_id, sms_tencent_region, sms_tencent_endpoint, sms_sdk_app_id
     ) VALUES (
@@ -28,7 +28,7 @@
     )
   </insert>
 
-  <update id="update" parameterType="top.elexvx.admin.entity.VerificationSmsSetting">
+  <update id="update" parameterType="elexvx.admin.entity.VerificationSmsSetting">
     UPDATE verification_sms_settings
     SET
       sms_enabled = #{smsEnabled},

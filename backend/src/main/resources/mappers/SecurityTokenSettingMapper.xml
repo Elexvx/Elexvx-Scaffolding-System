@@ -2,8 +2,8 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="top.elexvx.admin.mapper.SecurityTokenSettingMapper">
-  <select id="selectTop" resultType="top.elexvx.admin.entity.SecurityTokenSetting">
+<mapper namespace="elexvx.admin.mapper.SecurityTokenSettingMapper">
+  <select id="selectTop" resultType="elexvx.admin.entity.SecurityTokenSetting">
     SELECT id, session_timeout_minutes, token_timeout_minutes, token_refresh_grace_minutes, allow_url_token_param
     FROM security_token_settings
     ORDER BY id ASC
@@ -20,7 +20,7 @@
     </choose>
   </select>
 
-  <insert id="insert" parameterType="top.elexvx.admin.entity.SecurityTokenSetting" useGeneratedKeys="true" keyProperty="id">
+  <insert id="insert" parameterType="elexvx.admin.entity.SecurityTokenSetting" useGeneratedKeys="true" keyProperty="id">
     INSERT INTO security_token_settings (
       session_timeout_minutes, token_timeout_minutes, token_refresh_grace_minutes, allow_url_token_param
     ) VALUES (
@@ -28,7 +28,7 @@
     )
   </insert>
 
-  <update id="update" parameterType="top.elexvx.admin.entity.SecurityTokenSetting">
+  <update id="update" parameterType="elexvx.admin.entity.SecurityTokenSetting">
     UPDATE security_token_settings
     SET
       session_timeout_minutes = #{sessionTimeoutMinutes},

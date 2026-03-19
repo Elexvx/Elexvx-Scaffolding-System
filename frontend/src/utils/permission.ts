@@ -14,7 +14,14 @@ export function hasPerm(code: string): boolean {
   if (!userStore.token) return false;
 
   const roles = userStore.userInfo?.roles || [];
-  if (roles.some((role) => String(role || '').trim().toLowerCase() === ADMIN_ROLE)) {
+  if (
+    roles.some(
+      (role) =>
+        String(role || '')
+          .trim()
+          .toLowerCase() === ADMIN_ROLE,
+    )
+  ) {
     return true;
   }
 

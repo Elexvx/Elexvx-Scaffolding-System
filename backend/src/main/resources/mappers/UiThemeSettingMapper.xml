@@ -2,8 +2,8 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="top.elexvx.admin.mapper.UiThemeSettingMapper">
-  <select id="selectTop" resultType="top.elexvx.admin.entity.UiThemeSetting">
+<mapper namespace="elexvx.admin.mapper.UiThemeSettingMapper">
+  <select id="selectTop" resultType="elexvx.admin.entity.UiThemeSetting">
     SELECT id, auto_theme, light_start_time, dark_start_time, mode, brand_theme
     FROM ui_theme_settings
     ORDER BY id ASC
@@ -20,7 +20,7 @@
     </choose>
   </select>
 
-  <insert id="insert" parameterType="top.elexvx.admin.entity.UiThemeSetting" useGeneratedKeys="true" keyProperty="id">
+  <insert id="insert" parameterType="elexvx.admin.entity.UiThemeSetting" useGeneratedKeys="true" keyProperty="id">
     INSERT INTO ui_theme_settings (
       auto_theme, light_start_time, dark_start_time, mode, brand_theme
     ) VALUES (
@@ -28,7 +28,7 @@
     )
   </insert>
 
-  <update id="update" parameterType="top.elexvx.admin.entity.UiThemeSetting">
+  <update id="update" parameterType="elexvx.admin.entity.UiThemeSetting">
     UPDATE ui_theme_settings
     SET
       auto_theme = #{autoTheme},

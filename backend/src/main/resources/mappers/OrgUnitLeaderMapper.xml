@@ -2,14 +2,14 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="top.elexvx.admin.mapper.OrgUnitLeaderMapper">
+<mapper namespace="elexvx.admin.mapper.OrgUnitLeaderMapper">
   <select id="selectLeaderIds" resultType="long">
     SELECT user_id
     FROM org_unit_leaders
     WHERE org_unit_id = #{orgUnitId}
   </select>
 
-  <select id="selectLeaderPairsByOrgUnitIds" resultType="top.elexvx.admin.dto.OrgUnitLeaderPair">
+  <select id="selectLeaderPairsByOrgUnitIds" resultType="elexvx.admin.dto.OrgUnitLeaderPair">
     SELECT org_unit_id, user_id
     FROM org_unit_leaders
     WHERE org_unit_id IN

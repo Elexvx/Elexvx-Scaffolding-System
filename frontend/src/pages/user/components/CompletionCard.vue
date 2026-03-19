@@ -23,7 +23,6 @@
     <t-button class="completion-card__cta" theme="primary" block @click="$emit('cta-click')">{{ ctaText }}</t-button>
   </t-card>
 </template>
-
 <script setup lang="ts">
 interface CompletionTodo {
   key: string;
@@ -51,7 +50,6 @@ defineEmits<{
   (e: 'cta-click'): void;
 }>();
 </script>
-
 <style lang="less" scoped>
 .completion-card {
   :deep(.t-card__body) {

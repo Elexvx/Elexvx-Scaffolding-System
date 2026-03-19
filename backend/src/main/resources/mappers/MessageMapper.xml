@@ -2,8 +2,8 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="top.elexvx.admin.mapper.MessageMapper">
-  <select id="listByUserId" resultType="top.elexvx.admin.entity.MessageEntity">
+<mapper namespace="elexvx.admin.mapper.MessageMapper">
+  <select id="listByUserId" resultType="elexvx.admin.entity.MessageEntity">
     SELECT id,
       to_user_id,
       content,
@@ -17,7 +17,7 @@
     ORDER BY created_at DESC
   </select>
 
-  <select id="selectById" resultType="top.elexvx.admin.entity.MessageEntity">
+  <select id="selectById" resultType="elexvx.admin.entity.MessageEntity">
     SELECT id,
       to_user_id,
       content,
@@ -44,7 +44,7 @@
     </choose>
   </select>
 
-  <insert id="insert" parameterType="top.elexvx.admin.entity.MessageEntity">
+  <insert id="insert" parameterType="elexvx.admin.entity.MessageEntity">
     INSERT INTO messages (
       id,
       to_user_id,
@@ -93,7 +93,7 @@
     </foreach>
   </insert>
 
-  <update id="update" parameterType="top.elexvx.admin.entity.MessageEntity">
+  <update id="update" parameterType="elexvx.admin.entity.MessageEntity">
     UPDATE messages
     SET
       to_user_id = #{toUserId},

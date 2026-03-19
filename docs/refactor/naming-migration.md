@@ -4,8 +4,8 @@
 
 ## 后端
 
-- Java 根包：`com.tencent.tdesign` → `top.elexvx.admin`
-- Maven 坐标：`com.tencent.tdesign:tdesign-backend` → `top.elexvx:elexvx-backend`
+- Java 根包：`com.tencent.tdesign` → `elexvx.admin`
+- Maven 坐标：`com.tencent.tdesign:tdesign-backend` → `elexvx:elexvx-backend`
 - Spring Boot 启动类：`TDesignApplication` → `ElexvxApplication`
 - 运行时配置主前缀：`elexvx.*`
 - 兼容前缀：`tdesign.*`

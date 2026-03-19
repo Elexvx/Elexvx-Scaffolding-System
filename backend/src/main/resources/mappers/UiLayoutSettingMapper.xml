@@ -2,8 +2,8 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="top.elexvx.admin.mapper.UiLayoutSettingMapper">
-  <select id="selectTop" resultType="top.elexvx.admin.entity.UiLayoutSetting">
+<mapper namespace="elexvx.admin.mapper.UiLayoutSettingMapper">
+  <select id="selectTop" resultType="elexvx.admin.entity.UiLayoutSetting">
     SELECT id, default_home, show_footer, is_sidebar_compact, show_breadcrumb, menu_auto_collapsed, layout, split_menu, side_mode, is_footer_aside, is_sidebar_fixed, is_header_fixed, is_use_tabs_router, show_header, header_github_url, header_help_url
     FROM ui_layout_settings
     ORDER BY id ASC
@@ -20,7 +20,7 @@
     </choose>
   </select>
 
-  <insert id="insert" parameterType="top.elexvx.admin.entity.UiLayoutSetting" useGeneratedKeys="true" keyProperty="id">
+  <insert id="insert" parameterType="elexvx.admin.entity.UiLayoutSetting" useGeneratedKeys="true" keyProperty="id">
     INSERT INTO ui_layout_settings (
       default_home, show_footer, is_sidebar_compact, show_breadcrumb, menu_auto_collapsed, layout, split_menu, side_mode, is_footer_aside, is_sidebar_fixed, is_header_fixed, is_use_tabs_router, show_header, header_github_url, header_help_url
     ) VALUES (
@@ -28,7 +28,7 @@
     )
   </insert>
 
-  <update id="update" parameterType="top.elexvx.admin.entity.UiLayoutSetting">
+  <update id="update" parameterType="elexvx.admin.entity.UiLayoutSetting">
     UPDATE ui_layout_settings
     SET
       default_home = #{defaultHome},

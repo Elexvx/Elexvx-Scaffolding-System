@@ -125,12 +125,7 @@
                 :disabled="!isAdmin"
                 @change="handleQrSelect"
               />
-              <t-button
-                class="image-panel__upload-btn"
-                variant="outline"
-                :disabled="!isAdmin"
-                @click="triggerQrSelect"
-              >
+              <t-button class="image-panel__upload-btn" variant="outline" :disabled="!isAdmin" @click="triggerQrSelect">
                 上传
               </t-button>
             </div>

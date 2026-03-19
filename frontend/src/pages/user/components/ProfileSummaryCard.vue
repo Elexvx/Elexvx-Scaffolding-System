@@ -31,7 +31,9 @@
             <t-tag size="small" variant="light">{{ roleTag || 'admin' }}</t-tag>
           </div>
           <div class="profile-summary-card__contact-row">
-            <span v-for="item in visibleContacts" :key="item" class="profile-summary-card__contact-item">{{ item }}</span>
+            <span v-for="item in visibleContacts" :key="item" class="profile-summary-card__contact-item">{{
+              item
+            }}</span>
             <t-popup v-if="hiddenContacts.length > 0" trigger="click" placement="bottom-right">
               <t-link theme="primary" hover="color">更多</t-link>
               <template #content>
@@ -43,11 +45,9 @@
           </div>
         </div>
       </div>
-
     </div>
   </t-card>
 </template>
-
 <script setup lang="ts">
 import { computed } from 'vue';
 
@@ -84,7 +84,6 @@ defineEmits<{
 const visibleContacts = computed(() => props.contacts.slice(0, 2));
 const hiddenContacts = computed(() => props.contacts.slice(2));
 </script>
-
 <style lang="less" scoped>
 .profile-summary-card {
   :deep(.t-card__body) {

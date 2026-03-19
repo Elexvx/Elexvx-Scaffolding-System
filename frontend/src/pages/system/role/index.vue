@@ -10,7 +10,11 @@
         <template #op="{ row }">
           <t-space>
             <t-link v-perm:disable="'system:SystemRole:update'" theme="primary" @click="openEdit(row)">编辑</t-link>
-            <t-link v-perm:disable="'system:SystemRole:delete'" theme="danger" :disabled="row.name === 'admin'" @click="removeRow(row)"
+            <t-link
+              v-perm:disable="'system:SystemRole:delete'"
+              theme="danger"
+              :disabled="row.name === 'admin'"
+              @click="removeRow(row)"
               >删除</t-link
             >
           </t-space>
@@ -190,7 +194,10 @@ const expandedMenuIds = ref<number[]>([]);
 const selectAll = ref(false);
 const checkStrictly = ref(false);
 const activeActionMenuId = ref<number | null>(null);
-type ActionMenuOption = { label: string; value: number };
+interface ActionMenuOption {
+  label: string;
+  value: number;
+}
 
 const catalogByMenuId = computed(() => {
   const map = new Map<number, PermissionCatalogItem>();

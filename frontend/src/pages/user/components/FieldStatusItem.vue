@@ -12,7 +12,6 @@
     </t-button>
   </div>
 </template>
-
 <script setup lang="ts">
 defineProps<{
   label: string;
@@ -25,7 +24,6 @@ defineEmits<{
   (e: 'action'): void;
 }>();
 </script>
-
 <style lang="less" scoped>
 .field-status-item {
   display: flex;

@@ -2,20 +2,20 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="top.elexvx.admin.mapper.ModuleRegistryMapper">
-  <select id="selectAll" resultType="top.elexvx.admin.entity.ModuleRegistry">
+<mapper namespace="elexvx.admin.mapper.ModuleRegistryMapper">
+  <select id="selectAll" resultType="elexvx.admin.entity.ModuleRegistry">
     SELECT module_key, name, version, enabled, install_state, installed_at
     FROM module_registry
     ORDER BY module_key ASC
   </select>
 
-  <select id="selectByKey" resultType="top.elexvx.admin.entity.ModuleRegistry">
+  <select id="selectByKey" resultType="elexvx.admin.entity.ModuleRegistry">
     SELECT module_key, name, version, enabled, install_state, installed_at
     FROM module_registry
     WHERE module_key = #{moduleKey}
   </select>
 
-  <insert id="insert" parameterType="top.elexvx.admin.entity.ModuleRegistry">
+  <insert id="insert" parameterType="elexvx.admin.entity.ModuleRegistry">
     INSERT INTO module_registry (
       module_key, name, version, enabled, install_state, installed_at
     ) VALUES (
@@ -23,7 +23,7 @@
     )
   </insert>
 
-  <update id="update" parameterType="top.elexvx.admin.entity.ModuleRegistry">
+  <update id="update" parameterType="elexvx.admin.entity.ModuleRegistry">
     UPDATE module_registry
     SET
       name = #{name},

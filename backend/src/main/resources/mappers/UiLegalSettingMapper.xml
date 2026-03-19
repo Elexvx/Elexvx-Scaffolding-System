@@ -2,8 +2,8 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="top.elexvx.admin.mapper.UiLegalSettingMapper">
-  <select id="selectTop" resultType="top.elexvx.admin.entity.UiLegalSetting">
+<mapper namespace="elexvx.admin.mapper.UiLegalSettingMapper">
+  <select id="selectTop" resultType="elexvx.admin.entity.UiLegalSetting">
     SELECT id, user_agreement, privacy_agreement
     FROM ui_legal_settings
     ORDER BY id ASC
@@ -20,7 +20,7 @@
     </choose>
   </select>
 
-  <insert id="insert" parameterType="top.elexvx.admin.entity.UiLegalSetting" useGeneratedKeys="true" keyProperty="id">
+  <insert id="insert" parameterType="elexvx.admin.entity.UiLegalSetting" useGeneratedKeys="true" keyProperty="id">
     INSERT INTO ui_legal_settings (
       user_agreement, privacy_agreement
     ) VALUES (
@@ -28,7 +28,7 @@
     )
   </insert>
 
-  <update id="update" parameterType="top.elexvx.admin.entity.UiLegalSetting">
+  <update id="update" parameterType="elexvx.admin.entity.UiLegalSetting">
     UPDATE ui_legal_settings
     SET
       user_agreement = #{userAgreement},

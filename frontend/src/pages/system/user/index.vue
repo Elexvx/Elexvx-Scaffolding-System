@@ -70,13 +70,25 @@
             </template>
             <template #op="{ row }">
               <t-space class="user-table-actions">
-                <t-link v-perm:disable="'system:SystemUser:update'" :disabled="isEditDisabled(row)" theme="primary" @click="openEdit(row)"
+                <t-link
+                  v-perm:disable="'system:SystemUser:update'"
+                  :disabled="isEditDisabled(row)"
+                  theme="primary"
+                  @click="openEdit(row)"
                   >编辑</t-link
                 >
-                <t-link v-perm:disable="'system:SystemUser:update'" :disabled="isResetDisabled(row)" theme="primary" @click="resetPwd(row)"
+                <t-link
+                  v-perm:disable="'system:SystemUser:update'"
+                  :disabled="isResetDisabled(row)"
+                  theme="primary"
+                  @click="resetPwd(row)"
                   >重置密码</t-link
                 >
-                <t-link v-perm:disable="'system:SystemUser:delete'" :disabled="isDeleteDisabled(row)" theme="danger" @click="removeRow(row)"
+                <t-link
+                  v-perm:disable="'system:SystemUser:delete'"
+                  :disabled="isDeleteDisabled(row)"
+                  theme="danger"
+                  @click="removeRow(row)"
                   >删除</t-link
                 >
               </t-space>

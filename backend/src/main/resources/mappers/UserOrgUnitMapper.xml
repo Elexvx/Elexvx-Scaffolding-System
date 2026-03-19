@@ -2,8 +2,8 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="top.elexvx.admin.mapper.UserOrgUnitMapper">
-  <select id="selectAll" resultType="top.elexvx.admin.entity.UserOrgUnitRelation">
+<mapper namespace="elexvx.admin.mapper.UserOrgUnitMapper">
+  <select id="selectAll" resultType="elexvx.admin.entity.UserOrgUnitRelation">
     SELECT user_id AS userId, org_unit_id AS orgUnitId
     FROM user_org_units
   </select>

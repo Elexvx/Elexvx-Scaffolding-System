@@ -6,7 +6,7 @@
           <div class="profile-main" :class="{ 'profile-main--wide': isWideDesktop }">
             <div class="profile-main__left">
               <div id="user-block-profile">
-                <ProfileSummaryCard
+                <profile-summary-card
                   :loading="profileLoading"
                   :avatar="profile.avatar"
                   :name="profile.name"
@@ -19,7 +19,7 @@
               </div>
 
               <div id="user-block-completion">
-                <CompletionCard
+                <completion-card
                   :loading="profileLoading"
                   :percent="completenessScore"
                   :todos="completionTodos"
@@ -34,7 +34,7 @@
               <div class="sections-shell">
                 <div class="sections-detail">
                   <t-collapse v-model="activePanels" class="info-sections">
-                    <InfoSectionCard
+                    <info-section-card
                       value="basic"
                       title="基本信息"
                       :percent="basicInfoScore"
@@ -45,7 +45,7 @@
                       @action="openBasicEditDrawer"
                     >
                       <div id="user-block-basic" class="section-body">
-                        <FieldStatusItem
+                        <field-status-item
                           v-for="item in basicStatusItems"
                           :key="item.key"
                           :label="item.label"
@@ -55,9 +55,9 @@
                           @action="openBasicEditDrawer"
                         />
                       </div>
-                    </InfoSectionCard>
+                    </info-section-card>
 
-                    <InfoSectionCard
+                    <info-section-card
                       value="document"
                       title="证件信息"
                       :percent="documentInfoScore"
@@ -68,7 +68,7 @@
                       @action="openDocumentEditDrawer"
                     >
                       <div id="user-block-document" class="section-body">
-                        <FieldStatusItem
+                        <field-status-item
                           v-for="item in documentStatusItems"
                           :key="item.key"
                           :label="item.label"
@@ -78,9 +78,9 @@
                           @action="openDocumentEditDrawer"
                         />
                       </div>
-                    </InfoSectionCard>
+                    </info-section-card>
 
-                    <InfoSectionCard
+                    <info-section-card
                       value="security"
                       title="安全设置"
                       :percent="securityInfoScore"
@@ -90,7 +90,7 @@
                       @toggle-sensitive="toggleSecurityMasked"
                     >
                       <div id="user-block-security" class="section-body">
-                        <FieldStatusItem
+                        <field-status-item
                           v-for="item in securityStatusItems"
                           :key="item.key"
                           :label="item.label"
@@ -123,7 +123,9 @@
                               placeholder="请再次输入新密码"
                           /></t-form-item>
                           <t-form-item class="form-submit" label-width="0"
-                            ><t-button theme="primary" type="submit" :loading="changingPassword">修改密码</t-button></t-form-item
+                            ><t-button theme="primary" type="submit" :loading="changingPassword"
+                              >修改密码</t-button
+                            ></t-form-item
                           >
                         </t-form>
 
@@ -137,7 +139,7 @@
                           :pagination="null"
                         />
                       </div>
-                    </InfoSectionCard>
+                    </info-section-card>
                   </t-collapse>
                 </div>
               </div>
@@ -160,7 +162,8 @@
       >
         <t-row :gutter="[24, 24]">
           <t-col :xs="24" :sm="12"
-            ><t-form-item label="姓名" name="name"><t-input v-model="profileForm.name" placeholder="请输入姓名" /></t-form-item
+            ><t-form-item label="姓名" name="name"
+              ><t-input v-model="profileForm.name" placeholder="请输入姓名" /></t-form-item
           ></t-col>
           <t-col :xs="24" :sm="12"
             ><t-form-item label="性别" name="gender"
@@ -272,15 +275,8 @@
     </confirm-drawer>
   </div>
 </template>
-
 <script setup lang="ts">
-import type {
-  FormInstanceFunctions,
-  FormRule,
-  PrimaryTableCol,
-  SelectOption,
-  SubmitContext,
-} from 'tdesign-vue-next';
+import type { FormInstanceFunctions, FormRule, PrimaryTableCol, SelectOption, SubmitContext } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
 
@@ -659,7 +655,9 @@ const syncAreaFromProfile = async (data: UserProfile) => {
   const districtFromCity = districts.find(
     (item) => item.label === data.district || String(item.value) === data.district,
   );
-  const districtFromProvince = cities.find((item) => item.label === data.district || String(item.value) === data.district);
+  const districtFromProvince = cities.find(
+    (item) => item.label === data.district || String(item.value) === data.district,
+  );
   const path = (districtFromCity ? [province, city, districtFromCity] : [province, districtFromProvince]).filter(
     Boolean,
   ) as AreaOption[];
@@ -847,7 +845,8 @@ const fallbackCompleteness = computed(() => {
   if (!hasText(profile.value.idValidTo)) missing.add('idValidTo');
 
   const basicComplete = 5 - ['name', 'gender', 'mobile', 'email', 'address'].filter((key) => missing.has(key)).length;
-  const documentComplete = 4 - ['idType', 'idCard', 'idValidFrom', 'idValidTo'].filter((key) => missing.has(key)).length;
+  const documentComplete =
+    4 - ['idType', 'idCard', 'idValidFrom', 'idValidTo'].filter((key) => missing.has(key)).length;
   return {
     missing,
     basicScore: Math.round((basicComplete * 100) / 5),
@@ -857,10 +856,14 @@ const fallbackCompleteness = computed(() => {
 });
 
 const completenessScore = computed(() =>
-  typeof profile.value.completenessScore === 'number' ? profile.value.completenessScore : fallbackCompleteness.value.score,
+  typeof profile.value.completenessScore === 'number'
+    ? profile.value.completenessScore
+    : fallbackCompleteness.value.score,
 );
 const basicInfoScore = computed(() =>
-  typeof profile.value.basicInfoScore === 'number' ? profile.value.basicInfoScore : fallbackCompleteness.value.basicScore,
+  typeof profile.value.basicInfoScore === 'number'
+    ? profile.value.basicInfoScore
+    : fallbackCompleteness.value.basicScore,
 );
 const documentInfoScore = computed(() =>
   typeof profile.value.documentInfoScore === 'number'
@@ -895,8 +898,18 @@ const basicStatusItems = computed(() => [
 const documentStatusItems = computed(() => [
   { key: 'idType', label: '证件类型', value: documentTypeLabel.value || '待补充', done: !isMissing('idType') },
   { key: 'idCard', label: '证件号码', value: displayDocument.value.idCard || '待补充', done: !isMissing('idCard') },
-  { key: 'idValidFrom', label: '证件有效期起', value: profile.value.idValidFrom || '待补充', done: !isMissing('idValidFrom') },
-  { key: 'idValidTo', label: '证件有效期止', value: profile.value.idValidTo || '待补充', done: !isMissing('idValidTo') },
+  {
+    key: 'idValidFrom',
+    label: '证件有效期起',
+    value: profile.value.idValidFrom || '待补充',
+    done: !isMissing('idValidFrom'),
+  },
+  {
+    key: 'idValidTo',
+    label: '证件有效期止',
+    value: profile.value.idValidTo || '待补充',
+    done: !isMissing('idValidTo'),
+  },
 ]);
 
 const securityStatusItems = computed(() => [
@@ -958,8 +971,22 @@ const targetSectionKey = computed<'basic' | 'document' | 'security'>(() => {
 const todoConfigs: CompletionTodoConfig[] = [
   { key: 'idCard', title: '完善证件号码', gain: '+15%', section: 'document', actionText: '去填写', priority: 100 },
   { key: 'idType', title: '选择证件类型', gain: '+12%', section: 'document', actionText: '去填写', priority: 95 },
-  { key: 'idValidFrom', title: '补全证件有效期起', gain: '+10%', section: 'document', actionText: '去填写', priority: 90 },
-  { key: 'idValidTo', title: '补全证件有效期止', gain: '+10%', section: 'document', actionText: '去填写', priority: 88 },
+  {
+    key: 'idValidFrom',
+    title: '补全证件有效期起',
+    gain: '+10%',
+    section: 'document',
+    actionText: '去填写',
+    priority: 90,
+  },
+  {
+    key: 'idValidTo',
+    title: '补全证件有效期止',
+    gain: '+10%',
+    section: 'document',
+    actionText: '去填写',
+    priority: 88,
+  },
   { key: 'mobile', title: '补全手机号码', gain: '+8%', section: 'security', actionText: '去填写', priority: 80 },
   { key: 'email', title: '补全电子邮箱', gain: '+8%', section: 'security', actionText: '去填写', priority: 78 },
   { key: 'address', title: '补全联系地址', gain: '+6%', section: 'basic', actionText: '去填写', priority: 60 },
@@ -1193,7 +1220,6 @@ onUnmounted(() => {
   if (typeof window !== 'undefined') window.removeEventListener('resize', updateViewport);
 });
 </script>
-
 <style lang="less" scoped>
 .user-page {
   --user-page-gap: 16px;

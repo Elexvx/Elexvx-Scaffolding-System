@@ -93,8 +93,14 @@ const redirectFromAuthPage = (redirect?: string, forceReload = false) => {
 const handleStorageChange = async (event: StorageEvent) => {
   if (event.storageArea !== window.localStorage) return;
   const tokenKey = getTokenStorageKey();
-  if (event.key !== 'elexvx.user' && event.key !== 'user' && event.key !== tokenKey && event.key !== 'tdesign.auth.token')
+  if (
+    event.key !== 'elexvx.user' &&
+    event.key !== 'user' &&
+    event.key !== tokenKey &&
+    event.key !== 'tdesign.auth.token'
+  ) {
     return;
+  }
   if (authSyncing) return;
   authSyncing = true;
   const prevToken = userStore.token;

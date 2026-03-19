@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="top.elexvx.admin.mapper.AiProviderMapper">
+<mapper namespace="elexvx.admin.mapper.AiProviderMapper">
   <sql id="BaseSelect">
     SELECT id,
       name,
@@ -26,17 +26,17 @@
     FROM ai_provider_settings
   </sql>
 
-  <select id="selectAll" resultType="top.elexvx.admin.entity.AiProviderSetting">
+  <select id="selectAll" resultType="elexvx.admin.entity.AiProviderSetting">
     <include refid="BaseSelect" />
     ORDER BY id ASC
   </select>
 
-  <select id="selectById" resultType="top.elexvx.admin.entity.AiProviderSetting">
+  <select id="selectById" resultType="elexvx.admin.entity.AiProviderSetting">
     <include refid="BaseSelect" />
     WHERE id = #{id}
   </select>
 
-  <select id="selectFirstDefaultEnabled" resultType="top.elexvx.admin.entity.AiProviderSetting">
+  <select id="selectFirstDefaultEnabled" resultType="elexvx.admin.entity.AiProviderSetting">
     <include refid="BaseSelect" />
     WHERE is_default = 1 AND enabled = 1
     ORDER BY id ASC
@@ -53,7 +53,7 @@
     </choose>
   </select>
 
-  <select id="selectFirstEnabled" resultType="top.elexvx.admin.entity.AiProviderSetting">
+  <select id="selectFirstEnabled" resultType="elexvx.admin.entity.AiProviderSetting">
     <include refid="BaseSelect" />
     WHERE enabled = 1
     ORDER BY id ASC
@@ -70,7 +70,7 @@
     </choose>
   </select>
 
-  <insert id="insert" parameterType="top.elexvx.admin.entity.AiProviderSetting" useGeneratedKeys="true" keyProperty="id">
+  <insert id="insert" parameterType="elexvx.admin.entity.AiProviderSetting" useGeneratedKeys="true" keyProperty="id">
     INSERT INTO ai_provider_settings (
       name,
       vendor,
@@ -113,7 +113,7 @@
     )
   </insert>
 
-  <update id="update" parameterType="top.elexvx.admin.entity.AiProviderSetting">
+  <update id="update" parameterType="elexvx.admin.entity.AiProviderSetting">
     UPDATE ai_provider_settings
     SET
       name = #{name},

@@ -42,9 +42,9 @@
 
 ### 3.2 数据初始化
 
-- 建议导入含演示数据脚本（便于快速覆盖更多功能）：[database/README.md](database/README.md)
-  - `database/demo/tdesign_init.sql`（MySQL）
-- 如果只验证结构与空库行为，可导入 `database/schema/tdesign_schema.sql`
+- 建议导入含演示数据脚本（便于快速覆盖更多功能）：`database/tdesign_init.sql`（MySQL）
+- 其他数据库可使用 `database/tdesign_init_pg.sql`、`database/tdesign_init_oracle.sql`、`database/tdesign_init_sqlserver.sql`
+- 如果只验证结构与空库行为，当前仓库暂未单独拆出 schema-only 脚本，请基于对应初始化脚本裁剪示例数据后导入
 
 ### 3.3 测试账号与权限
 
@@ -237,17 +237,17 @@
 
 | 用例ID | 用例名称 | 前置条件 | 测试步骤 | 预期结果 | 优先级 |
 | --- | --- | --- | --- | --- | --- |
-| FT-DB-001 | MySQL demo 脚本导入 | MySQL 可用；空库 | 1）导入 `database/demo/tdesign_init.sql` | 导入成功；表/数据存在；后端可正常启动登录 | P0 |
-| FT-DB-002 | MySQL schema 脚本导入 | MySQL 可用；空库 | 1）导入 `database/schema/tdesign_schema.sql` | 导入成功；后端启动后核心接口不报表缺失 | P1 |
-| FT-DB-003 | PostgreSQL 脚本导入 | PostgreSQL 可用；空库 | 1）导入 `database/demo/tdesign_init_pg.sql` 2）或 `database/schema/tdesign_schema_pg.sql` | 导入成功；关键表结构与字段存在 | P1 |
-| FT-DB-004 | Oracle 脚本导入 | Oracle 可用；空 schema | 1）导入 `database/demo/tdesign_init_oracle.sql` 2）或 `database/schema/tdesign_schema_oracle.sql` | 导入成功；关键表结构存在 | P2 |
-| FT-DB-005 | SQL Server 脚本导入 | SQL Server 可用；空库 | 1）导入 `database/demo/tdesign_init_sqlserver.sql` 2）或 `database/schema/tdesign_schema_sqlserver.sql` | 导入成功；关键表结构存在 | P2 |
+| FT-DB-001 | MySQL demo 脚本导入 | MySQL 可用；空库 | 1）导入 `database/tdesign_init.sql` | 导入成功；表/数据存在；后端可正常启动登录 | P0 |
+| FT-DB-002 | MySQL 结构脚本导入 | MySQL 可用；空库 | 1）导入对应的结构版 SQL（由 `database/tdesign_init.sql` 去除示例数据生成） | 导入成功；后端启动后核心接口不报表缺失 | P1 |
+| FT-DB-003 | PostgreSQL 脚本导入 | PostgreSQL 可用；空库 | 1）导入 `database/tdesign_init_pg.sql` | 导入成功；关键表结构与字段存在 | P1 |
+| FT-DB-004 | Oracle 脚本导入 | Oracle 可用；空 schema | 1）导入 `database/tdesign_init_oracle.sql` | 导入成功；关键表结构存在 | P2 |
+| FT-DB-005 | SQL Server 脚本导入 | SQL Server 可用；空库 | 1）导入 `database/tdesign_init_sqlserver.sql` | 导入成功；关键表结构存在 | P2 |
 
 ## 6. 执行检查清单（可执行性）
 
 - 后端启动正常，无报错；Swagger/OpenAPI 可访问（若启用）
 - `server.servlet.context-path=/api` 生效：所有接口以 `/api` 前缀访问
 - 登录成功后，`Authorization: Bearer <token>` 头能访问受保护接口
-- 401/403 错误提示与 [SecurityConfig.java](backend/src/main/java/top/elexvx/admin/config/SecurityConfig.java#L64-L88) 一致
+- 401/403 错误提示与 [SecurityConfig.java](backend/src/main/java/elexvx/admin/config/SecurityConfig.java#L64-L88) 一致
 - 已覆盖带 `@RepeatSubmit` 的写接口重复提交场景（详见 [API_SECURITY_SPEC.md](docs/API_SECURITY_SPEC.md#L18-L83)）
 - 文件上传得到的 `url` 能通过 `/files/{token}` 访问，并支持 Range

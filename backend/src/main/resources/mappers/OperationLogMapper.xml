@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="top.elexvx.admin.mapper.OperationLogMapper">
+<mapper namespace="elexvx.admin.mapper.OperationLogMapper">
   <sql id="BaseSelect">
     SELECT id,
       action,
@@ -48,7 +48,7 @@
     </where>
   </sql>
 
-  <select id="selectPage" resultType="top.elexvx.admin.entity.OperationLogEntity">
+  <select id="selectPage" resultType="elexvx.admin.entity.OperationLogEntity">
     <include refid="BaseSelect" />
     <include refid="FilterWhere" />
     ORDER BY id DESC
@@ -62,7 +62,7 @@
     </choose>
   </select>
 
-  <select id="selectAll" resultType="top.elexvx.admin.entity.OperationLogEntity">
+  <select id="selectAll" resultType="elexvx.admin.entity.OperationLogEntity">
     <include refid="BaseSelect" />
     <include refid="FilterWhere" />
     ORDER BY id DESC

@@ -36,6 +36,6 @@
     <logger name="io.netty" level="WARN" />
     
     <!-- 业务代码保持 INFO 级别 -->
-    <logger name="top.elexvx.admin" level="INFO" />
+    <logger name="elexvx.admin" level="INFO" />
 
 </configuration>

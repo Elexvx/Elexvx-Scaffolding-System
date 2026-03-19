@@ -46,7 +46,7 @@ Behavior:
 - Response: HTTP 429 + `ApiResponse` code 429 with the configured message.
 
 Applied endpoints (current):
-- `backend/src/main/java/top/elexvx/admin/controller/AuthController.java`
+- `backend/src/main/java/elexvx/admin/controller/AuthController.java`
   - /auth/sms/send
   - /auth/login/confirm
   - /auth/register
@@ -54,38 +54,38 @@ Applied endpoints (current):
   - /auth/password
   - /auth/logout
   - /auth/assume-role
-- `backend/src/main/java/top/elexvx/admin/controller/ConcurrentLoginController.java`
+- `backend/src/main/java/elexvx/admin/controller/ConcurrentLoginController.java`
   - /auth/concurrent/decision
-- `backend/src/main/java/top/elexvx/admin/controller/SystemUserController.java`
+- `backend/src/main/java/elexvx/admin/controller/SystemUserController.java`
   - POST /system/user
   - PUT /system/user/{id}
   - DELETE /system/user/{id}
   - POST /system/user/{id}/reset-password
-- `backend/src/main/java/top/elexvx/admin/controller/SystemRoleController.java`
+- `backend/src/main/java/elexvx/admin/controller/SystemRoleController.java`
   - POST /system/role
   - PUT /system/role/{id}
   - DELETE /system/role/{id}
-- `backend/src/main/java/top/elexvx/admin/controller/SystemMenuController.java`
+- `backend/src/main/java/elexvx/admin/controller/SystemMenuController.java`
   - POST /system/menu
   - PUT /system/menu/{id}
   - DELETE /system/menu/{id}
   - PUT /system/menu/reorder
   - POST /system/menu/seed-default
-- `backend/src/main/java/top/elexvx/admin/controller/UiSettingController.java`
+- `backend/src/main/java/elexvx/admin/controller/UiSettingController.java`
   - POST /system/ui
   - POST /system/ui/upload
-- `backend/src/main/java/top/elexvx/admin/controller/WatermarkController.java`
+- `backend/src/main/java/elexvx/admin/controller/WatermarkController.java`
   - POST /system/watermark
-- `backend/src/main/java/top/elexvx/admin/controller/StorageController.java`
+- `backend/src/main/java/elexvx/admin/controller/StorageController.java`
   - POST /system/storage
   - POST /system/storage/test
-- `backend/src/main/java/top/elexvx/admin/controller/UserParameterController.java`
+- `backend/src/main/java/elexvx/admin/controller/UserParameterController.java`
   - POST /api/user/parameters
   - PUT /api/user/parameters/{id}
   - DELETE /api/user/parameters/{id}
-- `backend/src/main/java/top/elexvx/admin/controller/FileUploadController.java`
+- `backend/src/main/java/elexvx/admin/controller/FileUploadController.java`
   - POST /system/file/upload
-- `backend/src/main/java/top/elexvx/admin/controller/MessageController.java`
+- `backend/src/main/java/elexvx/admin/controller/MessageController.java`
   - POST /message
   - POST /message/broadcast
   - POST /message/read
@@ -104,17 +104,17 @@ Usage:
   - `USERNAME`, `PASSWORD`, `ID_CARD`, `PHONE`, `EMAIL`, `BANK_CARD`, `CAR_LICENSE`
 
 Current coverage:
-- `backend/src/main/java/top/elexvx/admin/vo/UserListItem.java`
+- `backend/src/main/java/elexvx/admin/vo/UserListItem.java`
   - `mobile`, `phone`, `email`, `idCard`
-- `backend/src/main/java/top/elexvx/admin/vo/UserProfileResponse.java`
+- `backend/src/main/java/elexvx/admin/vo/UserProfileResponse.java`
   - `mobile`, `phone`, `email`, `idCard`
 
 Update behavior with masked input:
 - To avoid overwriting real values with masked placeholders, updates ignore
   values that contain `*`.
 - Implemented in:
-  - `backend/src/main/java/top/elexvx/admin/service/UserAdminService.java`
-  - `backend/src/main/java/top/elexvx/admin/service/AuthService.java`
+  - `backend/src/main/java/elexvx/admin/service/UserAdminService.java`
+  - `backend/src/main/java/elexvx/admin/service/AuthService.java`
 
 Example:
 ```java

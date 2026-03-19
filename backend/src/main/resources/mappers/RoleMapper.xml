@@ -2,23 +2,23 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="top.elexvx.admin.mapper.RoleMapper">
+<mapper namespace="elexvx.admin.mapper.RoleMapper">
   <sql id="BaseSelect">
     SELECT id, name, description
     FROM roles
   </sql>
 
-  <select id="selectAll" resultType="top.elexvx.admin.entity.RoleEntity">
+  <select id="selectAll" resultType="elexvx.admin.entity.RoleEntity">
     <include refid="BaseSelect" />
     ORDER BY id ASC
   </select>
 
-  <select id="selectById" resultType="top.elexvx.admin.entity.RoleEntity">
+  <select id="selectById" resultType="elexvx.admin.entity.RoleEntity">
     <include refid="BaseSelect" />
     WHERE id = #{id}
   </select>
 
-  <select id="selectByName" resultType="top.elexvx.admin.entity.RoleEntity">
+  <select id="selectByName" resultType="elexvx.admin.entity.RoleEntity">
     <include refid="BaseSelect" />
     WHERE name = #{name}
   </select>
@@ -29,12 +29,12 @@
     WHERE name = #{name}
   </select>
 
-  <insert id="insert" parameterType="top.elexvx.admin.entity.RoleEntity" useGeneratedKeys="true" keyProperty="id">
+  <insert id="insert" parameterType="elexvx.admin.entity.RoleEntity" useGeneratedKeys="true" keyProperty="id">
     INSERT INTO roles (name, description)
     VALUES (#{name}, #{description})
   </insert>
 
-  <update id="update" parameterType="top.elexvx.admin.entity.RoleEntity">
+  <update id="update" parameterType="elexvx.admin.entity.RoleEntity">
     UPDATE roles
     SET name = #{name},
       description = #{description}

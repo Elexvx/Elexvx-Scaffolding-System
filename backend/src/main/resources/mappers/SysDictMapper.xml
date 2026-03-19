@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="top.elexvx.admin.mapper.SysDictMapper">
+<mapper namespace="elexvx.admin.mapper.SysDictMapper">
   <sql id="BaseSelect">
     SELECT id,
       name,
@@ -15,12 +15,12 @@
     FROM sys_dict
   </sql>
 
-  <select id="selectAll" resultType="top.elexvx.admin.entity.SysDict">
+  <select id="selectAll" resultType="elexvx.admin.entity.SysDict">
     <include refid="BaseSelect" />
     ORDER BY sort ASC, id DESC
   </select>
 
-  <select id="selectPage" resultType="top.elexvx.admin.entity.SysDict">
+  <select id="selectPage" resultType="elexvx.admin.entity.SysDict">
     <include refid="BaseSelect" />
     <where>
       <if test="keyword != null and keyword != ''">
@@ -56,12 +56,12 @@
     </where>
   </select>
 
-  <select id="selectById" resultType="top.elexvx.admin.entity.SysDict">
+  <select id="selectById" resultType="elexvx.admin.entity.SysDict">
     <include refid="BaseSelect" />
     WHERE id = #{id}
   </select>
 
-  <select id="selectByCode" resultType="top.elexvx.admin.entity.SysDict">
+  <select id="selectByCode" resultType="elexvx.admin.entity.SysDict">
     <include refid="BaseSelect" />
     WHERE code = #{code}
     <choose>
@@ -77,7 +77,7 @@
     </choose>
   </select>
 
-  <insert id="insert" parameterType="top.elexvx.admin.entity.SysDict" useGeneratedKeys="true" keyProperty="id">
+  <insert id="insert" parameterType="elexvx.admin.entity.SysDict" useGeneratedKeys="true" keyProperty="id">
     INSERT INTO sys_dict (
       name,
       code,
@@ -98,7 +98,7 @@
     )
   </insert>
 
-  <update id="update" parameterType="top.elexvx.admin.entity.SysDict">
+  <update id="update" parameterType="elexvx.admin.entity.SysDict">
     UPDATE sys_dict
     SET
       name = #{name},

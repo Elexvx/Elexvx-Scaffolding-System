@@ -8,7 +8,12 @@
         </div>
         <div v-if="sensitiveToggle || showAction" class="info-section-card__operation-wrap">
           <t-tooltip v-if="sensitiveToggle" :content="sensitiveVisible ? '隐藏敏感信息' : '显示敏感信息'">
-            <span class="info-section-card__sensitive-toggle" role="button" tabindex="0" @click.stop="$emit('toggle-sensitive')">
+            <span
+              class="info-section-card__sensitive-toggle"
+              role="button"
+              tabindex="0"
+              @click.stop="$emit('toggle-sensitive')"
+            >
               <t-icon :name="sensitiveVisible ? 'browse' : 'browse-off'" />
             </span>
           </t-tooltip>
@@ -21,7 +26,6 @@
     <slot />
   </t-collapse-panel>
 </template>
-
 <script setup lang="ts">
 withDefaults(
   defineProps<{
@@ -43,7 +47,6 @@ defineEmits<{
   (e: 'toggle-sensitive'): void;
 }>();
 </script>
-
 <style lang="less" scoped>
 .info-section-card {
   &__header {

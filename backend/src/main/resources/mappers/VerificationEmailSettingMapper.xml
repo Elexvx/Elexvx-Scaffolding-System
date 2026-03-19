@@ -2,8 +2,8 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="top.elexvx.admin.mapper.VerificationEmailSettingMapper">
-  <select id="selectTop" resultType="top.elexvx.admin.entity.VerificationEmailSetting">
+<mapper namespace="elexvx.admin.mapper.VerificationEmailSettingMapper">
+  <select id="selectTop" resultType="elexvx.admin.entity.VerificationEmailSetting">
     SELECT id, email_enabled, email_host, email_port, email_username, email_password, email_from, email_ssl
     FROM verification_email_settings
     ORDER BY id ASC
@@ -20,7 +20,7 @@
     </choose>
   </select>
 
-  <insert id="insert" parameterType="top.elexvx.admin.entity.VerificationEmailSetting" useGeneratedKeys="true" keyProperty="id">
+  <insert id="insert" parameterType="elexvx.admin.entity.VerificationEmailSetting" useGeneratedKeys="true" keyProperty="id">
     INSERT INTO verification_email_settings (
       email_enabled, email_host, email_port, email_username, email_password, email_from, email_ssl
     ) VALUES (
@@ -28,7 +28,7 @@
     )
   </insert>
 
-  <update id="update" parameterType="top.elexvx.admin.entity.VerificationEmailSetting">
+  <update id="update" parameterType="elexvx.admin.entity.VerificationEmailSetting">
     UPDATE verification_email_settings
     SET
       email_enabled = #{emailEnabled},

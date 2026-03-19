@@ -6,7 +6,7 @@
     <version>3.3.5</version>
     <relativePath/>
   </parent>
-  <groupId>top.elexvx</groupId>
+  <groupId>elexvx</groupId>
   <artifactId>elexvx-backend</artifactId>
   <version>1.0.0</version>
   <name>elexvx-backend</name>

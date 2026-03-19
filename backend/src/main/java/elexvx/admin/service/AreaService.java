@@ -17,6 +17,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class AreaService {
   private static final Logger log = LoggerFactory.getLogger(AreaService.class);
+  private static final String AREA_DATA_NOT_INITIALIZED_MESSAGE = "请先导入 database/tdesign_init.sql 或对应数据库的初始化脚本。";
+
   private static BusinessException badRequest(String message) {
     return new BusinessException(ErrorCodes.BAD_REQUEST, message);
   }
@@ -33,7 +35,7 @@ public class AreaService {
       rows = areaMapper.selectChildren(safeParentId);
     } catch (Exception e) {
       log.error("Load area children failed, parentId={}", safeParentId, e);
-      throw badRequest("地区数据未初始化，请先导入地区数据");
+      throw badRequest(AREA_DATA_NOT_INITIALIZED_MESSAGE);
     }
     List<AreaNodeResponse> result = new ArrayList<>();
     for (AreaNodeRow row : rows) {
@@ -59,7 +61,7 @@ public class AreaService {
         entity = areaMapper.selectById(cursor);
       } catch (Exception e) {
         log.error("Load area path failed, areaId={}", areaId, e);
-        throw badRequest("地区数据未初始化，请先导入地区数据");
+        throw badRequest(AREA_DATA_NOT_INITIALIZED_MESSAGE);
       }
       if (entity == null) break;
       AreaPathNode node = new AreaPathNode();
@@ -84,7 +86,7 @@ public class AreaService {
       parentId = appendByName(path, parentId, district);
     } catch (Exception e) {
       log.error("Resolve area path failed.", e);
-      throw badRequest("地区数据未初始化，请先导入地区数据");
+      throw badRequest(AREA_DATA_NOT_INITIALIZED_MESSAGE);
     }
     return path;
   }

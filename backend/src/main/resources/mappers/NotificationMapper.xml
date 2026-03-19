@@ -2,8 +2,8 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.tencent.tdesign.mapper.NotificationMapper">
-  <select id="selectById" resultType="com.tencent.tdesign.entity.Notification">
+<mapper namespace="top.elexvx.admin.mapper.NotificationMapper">
+  <select id="selectById" resultType="top.elexvx.admin.entity.Notification">
     SELECT id,
       title,
       summary,
@@ -23,7 +23,7 @@
     WHERE id = #{id}
   </select>
 
-  <select id="selectPage" resultType="com.tencent.tdesign.entity.Notification">
+  <select id="selectPage" resultType="top.elexvx.admin.entity.Notification">
     SELECT id,
       title,
       summary,
@@ -76,7 +76,7 @@
     </if>
   </select>
 
-  <select id="selectLatestPublished" resultType="com.tencent.tdesign.entity.Notification">
+  <select id="selectLatestPublished" resultType="top.elexvx.admin.entity.Notification">
     SELECT id,
       title,
       summary,
@@ -105,7 +105,7 @@
     </choose>
   </select>
 
-  <insert id="insert" parameterType="com.tencent.tdesign.entity.Notification">
+  <insert id="insert" parameterType="top.elexvx.admin.entity.Notification">
     INSERT INTO notifications (
       title,
       summary,
@@ -140,7 +140,7 @@
     )
   </insert>
 
-  <update id="update" parameterType="com.tencent.tdesign.entity.Notification">
+  <update id="update" parameterType="top.elexvx.admin.entity.Notification">
     UPDATE notifications
     SET
       title = #{title},

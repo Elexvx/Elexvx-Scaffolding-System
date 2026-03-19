@@ -2,6 +2,7 @@ import { defineStore } from 'pinia';
 
 import { store } from '@/store';
 import type { TRouterInfo, TTabRouterType } from '@/types/interface';
+import { migrateLocalStorageKey } from '@/utils/storage/compat';
 
 export const normalizeTabPath = (path: string) => String(path || '').split(/[?#]/)[0];
 
@@ -219,10 +220,15 @@ export const useTabsRouterStore = defineStore('tabsRouter', {
     },
   },
   persist: {
+    key: 'elexvx.tabs-router',
     paths: ['tabRouterList'],
   },
 });
 
 export function getTabsRouterStore() {
   return useTabsRouterStore(store);
+}
+
+if (typeof window !== 'undefined') {
+  migrateLocalStorageKey('elexvx.tabs-router', ['tabsRouter']);
 }

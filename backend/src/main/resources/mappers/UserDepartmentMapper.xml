@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.tencent.tdesign.mapper.UserDepartmentMapper">
+<mapper namespace="top.elexvx.admin.mapper.UserDepartmentMapper">
   <select id="selectDepartmentIdsByUserId" resultType="long">
     SELECT department_id
     FROM user_departments
@@ -18,7 +18,7 @@
   </select>
 
 
-  <select id="selectDepartmentNamesByUserIds" resultType="com.tencent.tdesign.dto.UserIdStringValue">
+  <select id="selectDepartmentNamesByUserIds" resultType="top.elexvx.admin.dto.UserIdStringValue">
     SELECT ud.user_id AS userId, ou.name AS value
     FROM user_departments ud
     JOIN org_units ou ON ou.id = ud.department_id
@@ -29,7 +29,7 @@
     ORDER BY ud.user_id ASC, ou.sort_order ASC, ou.id ASC
   </select>
 
-  <select id="selectDepartmentIdsByUserIds" resultType="com.tencent.tdesign.dto.UserIdLongValue">
+  <select id="selectDepartmentIdsByUserIds" resultType="top.elexvx.admin.dto.UserIdLongValue">
     SELECT ud.user_id AS userId, ud.department_id AS value
     FROM user_departments ud
     JOIN org_units ou ON ou.id = ud.department_id

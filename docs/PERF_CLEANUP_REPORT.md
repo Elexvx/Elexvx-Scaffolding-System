@@ -10,7 +10,7 @@
   - `removeObsoleteTeamRoute`
   - `removeObsoletePrintRoute`
   - `removeObsoleteNotificationRoute`
-- 新增开关：`tdesign.menu.maintenance.enabled`（默认 `true`，可通过环境变量 `TDESIGN_MENU_MAINTENANCE_ENABLED` 关闭）。
+- 新增开关：`elexvx.menu.maintenance.enabled`（默认 `true`，可通过环境变量 `ELEXVX_MENU_MAINTENANCE_ENABLED` 关闭）。
 - `MenuController#getMenuList` 与 `SystemMenuController#tree` 去除了维护逻辑，改为纯读路径。
 
 ### 1.2 菜单并发幂等
@@ -103,7 +103,7 @@
 
 ### 回滚建议
 1. 回滚到本次提交前版本（git revert）。
-2. 若只临时关闭菜单维护任务，可设：`TDESIGN_MENU_MAINTENANCE_ENABLED=false`。
+2. 若只临时关闭菜单维护任务，可设：`ELEXVX_MENU_MAINTENANCE_ENABLED=false`。
 3. 分阶段回滚优先级：
    - 先回滚对象存储 client 复用
    - 再回滚缓存层改造

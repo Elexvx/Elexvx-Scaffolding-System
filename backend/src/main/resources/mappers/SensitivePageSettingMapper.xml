@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.tencent.tdesign.mapper.SensitivePageSettingMapper">
+<mapper namespace="top.elexvx.admin.mapper.SensitivePageSettingMapper">
   <sql id="BaseSelect">
     SELECT id,
       page_key,
@@ -13,11 +13,11 @@
     FROM sensitive_page_settings
   </sql>
 
-  <select id="selectAll" resultType="com.tencent.tdesign.entity.SensitivePageSetting">
+  <select id="selectAll" resultType="top.elexvx.admin.entity.SensitivePageSetting">
     <include refid="BaseSelect" />
   </select>
 
-  <select id="selectByPageKey" resultType="com.tencent.tdesign.entity.SensitivePageSetting">
+  <select id="selectByPageKey" resultType="top.elexvx.admin.entity.SensitivePageSetting">
     <include refid="BaseSelect" />
     WHERE page_key = #{pageKey}
     <choose>
@@ -33,12 +33,12 @@
     </choose>
   </select>
 
-  <select id="selectById" resultType="com.tencent.tdesign.entity.SensitivePageSetting">
+  <select id="selectById" resultType="top.elexvx.admin.entity.SensitivePageSetting">
     <include refid="BaseSelect" />
     WHERE id = #{id}
   </select>
 
-  <insert id="insert" parameterType="com.tencent.tdesign.entity.SensitivePageSetting" useGeneratedKeys="true" keyProperty="id">
+  <insert id="insert" parameterType="top.elexvx.admin.entity.SensitivePageSetting" useGeneratedKeys="true" keyProperty="id">
     INSERT INTO sensitive_page_settings (
       page_key,
       page_name,
@@ -55,7 +55,7 @@
     )
   </insert>
 
-  <update id="update" parameterType="com.tencent.tdesign.entity.SensitivePageSetting">
+  <update id="update" parameterType="top.elexvx.admin.entity.SensitivePageSetting">
     UPDATE sensitive_page_settings
     SET
       page_key = #{pageKey},

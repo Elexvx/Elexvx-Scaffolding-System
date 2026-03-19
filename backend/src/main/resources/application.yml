@@ -12,14 +12,14 @@ spring:
     log-startup-info: false # 是否打印启动信息
   # 数据源配置（默认 MySQL，可通过环境变量覆盖）
   datasource:
-    # 数据库连接 URL（可通过 TDESIGN_DB_URL 覆盖）
-    url: ${TDESIGN_DB_URL:jdbc:mysql://localhost:3306/tdesign?createDatabaseIfNotExist=true&useSSL=false&useUnicode=true&characterEncoding=UTF-8&connectionCollation=utf8mb4_0900_ai_ci&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
-    # 数据库用户名（可通过 TDESIGN_DB_USER 覆盖）
-    username: ${TDESIGN_DB_USER:root}
-    # 数据库密码（可通过 TDESIGN_DB_PASSWORD 覆盖）
-    password: ${TDESIGN_DB_PASSWORD:123456}
-    # 数据库驱动（可通过 TDESIGN_DB_DRIVER 覆盖）
-    driver-class-name: ${TDESIGN_DB_DRIVER:com.mysql.cj.jdbc.Driver}
+    # 数据库连接 URL（可通过 ELEXVX_DB_URL 覆盖，兼容 TDESIGN_DB_URL）
+    url: ${ELEXVX_DB_URL:${TDESIGN_DB_URL:jdbc:mysql://localhost:3306/elexvx?createDatabaseIfNotExist=true&useSSL=false&useUnicode=true&characterEncoding=UTF-8&connectionCollation=utf8mb4_0900_ai_ci&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}}
+    # 数据库用户名（可通过 ELEXVX_DB_USER 覆盖，兼容 TDESIGN_DB_USER）
+    username: ${ELEXVX_DB_USER:${TDESIGN_DB_USER:root}}
+    # 数据库密码（可通过 ELEXVX_DB_PASSWORD 覆盖，兼容 TDESIGN_DB_PASSWORD）
+    password: ${ELEXVX_DB_PASSWORD:${TDESIGN_DB_PASSWORD:123456}}
+    # 数据库驱动（可通过 ELEXVX_DB_DRIVER 覆盖，兼容 TDESIGN_DB_DRIVER）
+    driver-class-name: ${ELEXVX_DB_DRIVER:${TDESIGN_DB_DRIVER:com.mysql.cj.jdbc.Driver}}
     # 数据库连接池类型（使用 Druid）
     type: com.alibaba.druid.pool.DruidDataSource
   # Flyway 数据库迁移配置
@@ -45,59 +45,61 @@ mybatis:
   configuration:
     map-underscore-to-camel-case: true # 开启下划线到驼峰转换
 
-# 自定义业务配置（tdesign.*）
-tdesign:
-  # 数据库能力（根据 tdesign.db.type 选择模板覆盖 spring.datasource.*）
+# 自定义业务配置（elexvx.* 为主，tdesign.* 兼容一段时间）
+elexvx:
+  # 数据库能力（根据 elexvx.db.type 选择模板覆盖 spring.datasource.*）
   db:
     # 数据库类型（mysql/postgresql/oracle/sqlserver）
-    type: ${TDESIGN_DB_TYPE:mysql}
+    type: ${ELEXVX_DB_TYPE:${TDESIGN_DB_TYPE:mysql}}
     # 数据库方言（用于 DDL 生成、SQL 兼容提示）
-    dialect: ${TDESIGN_DB_DIALECT:mysql}
+    dialect: ${ELEXVX_DB_DIALECT:${TDESIGN_DB_DIALECT:mysql}}
     # 连接模板（按需替换 spring.datasource.*）
     templates:
       # MySQL 连接模板
       mysql:
-        url: jdbc:mysql://localhost:3306/tdesign?createDatabaseIfNotExist=true&useSSL=false&useUnicode=true&characterEncoding=UTF-8&connectionCollation=utf8mb4_0900_ai_ci&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+        url: jdbc:mysql://localhost:3306/elexvx?createDatabaseIfNotExist=true&useSSL=false&useUnicode=true&characterEncoding=UTF-8&connectionCollation=utf8mb4_0900_ai_ci&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
         driver-class-name: com.mysql.cj.jdbc.Driver
         dialect: mysql
       # PostgreSQL 连接模板
       postgresql:
-        url: jdbc:postgresql://localhost:5432/tdesign
+        url: jdbc:postgresql://localhost:5432/elexvx
         driver-class-name: org.postgresql.Driver
         dialect: postgresql
       # Oracle 连接模板
       oracle:
-        url: jdbc:oracle:thin:@localhost:1521/tdesign
+        url: jdbc:oracle:thin:@localhost:1521/elexvx
         driver-class-name: oracle.jdbc.OracleDriver
         dialect: oracle
       # SQLServer 连接模板
       sqlserver:
-        url: jdbc:sqlserver://localhost:1433;databaseName=tdesign;encrypt=false
+        url: jdbc:sqlserver://localhost:1433;databaseName=elexvx;encrypt=false
         driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
         dialect: sqlserver
   # 系统基础信息
   system:
     # 系统版本号（用于前端展示/接口返回等）
-    version: ${TDESIGN_SYSTEM_VERSION:1.0.0}
+    version: ${ELEXVX_SYSTEM_VERSION:${TDESIGN_SYSTEM_VERSION:1.0.0}}
     # 版本更新检查地址（可为空）
-    update-check-url: ${TDESIGN_UPDATE_CHECK_URL:}
+    update-check-url: ${ELEXVX_UPDATE_CHECK_URL:${TDESIGN_UPDATE_CHECK_URL:}}
   menu:
     maintenance:
-      enabled: ${TDESIGN_MENU_MAINTENANCE_ENABLED:true}
+      enabled: ${ELEXVX_MENU_MAINTENANCE_ENABLED:${TDESIGN_MENU_MAINTENANCE_ENABLED:true}}
   # 文件能力（上传/下载/预览）
   file:
     # 文件下载/预览 token 的签名密钥（生产必填）
-    token-secret: ${FILE_TOKEN_SECRET:}
+    token-secret: ${ELEXVX_FILE_TOKEN_SECRET:${TDESIGN_FILE_TOKEN_SECRET:${FILE_TOKEN_SECRET:}}}
     # 文件 token 有效期（秒）
-    token-ttl-seconds: ${TDESIGN_FILE_TOKEN_TTL_SECONDS:600}
+    token-ttl-seconds: ${ELEXVX_FILE_TOKEN_TTL_SECONDS:${TDESIGN_FILE_TOKEN_TTL_SECONDS:600}}
     # 上传配置
     upload:
       # 上传单文件最大大小（MB）
-      max-file-size-mb: ${TDESIGN_UPLOAD_MAX_FILE_SIZE_MB:100}
+      max-file-size-mb: ${ELEXVX_UPLOAD_MAX_FILE_SIZE_MB:${TDESIGN_UPLOAD_MAX_FILE_SIZE_MB:100}}
   # 安全相关配置（验证码/限流等）
   security:
+    # 新旧键兼容，后续版本再移除旧键。
+    field-secret: ${ELEXVX_SECURITY_FIELD_SECRET:${TDESIGN_SECURITY_FIELD_SECRET:sdfghjh533gfdc8768vgcchg6fgvhbjhgf}}
     # 兼容开关：是否允许通过 URL query 传递密码（默认 false，建议仅迁移期临时开启）
-    allow-password-in-query: false
+    allow-password-in-query: ${ELEXVX_SECURITY_ALLOW_PASSWORD_IN_QUERY:${TDESIGN_SECURITY_ALLOW_PASSWORD_IN_QUERY:false}}
     captcha:
       enabled: true # 是否启用验证码（登录流程）
     rate-limit:
@@ -118,9 +120,9 @@ tdesign:
   # 插件系统（PF4J）配置
   plugins:
     # 是否启用插件系统（默认关闭）
-    enabled: ${TDESIGN_PLUGINS_ENABLED:false}
+    enabled: ${ELEXVX_PLUGINS_ENABLED:${TDESIGN_PLUGINS_ENABLED:false}}
     # 插件包目录（相对路径通常在项目 data 目录下）
-    package-dir: ${TDESIGN_PLUGINS_PACKAGE_DIR:data/plugins}
+    package-dir: ${ELEXVX_PLUGINS_PACKAGE_DIR:${TDESIGN_PLUGINS_PACKAGE_DIR:data/plugins}}
   # 可选业务模块开关
   modules:
     sms:
@@ -166,9 +168,6 @@ aj:
     slip-offset: 5 # 滑块误差偏移
     aes-status: true # 是否启用 AES 加密
     interference-options: 2 # 干扰项强度
-
-# 字段加解密密钥（用于敏感字段脱敏/加密场景；生产建议通过环境变量覆盖）
-tdesign.security.field-secret: ${TDESIGN_SECURITY_FIELD_SECRET:sdfghjh533gfdc8768vgcchg6fgvhbjhgf}
 
 
 # 接口文档（SpringDoc OpenAPI/Swagger UI）配置

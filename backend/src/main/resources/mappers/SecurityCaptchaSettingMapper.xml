@@ -2,8 +2,8 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.tencent.tdesign.mapper.SecurityCaptchaSettingMapper">
-  <select id="selectTop" resultType="com.tencent.tdesign.entity.SecurityCaptchaSetting">
+<mapper namespace="top.elexvx.admin.mapper.SecurityCaptchaSettingMapper">
+  <select id="selectTop" resultType="top.elexvx.admin.entity.SecurityCaptchaSetting">
     SELECT id, captcha_type, drag_captcha_width, drag_captcha_height, drag_captcha_threshold, image_captcha_length, image_captcha_noise_lines, captcha_enabled
     FROM security_captcha_settings
     ORDER BY id ASC
@@ -20,7 +20,7 @@
     </choose>
   </select>
 
-  <insert id="insert" parameterType="com.tencent.tdesign.entity.SecurityCaptchaSetting" useGeneratedKeys="true" keyProperty="id">
+  <insert id="insert" parameterType="top.elexvx.admin.entity.SecurityCaptchaSetting" useGeneratedKeys="true" keyProperty="id">
     INSERT INTO security_captcha_settings (
       captcha_type, drag_captcha_width, drag_captcha_height, drag_captcha_threshold, image_captcha_length, image_captcha_noise_lines, captcha_enabled
     ) VALUES (
@@ -28,7 +28,7 @@
     )
   </insert>
 
-  <update id="update" parameterType="com.tencent.tdesign.entity.SecurityCaptchaSetting">
+  <update id="update" parameterType="top.elexvx.admin.entity.SecurityCaptchaSetting">
     UPDATE security_captcha_settings
     SET
       captcha_type = #{captchaType},

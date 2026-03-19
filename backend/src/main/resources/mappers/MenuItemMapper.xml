@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.tencent.tdesign.mapper.MenuItemMapper">
+<mapper namespace="top.elexvx.admin.mapper.MenuItemMapper">
   <sql id="BaseSelect">
     SELECT id,
       parent_id,
@@ -31,21 +31,21 @@
     SELECT COUNT(1) FROM sys_menu_items
   </select>
 
-  <select id="selectAll" resultType="com.tencent.tdesign.entity.MenuItemEntity">
+  <select id="selectAll" resultType="top.elexvx.admin.entity.MenuItemEntity">
     <include refid="BaseSelect" />
   </select>
 
-  <select id="selectAllEnabled" resultType="com.tencent.tdesign.entity.MenuItemEntity">
+  <select id="selectAllEnabled" resultType="top.elexvx.admin.entity.MenuItemEntity">
     <include refid="BaseSelect" />
     WHERE enabled = 1
   </select>
 
-  <select id="selectById" resultType="com.tencent.tdesign.entity.MenuItemEntity">
+  <select id="selectById" resultType="top.elexvx.admin.entity.MenuItemEntity">
     <include refid="BaseSelect" />
     WHERE id = #{id}
   </select>
 
-  <select id="selectByIds" resultType="com.tencent.tdesign.entity.MenuItemEntity">
+  <select id="selectByIds" resultType="top.elexvx.admin.entity.MenuItemEntity">
     <include refid="BaseSelect" />
     WHERE id IN
     <foreach collection="ids" item="id" open="(" close=")" separator=",">
@@ -53,12 +53,12 @@
     </foreach>
   </select>
 
-  <select id="selectByRouteName" resultType="com.tencent.tdesign.entity.MenuItemEntity">
+  <select id="selectByRouteName" resultType="top.elexvx.admin.entity.MenuItemEntity">
     <include refid="BaseSelect" />
     WHERE route_name = #{routeName}
   </select>
 
-  <insert id="insert" parameterType="com.tencent.tdesign.entity.MenuItemEntity" useGeneratedKeys="true" keyProperty="id">
+  <insert id="insert" parameterType="top.elexvx.admin.entity.MenuItemEntity" useGeneratedKeys="true" keyProperty="id">
     INSERT INTO sys_menu_items (
       parent_id,
       node_type,
@@ -99,7 +99,7 @@
     )
   </insert>
 
-  <update id="update" parameterType="com.tencent.tdesign.entity.MenuItemEntity">
+  <update id="update" parameterType="top.elexvx.admin.entity.MenuItemEntity">
     UPDATE sys_menu_items
     SET
       parent_id = #{parentId},

@@ -93,15 +93,16 @@ const redirectFromAuthPage = (redirect?: string, forceReload = false) => {
 const handleStorageChange = async (event: StorageEvent) => {
   if (event.storageArea !== window.localStorage) return;
   const tokenKey = getTokenStorageKey();
-  if (event.key !== 'user' && event.key !== tokenKey) return;
+  if (event.key !== 'elexvx.user' && event.key !== 'user' && event.key !== tokenKey && event.key !== 'tdesign.auth.token')
+    return;
   if (authSyncing) return;
   authSyncing = true;
   const prevToken = userStore.token;
   try {
-    if (event.key === 'user') {
+    if (event.key === 'elexvx.user' || event.key === 'user') {
       userStore.$hydrate({ runHooks: true });
     }
-    if (event.key === tokenKey) {
+    if (event.key === tokenKey || event.key === 'tdesign.auth.token') {
       await userStore.restoreTokenFromStorage();
     }
     const nextToken = userStore.token;

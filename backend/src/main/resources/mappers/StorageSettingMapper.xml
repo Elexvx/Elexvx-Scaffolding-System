@@ -2,8 +2,8 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.tencent.tdesign.mapper.StorageSettingMapper">
-  <select id="selectTop" resultType="com.tencent.tdesign.entity.StorageSetting">
+<mapper namespace="top.elexvx.admin.mapper.StorageSettingMapper">
+  <select id="selectTop" resultType="top.elexvx.admin.entity.StorageSetting">
     SELECT id,
       provider,
       bucket,
@@ -29,7 +29,7 @@
     </choose>
   </select>
 
-  <insert id="insert" parameterType="com.tencent.tdesign.entity.StorageSetting" useGeneratedKeys="true" keyProperty="id">
+  <insert id="insert" parameterType="top.elexvx.admin.entity.StorageSetting" useGeneratedKeys="true" keyProperty="id">
     INSERT INTO storage_settings (
       provider,
       bucket,
@@ -54,7 +54,7 @@
     )
   </insert>
 
-  <update id="update" parameterType="com.tencent.tdesign.entity.StorageSetting">
+  <update id="update" parameterType="top.elexvx.admin.entity.StorageSetting">
     UPDATE storage_settings
     SET
       provider = #{provider},

@@ -9,6 +9,7 @@ import STYLE_CONFIG from '@/config/style';
 import { store } from '@/store';
 import type { ModeType } from '@/types/interface';
 import { generateColorMap, insertThemeStylesheet } from '@/utils/color';
+import { migrateLocalStorageKey } from '@/utils/storage/compat';
 
 /**
  * UI 配置与站点设置 Store（主题、布局、站点信息、登录方式开关、水印等）。
@@ -474,10 +475,15 @@ export const useSettingStore = defineStore('setting', {
     },
   },
   persist: {
+    key: 'elexvx.setting',
     paths: [...keys(STYLE_CONFIG), 'colorList', 'chartColors', 'uiRefreshSeq'],
   },
 });
 
 export function getSettingStore() {
   return useSettingStore(store);
+}
+
+if (typeof window !== 'undefined') {
+  migrateLocalStorageKey('elexvx.setting', ['setting']);
 }

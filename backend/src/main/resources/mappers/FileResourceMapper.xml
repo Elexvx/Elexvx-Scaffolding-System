@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.tencent.tdesign.mapper.FileResourceMapper">
+<mapper namespace="top.elexvx.admin.mapper.FileResourceMapper">
   <sql id="BaseSelect">
     SELECT id,
       content,
@@ -16,16 +16,16 @@
     FROM file_resources
   </sql>
 
-  <select id="selectById" resultType="com.tencent.tdesign.entity.FileResource">
+  <select id="selectById" resultType="top.elexvx.admin.entity.FileResource">
     <include refid="BaseSelect" />
     WHERE id = #{id}
   </select>
-  <select id="selectByFileUrl" resultType="com.tencent.tdesign.entity.FileResource">
+  <select id="selectByFileUrl" resultType="top.elexvx.admin.entity.FileResource">
     <include refid="BaseSelect" />
     WHERE file_url = #{fileUrl}
   </select>
 
-  <select id="selectPage" resultType="com.tencent.tdesign.entity.FileResource">
+  <select id="selectPage" resultType="top.elexvx.admin.entity.FileResource">
     <include refid="BaseSelect" />
     ORDER BY created_at DESC
     <choose>
@@ -43,7 +43,7 @@
     FROM file_resources
   </select>
 
-  <insert id="insert" parameterType="com.tencent.tdesign.entity.FileResource" useGeneratedKeys="true" keyProperty="id">
+  <insert id="insert" parameterType="top.elexvx.admin.entity.FileResource" useGeneratedKeys="true" keyProperty="id">
     INSERT INTO file_resources (
       content,
       file_name,
@@ -66,7 +66,7 @@
     )
   </insert>
 
-  <update id="update" parameterType="com.tencent.tdesign.entity.FileResource">
+  <update id="update" parameterType="top.elexvx.admin.entity.FileResource">
     UPDATE file_resources
     SET
       content = #{content},

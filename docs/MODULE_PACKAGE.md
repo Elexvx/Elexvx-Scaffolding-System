@@ -69,7 +69,7 @@ backend/**                 # 后端 Node 服务（必须包含 package.json）
 
 ## 配置项
 
-- `tdesign.modules.packageDir`
+- `elexvx.modules.packageDir`
   - 模块包落盘目录（默认：`data/module-packages`）
   - 该目录下会生成：
     - `manifests/`：模块清单

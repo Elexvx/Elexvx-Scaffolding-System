@@ -2,8 +2,8 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.tencent.tdesign.mapper.UiLoginSettingMapper">
-  <select id="selectTop" resultType="com.tencent.tdesign.entity.UiLoginSetting">
+<mapper namespace="top.elexvx.admin.mapper.UiLoginSettingMapper">
+  <select id="selectTop" resultType="top.elexvx.admin.entity.UiLoginSetting">
     SELECT id, login_bg_url, allow_multi_device_login
     FROM ui_login_settings
     ORDER BY id ASC
@@ -20,7 +20,7 @@
     </choose>
   </select>
 
-  <insert id="insert" parameterType="com.tencent.tdesign.entity.UiLoginSetting" useGeneratedKeys="true" keyProperty="id">
+  <insert id="insert" parameterType="top.elexvx.admin.entity.UiLoginSetting" useGeneratedKeys="true" keyProperty="id">
     INSERT INTO ui_login_settings (
       login_bg_url, allow_multi_device_login
     ) VALUES (
@@ -28,7 +28,7 @@
     )
   </insert>
 
-  <update id="update" parameterType="com.tencent.tdesign.entity.UiLoginSetting">
+  <update id="update" parameterType="top.elexvx.admin.entity.UiLoginSetting">
     UPDATE ui_login_settings
     SET
       login_bg_url = #{loginBgUrl},

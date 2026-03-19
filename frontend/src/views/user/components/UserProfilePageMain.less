@@ -1,0 +1,112 @@
+.user-page {
+  --user-page-gap: 16px;
+
+  .profile-shell {
+    background: transparent;
+  }
+
+  .profile-shell__body {
+    background: transparent;
+  }
+
+  .profile-shell__content {
+    overflow: visible;
+  }
+
+  .profile-main {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--user-page-gap);
+  }
+
+  .profile-main--wide {
+    grid-template-columns: 340px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .profile-main__left,
+  .profile-main__right {
+    display: grid;
+    gap: var(--user-page-gap);
+  }
+
+  .sections-shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--user-page-gap);
+  }
+
+  .info-sections {
+    border: 1px solid var(--td-border-level-1-color);
+    border-radius: var(--td-radius-large);
+    background: var(--td-bg-color-container);
+    overflow: hidden;
+
+    :deep(.t-collapse-panel) {
+      margin: 0;
+      border: none;
+      border-bottom: 1px solid var(--td-border-level-1-color);
+      border-radius: 0;
+      background: transparent;
+      padding: 0;
+    }
+
+    :deep(.t-collapse-panel:last-child) {
+      border-bottom: none;
+    }
+
+    :deep(.t-collapse-panel__header) {
+      min-height: 72px;
+      padding: 0 20px;
+      border-bottom: none;
+      background: var(--td-bg-color-container);
+    }
+
+    :deep(.t-collapse-panel__body) {
+      border-top: 1px solid var(--td-border-level-1-color);
+      background: var(--td-bg-color-container);
+      overflow: hidden;
+    }
+
+    :deep(.t-collapse-panel__body--collapsed) {
+      display: none;
+    }
+
+    :deep(.t-collapse-panel__content) {
+      padding: 0 20px 20px;
+    }
+  }
+
+  .section-body {
+    padding-top: 10px;
+  }
+
+  @media (max-width: 1200px) {
+    .profile-main--wide {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  @media (max-width: 900px) {
+    .info-sections {
+      :deep(.t-collapse-panel) {
+        padding: 0;
+      }
+
+      :deep(.t-collapse-panel__header) {
+        min-height: 64px;
+        padding: 0 14px;
+      }
+
+      :deep(.t-collapse-panel__content) {
+        padding: 0 14px 14px;
+      }
+    }
+
+    .login-log-table {
+      :deep(.t-table__content) {
+        overflow-x: auto;
+      }
+    }
+  }
+}

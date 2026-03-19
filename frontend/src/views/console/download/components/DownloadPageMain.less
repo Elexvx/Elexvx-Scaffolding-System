@@ -1,0 +1,108 @@
+.download-page {
+  .download-toolbar {
+    margin-bottom: 16px;
+  }
+
+  .download-file-cell {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+  }
+
+  .download-file-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .download-file-link {
+    color: var(--td-brand-color);
+    cursor: pointer;
+    text-decoration: none;
+    max-width: 200px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+  }
+
+  .download-file-suffix {
+    color: var(--td-text-color-placeholder);
+    font-size: 12px;
+  }
+
+  .download-upload-panel {
+    width: 100%;
+    display: grid;
+    gap: 8px;
+  }
+
+  .download-upload-tips {
+    color: var(--td-text-color-placeholder);
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .download-existing-file {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    color: var(--td-text-color-secondary);
+    font-size: 12px;
+  }
+
+  .download-existing-hint {
+    color: var(--td-text-color-placeholder);
+  }
+
+  .download-upload-caption {
+    margin: 0;
+    color: var(--td-brand-color);
+    font-size: 12px;
+  }
+
+  .download-upload-error {
+    margin: 0;
+    color: var(--td-error-color);
+    font-size: 12px;
+  }
+}
+
+.download-preview-dialog {
+  :deep(.t-dialog__body) {
+    padding: 0 24px 16px;
+  }
+
+  .download-preview-body {
+    width: 100%;
+    height: 70vh;
+    min-height: 420px;
+    border: 1px solid var(--td-border-level-1-color);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--td-bg-color-container);
+  }
+
+  .download-preview-body iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
+
+  .download-preview-empty {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--td-text-color-secondary);
+  }
+
+  .download-preview-footer {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+  }
+}

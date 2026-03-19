@@ -102,3 +102,72 @@
 - 以“兼容壳先收口 + 主实现再深拆”作为固定路径。
 - 每页迁移完成后同步更新 refactor 文档，避免团队认知滞后。
 - 新页面开发默认从 `views` 开始，不再在 `pages` 承载真实实现。
+
+## 第三轮迁移增量（本次补充）
+
+### system/org
+
+- 主页面：`views/system/org/components/OrgPageMain.vue`
+- 拆分落点：
+  - `components/`：`OrgToolbar`、`OrgTable`、`OrgFormDialog`、`OrgUserSelectorDialog`
+  - `hooks/`：`useOrgPageState`、`useOrgTable`、`useOrgTree`、`useOrgForm`、`useOrgDialog`、`useOrgSearchForm`、`useOrgPermissions`、`useOrgColumns`
+  - `schema/`：`orgFormSchema`、`searchSchema`
+  - `constants/`：`orgOptions`
+  - `utils/`：`orgMappers`、`orgTree`、`orgGuards`
+  - `types.ts`：组织树、表单、检索、用户选择等域类型
+
+### user
+
+- 主页面：`views/user/components/UserProfilePageMain.vue`
+- 拆分落点：
+  - `components/`：`ProfileSummaryCard`、`ProfileBaseInfoCard`、`ProfileDocumentInfoCard`、`ProfileSecurityCard`、`ProfilePreferencesCard`、`PasswordDialog`、`AvatarUploader`
+  - `hooks/`：`useUserProfileState`、`useUserProfileForm`、`usePasswordDialog`、`useAvatarUpload`、`useUserPreferences`
+  - `schema/`：`profileSchema`、`passwordSchema`、`preferencesSchema`
+  - `constants/`：`profileOptions`
+  - `utils/`：`profileMappers`、`profileGuards`
+  - `types.ts`：资料字段、密码流程、偏好配置、上传上下文等类型
+
+### system/dict
+
+- 主页面：`views/system/dict/components/DictPageMain.vue`
+- 拆分落点：
+  - `components/`：`DictPageMain`
+  - `hooks/`：`useDictPage`
+  - `schema/`：`dictSchema`
+  - `constants/`：`dictOptions`
+  - `types.ts`：字典项、字典类型、过滤表单、弹窗状态类型
+
+### system/sensitive
+
+- 主页面：`views/system/sensitive/components/SensitivePageMain.vue`
+- 拆分落点：
+  - `components/`：`SensitiveToolbar`、`SensitiveTable`、`SensitiveBatchActions`、`SensitiveFormDialog`
+  - `hooks/`：`useSensitivePageState`、`useSensitiveTable`、`useSensitiveColumns`、`useSensitiveSearchForm`、`useSensitiveForm`、`useSensitiveDialog`、`useSensitivePermissions`、`useSensitiveBatchActions`
+  - `schema/`：`sensitiveFormSchema`、`searchSchema`
+  - `constants/`：`sensitiveOptions`
+  - `utils/`：`sensitiveMappers`、`sensitiveGuards`
+  - `types.ts`：敏感词行模型、检索模型、批量动作载荷类型
+
+### console/download
+
+- 主页面：`views/console/download/components/DownloadPageMain.vue`
+- 拆分落点：
+  - `components/`：`DownloadToolbar`、`DownloadTable`、`DownloadFormDialog`、`DownloadDetailDrawer`
+  - `hooks/`：`useDownloadPageState`、`useDownloadTable`、`useDownloadColumns`、`useDownloadSearchForm`、`useDownloadForm`、`useDownloadDialog`、`useDownloadPermissions`
+  - `schema/`：`downloadFormSchema`、`searchSchema`
+  - `constants/`：`downloadOptions`
+  - `utils/`：`downloadMappers`、`downloadGuards`
+  - `types.ts`：资源行模型、表单模型、详情抽屉与权限类型
+
+## 本轮兼容壳收口文件
+
+- `frontend/src/pages/system/org/index.vue`
+- `frontend/src/pages/user/index.vue`
+- `frontend/src/pages/system/dict/index.vue`
+- `frontend/src/pages/system/sensitive/index.vue`
+- `frontend/src/pages/console/download/index.vue`
+
+补充最小收口：
+
+- `frontend/src/pages/system/user/helpers.ts` -> 转发到 `views/system/user/helpers`
+- `frontend/src/pages/system/menu/helpers.ts` -> 转发到 `views/system/menu` 下 helpers/utils

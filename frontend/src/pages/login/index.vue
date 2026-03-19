@@ -34,6 +34,7 @@ import defaultLoginBg from '@/assets/logo/background.svg?url';
 import TdesignSetting from '@/layouts/setting.vue';
 import { t } from '@/locales';
 import { useSettingStore } from '@/store';
+import { migrateSessionStorageKey } from '@/utils/storage/compat';
 
 import ForgotPassword from './components/ForgotPassword.vue';
 import LoginHeader from './components/Header.vue';
@@ -45,7 +46,8 @@ defineOptions({
 });
 const route = useRoute();
 const router = useRouter();
-const UNAUTHORIZED_NOTICE_KEY = 'tdesign.auth.invalid.notice';
+const UNAUTHORIZED_NOTICE_KEY = 'elexvx.auth.invalid.notice';
+const LEGACY_UNAUTHORIZED_NOTICE_KEY = 'tdesign.auth.invalid.notice';
 const type = computed(() => {
   if (route.path === '/register') return 'register';
   if (route.path === '/forgot') return 'forgot';
@@ -67,6 +69,7 @@ const copyrightText = computed(() => {
 });
 
 onMounted(async () => {
+  migrateSessionStorageKey(UNAUTHORIZED_NOTICE_KEY, [LEGACY_UNAUTHORIZED_NOTICE_KEY]);
   const unauthorizedNotice = sessionStorage.getItem(UNAUTHORIZED_NOTICE_KEY);
   if (unauthorizedNotice) {
     sessionStorage.removeItem(UNAUTHORIZED_NOTICE_KEY);

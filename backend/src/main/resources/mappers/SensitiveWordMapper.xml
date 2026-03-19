@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.tencent.tdesign.mapper.SensitiveWordMapper">
+<mapper namespace="top.elexvx.admin.mapper.SensitiveWordMapper">
   <sql id="BaseSelect">
     SELECT id,
       word,
@@ -12,16 +12,16 @@
     FROM sensitive_words
   </sql>
 
-  <select id="selectAll" resultType="com.tencent.tdesign.entity.SensitiveWord">
+  <select id="selectAll" resultType="top.elexvx.admin.entity.SensitiveWord">
     <include refid="BaseSelect" />
   </select>
 
-  <select id="selectAllEnabled" resultType="com.tencent.tdesign.entity.SensitiveWord">
+  <select id="selectAllEnabled" resultType="top.elexvx.admin.entity.SensitiveWord">
     <include refid="BaseSelect" />
     WHERE enabled = 1
   </select>
 
-  <select id="selectPage" resultType="com.tencent.tdesign.entity.SensitiveWord">
+  <select id="selectPage" resultType="top.elexvx.admin.entity.SensitiveWord">
     <include refid="BaseSelect" />
     <where>
       <if test="keyword != null and keyword != ''">
@@ -49,12 +49,12 @@
     </where>
   </select>
 
-  <select id="selectById" resultType="com.tencent.tdesign.entity.SensitiveWord">
+  <select id="selectById" resultType="top.elexvx.admin.entity.SensitiveWord">
     <include refid="BaseSelect" />
     WHERE id = #{id}
   </select>
 
-  <select id="selectByWord" resultType="com.tencent.tdesign.entity.SensitiveWord">
+  <select id="selectByWord" resultType="top.elexvx.admin.entity.SensitiveWord">
     <include refid="BaseSelect" />
     WHERE word = #{word}
     <choose>
@@ -70,7 +70,7 @@
     </choose>
   </select>
 
-  <insert id="insert" parameterType="com.tencent.tdesign.entity.SensitiveWord" useGeneratedKeys="true" keyProperty="id">
+  <insert id="insert" parameterType="top.elexvx.admin.entity.SensitiveWord" useGeneratedKeys="true" keyProperty="id">
     INSERT INTO sensitive_words (
       word,
       enabled,
@@ -85,7 +85,7 @@
     )
   </insert>
 
-  <update id="update" parameterType="com.tencent.tdesign.entity.SensitiveWord">
+  <update id="update" parameterType="top.elexvx.admin.entity.SensitiveWord">
     UPDATE sensitive_words
     SET
       word = #{word},

@@ -6,10 +6,10 @@
     <version>3.3.5</version>
     <relativePath/>
   </parent>
-  <groupId>com.tencent.tdesign</groupId>
-  <artifactId>tdesign-backend</artifactId>
+  <groupId>top.elexvx</groupId>
+  <artifactId>elexvx-backend</artifactId>
   <version>1.0.0</version>
-  <name>tdesign-backend</name>
+  <name>elexvx-backend</name>
   <description>Backend service</description>
   <properties>
     <java.version>17</java.version>

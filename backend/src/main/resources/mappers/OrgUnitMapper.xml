@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.tencent.tdesign.mapper.OrgUnitMapper">
+<mapper namespace="top.elexvx.admin.mapper.OrgUnitMapper">
   <sql id="BaseSelect">
     SELECT id,
       parent_id,
@@ -18,17 +18,17 @@
     FROM org_units
   </sql>
 
-  <select id="selectById" resultType="com.tencent.tdesign.entity.OrgUnitEntity">
+  <select id="selectById" resultType="top.elexvx.admin.entity.OrgUnitEntity">
     <include refid="BaseSelect" />
     WHERE id = #{id}
   </select>
 
-  <select id="selectAll" resultType="com.tencent.tdesign.entity.OrgUnitEntity">
+  <select id="selectAll" resultType="top.elexvx.admin.entity.OrgUnitEntity">
     <include refid="BaseSelect" />
     ORDER BY sort_order ASC, id ASC
   </select>
 
-  <select id="selectByUserId" resultType="com.tencent.tdesign.entity.OrgUnitEntity">
+  <select id="selectByUserId" resultType="top.elexvx.admin.entity.OrgUnitEntity">
     <include refid="BaseSelect" />
     WHERE id IN (
       SELECT org_unit_id FROM user_org_units WHERE user_id = #{userId}
@@ -51,7 +51,7 @@
   </select>
 
 
-  <select id="selectNamesByUserIds" resultType="com.tencent.tdesign.dto.UserIdStringValue">
+  <select id="selectNamesByUserIds" resultType="top.elexvx.admin.dto.UserIdStringValue">
     SELECT uou.user_id AS userId, ou.name AS value
     FROM user_org_units uou
     JOIN org_units ou ON ou.id = uou.org_unit_id
@@ -62,7 +62,7 @@
     ORDER BY uou.user_id ASC, ou.sort_order ASC, ou.id ASC
   </select>
 
-  <select id="selectIdsByUserIds" resultType="com.tencent.tdesign.dto.UserIdLongValue">
+  <select id="selectIdsByUserIds" resultType="top.elexvx.admin.dto.UserIdLongValue">
     SELECT uou.user_id AS userId, uou.org_unit_id AS value
     FROM user_org_units uou
     JOIN org_units ou ON ou.id = uou.org_unit_id
@@ -73,7 +73,7 @@
     ORDER BY uou.user_id ASC, ou.sort_order ASC, ou.id ASC
   </select>
 
-  <select id="selectByIds" resultType="com.tencent.tdesign.entity.OrgUnitEntity">
+  <select id="selectByIds" resultType="top.elexvx.admin.entity.OrgUnitEntity">
     <include refid="BaseSelect" />
     WHERE id IN
     <foreach collection="ids" item="id" open="(" close=")" separator=",">
@@ -94,7 +94,7 @@
     </where>
   </select>
 
-  <insert id="insert" parameterType="com.tencent.tdesign.entity.OrgUnitEntity" useGeneratedKeys="true" keyProperty="id">
+  <insert id="insert" parameterType="top.elexvx.admin.entity.OrgUnitEntity" useGeneratedKeys="true" keyProperty="id">
     INSERT INTO org_units (
       parent_id,
       name,
@@ -117,7 +117,7 @@
     )
   </insert>
 
-  <update id="update" parameterType="com.tencent.tdesign.entity.OrgUnitEntity">
+  <update id="update" parameterType="top.elexvx.admin.entity.OrgUnitEntity">
     UPDATE org_units
     SET
       parent_id = #{parentId},

@@ -2,8 +2,8 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.tencent.tdesign.mapper.UiFooterSettingMapper">
-  <select id="selectTop" resultType="com.tencent.tdesign.entity.UiFooterSetting">
+<mapper namespace="top.elexvx.admin.mapper.UiFooterSettingMapper">
+  <select id="selectTop" resultType="top.elexvx.admin.entity.UiFooterSetting">
     SELECT id, footer_company, footer_icp, copyright_start_year
     FROM ui_footer_settings
     ORDER BY id ASC
@@ -20,7 +20,7 @@
     </choose>
   </select>
 
-  <insert id="insert" parameterType="com.tencent.tdesign.entity.UiFooterSetting" useGeneratedKeys="true" keyProperty="id">
+  <insert id="insert" parameterType="top.elexvx.admin.entity.UiFooterSetting" useGeneratedKeys="true" keyProperty="id">
     INSERT INTO ui_footer_settings (
       footer_company, footer_icp, copyright_start_year
     ) VALUES (
@@ -28,7 +28,7 @@
     )
   </insert>
 
-  <update id="update" parameterType="com.tencent.tdesign.entity.UiFooterSetting">
+  <update id="update" parameterType="top.elexvx.admin.entity.UiFooterSetting">
     UPDATE ui_footer_settings
     SET
       footer_company = #{footerCompany},

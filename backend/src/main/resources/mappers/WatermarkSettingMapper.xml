@@ -2,8 +2,8 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.tencent.tdesign.mapper.WatermarkSettingMapper">
-  <select id="selectTop" resultType="com.tencent.tdesign.entity.WatermarkSetting">
+<mapper namespace="top.elexvx.admin.mapper.WatermarkSettingMapper">
+  <select id="selectTop" resultType="top.elexvx.admin.entity.WatermarkSetting">
     SELECT id, type, content, image_url, opacity, size, gap_x, gap_y, rotate, enabled
     FROM watermark_settings
     ORDER BY id ASC
@@ -20,7 +20,7 @@
     </choose>
   </select>
 
-  <insert id="insert" parameterType="com.tencent.tdesign.entity.WatermarkSetting" useGeneratedKeys="true" keyProperty="id">
+  <insert id="insert" parameterType="top.elexvx.admin.entity.WatermarkSetting" useGeneratedKeys="true" keyProperty="id">
     INSERT INTO watermark_settings (
       type,
       content,
@@ -45,7 +45,7 @@
     )
   </insert>
 
-  <update id="update" parameterType="com.tencent.tdesign.entity.WatermarkSetting">
+  <update id="update" parameterType="top.elexvx.admin.entity.WatermarkSetting">
     UPDATE watermark_settings
     SET
       type = #{type},

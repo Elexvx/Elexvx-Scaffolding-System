@@ -1,3 +1,5 @@
+import { migrateLocalStorageKey, migrateSessionStorageKey } from '@/utils/storage/compat';
+
 /**
  * Token 存储与简单加密封装（浏览器端）。
  *
@@ -7,9 +9,12 @@
  *
  * 注意：这不是为了对抗高强度攻击，而是用于降低明文 token 暴露风险（例如误截图/日志/简单读取）。
  */
-const TOKEN_STORAGE_KEY = 'tdesign.auth.token';
-const TOKEN_KEY_STORAGE_KEY = 'tdesign.auth.token.key';
-const REFRESH_TOKEN_STORAGE_KEY = 'tdesign.auth.refreshToken';
+const TOKEN_STORAGE_KEY = 'elexvx.auth.token';
+const TOKEN_KEY_STORAGE_KEY = 'elexvx.auth.token.key';
+const REFRESH_TOKEN_STORAGE_KEY = 'elexvx.auth.refreshToken';
+const LEGACY_TOKEN_STORAGE_KEY = 'tdesign.auth.token';
+const LEGACY_TOKEN_KEY_STORAGE_KEY = 'tdesign.auth.token.key';
+const LEGACY_REFRESH_TOKEN_STORAGE_KEY = 'tdesign.auth.refreshToken';
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
@@ -38,6 +43,8 @@ const getSubtle = () => {
 
 const readStoredKey = () => {
   if (typeof window === 'undefined') return null;
+  migrateLocalStorageKey(TOKEN_KEY_STORAGE_KEY, [LEGACY_TOKEN_KEY_STORAGE_KEY]);
+  migrateSessionStorageKey(TOKEN_KEY_STORAGE_KEY, [LEGACY_TOKEN_KEY_STORAGE_KEY]);
   const stored = localStorage.getItem(TOKEN_KEY_STORAGE_KEY);
   if (stored) return stored;
   return sessionStorage.getItem(TOKEN_KEY_STORAGE_KEY);
@@ -118,6 +125,7 @@ export const saveToken = async (token: string) => {
 
 export const loadToken = async () => {
   if (typeof window === 'undefined') return '';
+  migrateLocalStorageKey(TOKEN_STORAGE_KEY, [LEGACY_TOKEN_STORAGE_KEY]);
   const stored = localStorage.getItem(TOKEN_STORAGE_KEY);
   if (!stored) return '';
   return decryptToken(stored);
@@ -135,6 +143,7 @@ export const saveRefreshToken = async (token: string) => {
 
 export const loadRefreshToken = async () => {
   if (typeof window === 'undefined') return '';
+  migrateLocalStorageKey(REFRESH_TOKEN_STORAGE_KEY, [LEGACY_REFRESH_TOKEN_STORAGE_KEY]);
   const stored = localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY);
   if (!stored) return '';
   return decryptToken(stored);
@@ -145,5 +154,9 @@ export const clearTokenStorage = () => {
   localStorage.removeItem(TOKEN_STORAGE_KEY);
   localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
   localStorage.removeItem(TOKEN_KEY_STORAGE_KEY);
+  localStorage.removeItem(LEGACY_TOKEN_STORAGE_KEY);
+  localStorage.removeItem(LEGACY_REFRESH_TOKEN_STORAGE_KEY);
+  localStorage.removeItem(LEGACY_TOKEN_KEY_STORAGE_KEY);
   sessionStorage.removeItem(TOKEN_KEY_STORAGE_KEY);
+  sessionStorage.removeItem(LEGACY_TOKEN_KEY_STORAGE_KEY);
 };

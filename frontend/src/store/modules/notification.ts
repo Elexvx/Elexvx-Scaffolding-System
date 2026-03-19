@@ -5,6 +5,7 @@ import type { NotificationSocketPayload } from '@/api/notification';
 import { createNotificationSocketUrl } from '@/api/notification';
 import { useUserStore } from '@/store';
 import type { NotificationItem } from '@/types/interface';
+import { migrateLocalStorageKey } from '@/utils/storage/compat';
 
 type MsgDataType = NotificationItem[];
 
@@ -141,6 +142,11 @@ export const useNotificationStore = defineStore('notification', {
     },
   },
   persist: {
+    key: 'elexvx.notification',
     paths: ['msgData'],
   },
 });
+
+if (typeof window !== 'undefined') {
+  migrateLocalStorageKey('elexvx.notification', ['notification']);
+}

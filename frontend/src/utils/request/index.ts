@@ -19,6 +19,7 @@ import router from '@/router';
 import { useUserStore } from '@/store';
 import { resolveApiHost } from '@/utils/apiHost';
 import { clearTokenStorage } from '@/utils/secureToken';
+import { migrateSessionStorageKey } from '@/utils/storage/compat';
 
 import { VAxios } from './Axios';
 import type { AxiosTransform, CreateAxiosOptions } from './AxiosTransform';
@@ -29,7 +30,8 @@ let isUnauthorizedRedirecting = false;
 
 const host = resolveApiHost();
 const UNAUTHORIZED_SENTINEL = '\u767B\u5F55\u72B6\u6001\u5DF2\u5931\u6548 [401]';
-const UNAUTHORIZED_NOTICE_KEY = 'tdesign.auth.invalid.notice';
+const UNAUTHORIZED_NOTICE_KEY = 'elexvx.auth.invalid.notice';
+const LEGACY_UNAUTHORIZED_NOTICE_KEY = 'tdesign.auth.invalid.notice';
 const UNAUTHORIZED_NOTICE_TEXT = '\u5F53\u524D\u767B\u5F55\u72B6\u6001\u5931\u6548\uFF0C\u8BF7\u91CD\u65B0\u767B\u5F55';
 
 const buildHardLoginHref = (redirect?: string) => {
@@ -40,6 +42,7 @@ const buildHardLoginHref = (redirect?: string) => {
 
 const saveUnauthorizedNotice = (message: string) => {
   try {
+    migrateSessionStorageKey(UNAUTHORIZED_NOTICE_KEY, [LEGACY_UNAUTHORIZED_NOTICE_KEY]);
     sessionStorage.setItem(UNAUTHORIZED_NOTICE_KEY, message);
   } catch {}
 };

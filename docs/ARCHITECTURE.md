@@ -19,7 +19,7 @@
 - dto/vo/entity：入参 DTO、出参 VO、持久化实体 Entity
 - config：Spring 配置（Security、Redis、Netty 等）
 
-统一响应结构见 [ApiResponse](file:///c:/Users/Administrator/Documents/GitHub/Elexvx-Scaffolding-System/backend/src/main/java/com/tencent/tdesign/vo/ApiResponse.java)。
+统一响应结构见 [ApiResponse](backend/src/main/java/top/elexvx/admin/vo/ApiResponse.java)。
 
 ## 鉴权与安全
 
@@ -27,10 +27,10 @@
 
 - 登录成功后，后端生成随机 token，并将会话（AuthSession）序列化存入 Redis，带 TTL
 - 客户端请求通过 Authorization 头携带 Bearer token
-- 过滤器 [AuthTokenFilter](file:///c:/Users/Administrator/Documents/GitHub/Elexvx-Scaffolding-System/backend/src/main/java/com/tencent/tdesign/security/AuthTokenFilter.java) 从请求解析 token → 查询 Redis 会话 → 写入 SecurityContext
-- 业务侧通过 [AuthContext](file:///c:/Users/Administrator/Documents/GitHub/Elexvx-Scaffolding-System/backend/src/main/java/com/tencent/tdesign/security/AuthContext.java) 获取当前 userId/token
+- 过滤器 [AuthTokenFilter](backend/src/main/java/top/elexvx/admin/security/AuthTokenFilter.java) 从请求解析 token → 查询 Redis 会话 → 写入 SecurityContext
+- 业务侧通过 [AuthContext](backend/src/main/java/top/elexvx/admin/security/AuthContext.java) 获取当前 userId/token
 
-对应安全配置见 [SecurityConfig](file:///c:/Users/Administrator/Documents/GitHub/Elexvx-Scaffolding-System/backend/src/main/java/com/tencent/tdesign/config/SecurityConfig.java)（白名单接口、401/403 统一返回、Filter 链顺序等）。
+对应安全配置见 [SecurityConfig](backend/src/main/java/top/elexvx/admin/config/SecurityConfig.java)（白名单接口、401/403 统一返回、Filter 链顺序等）。
 
 ### 并发登录处理（可选流程）
 
@@ -39,26 +39,26 @@
 - 若存在“审批监听者”，可能返回 pending（需要确认）
 - 否则撤销旧 token，再继续创建新 token
 
-实现入口见 [AuthService](file:///c:/Users/Administrator/Documents/GitHub/Elexvx-Scaffolding-System/backend/src/main/java/com/tencent/tdesign/service/AuthService.java) 的 completeLogin 相关逻辑。
+实现入口见 [AuthService](backend/src/main/java/top/elexvx/admin/service/AuthService.java) 的 completeLogin 相关逻辑。
 
 ## 权限与动态菜单
 
 ### 后端：菜单数据由数据库驱动
 
-- 后端提供菜单路由接口：GET /get-menu-list-i18n（见 [MenuController](file:///c:/Users/Administrator/Documents/GitHub/Elexvx-Scaffolding-System/backend/src/main/java/com/tencent/tdesign/controller/MenuController.java)）
-- [MenuItemService](file:///c:/Users/Administrator/Documents/GitHub/Elexvx-Scaffolding-System/backend/src/main/java/com/tencent/tdesign/service/MenuItemService.java) 从菜单表读取全量菜单 → 根据当前用户权限过滤 → 输出 RouteItem 树
+- 后端提供菜单路由接口：GET /get-menu-list-i18n（见 [MenuController](backend/src/main/java/top/elexvx/admin/controller/MenuController.java)）
+- [MenuItemService](backend/src/main/java/top/elexvx/admin/service/MenuItemService.java) 从菜单表读取全量菜单 → 根据当前用户权限过滤 → 输出 RouteItem 树
 
 ### 前端：路由守卫触发动态路由加载
 
-- 路由守卫见 [permission.ts](file:///c:/Users/Administrator/Documents/GitHub/Elexvx-Scaffolding-System/frontend/src/permission.ts)
+- 路由守卫见 [permission.ts](frontend/src/permission.ts)
 - 首次进入/刷新时：
-  - 拉取用户信息：GET /auth/user（见 [user.ts](file:///c:/Users/Administrator/Documents/GitHub/Elexvx-Scaffolding-System/frontend/src/store/modules/user.ts)）
-  - 拉取菜单路由：GET /get-menu-list-i18n（见 [permission.ts](file:///c:/Users/Administrator/Documents/GitHub/Elexvx-Scaffolding-System/frontend/src/store/modules/permission.ts)）
+  - 拉取用户信息：GET /auth/user（见 [user.ts](frontend/src/store/modules/user.ts)）
+  - 拉取菜单路由：GET /get-menu-list-i18n（见 [permission.ts](frontend/src/store/modules/permission.ts)）
   - 转换为 Vue Router 结构并 addRoute，驱动侧边栏/页面权限
 
 ## 文件与对象存储
 
-[ObjectStorageService](file:///c:/Users/Administrator/Documents/GitHub/Elexvx-Scaffolding-System/backend/src/main/java/com/tencent/tdesign/service/ObjectStorageService.java) 统一封装文件上传与读取，支持：
+[ObjectStorageService](backend/src/main/java/top/elexvx/admin/service/ObjectStorageService.java) 统一封装文件上传与读取，支持：
 
 - LOCAL：落盘到 uploads/ 目录
 - ALIYUN：阿里云 OSS
@@ -81,5 +81,5 @@
 
 ## 图表
 
-类图与时序图汇总见 [DIAGRAMS.md](file:///c:/Users/Administrator/Documents/GitHub/Elexvx-Scaffolding-System/docs/DIAGRAMS.md)。
+类图与时序图汇总见 [DIAGRAMS.md](docs/DIAGRAMS.md)。
 

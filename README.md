@@ -1,6 +1,6 @@
 # Elexvx ® Inc 脚手架系统
 
-Elexvx 脚手架系统 是由 Elexvx ® Inc 推出的一套面向企业后台的脚手架/管理系统，涵盖用户与权限管理、系统配置、消息公告、文件与对象存储、短信/邮箱验证等基础能力，帮助快速搭建业务后台。
+Elexvx 脚手架系统是一套面向企业后台的前后端分离脚手架，涵盖用户与权限管理、系统配置、消息公告、文件与对象存储、短信/邮箱验证等基础能力，帮助快速搭建业务后台。
 
 ## 技术栈
 
@@ -19,7 +19,7 @@ Elexvx 脚手架系统 是由 Elexvx ® Inc 推出的一套面向企业后台的
 
 ### 初始化数据库
 
-- 可导入 `database/demo/tdesign_init.sql` 作为初始结构与示例数据
+- 可导入 `database/demo/tdesign_init.sql`（兼容参考脚本） 作为初始结构与示例数据
 - 若只需要结构，可导入 `database/schema/tdesign_schema.sql`
 
 ### 启动后端
@@ -32,7 +32,7 @@ mvn spring-boot:run
 - 默认端口：`9999`
 - 上下文路径：`/api`
 - 数据库配置：`backend/src/main/resources/application.yml`
-- 可用环境变量覆盖：`TDESIGN_DB_URL`、`TDESIGN_DB_USER`、`TDESIGN_DB_PASSWORD`（也可使用 `TDESIGN_DB_DRIVER`、`TDESIGN_DB_TYPE` 等进行多数据库切换）
+- 可用环境变量覆盖：`ELEXVX_DB_URL`、`ELEXVX_DB_USER`、`ELEXVX_DB_PASSWORD`（也可使用 `ELEXVX_DB_DRIVER`、`ELEXVX_DB_TYPE` 等进行多数据库切换）
 
 ### 启动前端
 
@@ -77,12 +77,12 @@ mvn -DskipTests package
 
 后端在 `prod` 环境默认采用“安全优先”配置：
 
-- `TDESIGN_SECURITY_FIELD_SECRET`：**必填**，至少 32 bytes；未配置时启动失败。
-- `TDESIGN_CORS_ALLOWED_ORIGINS`：**必填**，仅允许显式白名单域名（禁止 `*`）。
-- `FILE_TOKEN_SECRET`：建议必填，文件下载 token 使用 AES/GCM 并带过期时间（默认 600 秒）。
-- `tdesign.web.expose-uploads=false`：生产默认不暴露 `/uploads/**` 静态目录。
+- `ELEXVX_SECURITY_FIELD_SECRET`：**必填**，至少 32 bytes；未配置时启动失败。
+- `ELEXVX_CORS_ALLOWED_ORIGINS`：**必填**，仅允许显式白名单域名（禁止 `*`）。
+- `ELEXVX_FILE_TOKEN_SECRET`：建议必填；同时兼容 `TDESIGN_FILE_TOKEN_SECRET` 与旧的 `FILE_TOKEN_SECRET`。
+- `elexvx.web.expose-uploads=false`：生产默认不暴露 `/uploads/**` 静态目录。
 - `springdoc.api-docs.enabled=false`、`springdoc.swagger-ui.enabled=false`：生产默认关闭 API 文档端点。
-- `tdesign.file.upload.max-file-size-mb=100`：上传大小默认 100MB，可按业务下调/上调。
+- `elexvx.file.upload.max-file-size-mb=100`：上传大小默认 100MB，可按业务下调/上调。
 - 登录与短信/邮箱发送接口启用 Redis 限流（IP + 账号/邮箱/手机号维度）。
 
 参考生产配置：
@@ -92,9 +92,9 @@ spring:
   profiles:
     active: prod
 
-tdesign:
+elexvx:
   security:
-    field-secret: ${TDESIGN_SECURITY_FIELD_SECRET}
+    field-secret: ${ELEXVX_SECURITY_FIELD_SECRET}
     rate-limit:
       login-per-minute: 10
       login-fail-threshold: 5
@@ -103,7 +103,7 @@ tdesign:
   web:
     expose-uploads: false
     cors:
-      allowed-origin-patterns: ${TDESIGN_CORS_ALLOWED_ORIGINS}
+      allowed-origin-patterns: ${ELEXVX_CORS_ALLOWED_ORIGINS}
   file:
     token-secret: ${FILE_TOKEN_SECRET}
     token-ttl-seconds: 600
@@ -121,7 +121,7 @@ springdoc:
 ## 安全与会话存储迁移说明（PR#2）
 
 - 密码重置接口 `POST /system/user/{id}/reset-password` 默认仅支持 JSON body 传 `password`，避免密码出现在 URL/query。
-- 如需兼容历史客户端，可临时开启 `tdesign.security.allow-password-in-query=true`，并尽快完成客户端迁移后关闭。
+- 如需兼容历史客户端，可临时开启 `elexvx.security.allow-password-in-query=true`，并尽快完成客户端迁移后关闭。
 - 在线会话 token 索引从 `auth:tokens`(Set) 迁移到 `auth:tokens:z`(ZSET, score=expiresAtMs)。
 - 迁移策略为懒迁移：`listAllTokens` 会在读取时把旧集合中的有效 token 转入 ZSET，并清理失效 token。
 - 回滚策略：新版本仍会写入旧 `auth:tokens` 集合作为兼容；回滚后旧版本仍可读取。

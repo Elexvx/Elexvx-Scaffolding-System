@@ -1,6 +1,6 @@
-# TDesign 项目 1Panel 部署指南
+# Elexvx 项目 1Panel 部署指南
 
-本文档将指导你如何使用 [1Panel](https://1panel.cn/) 面板部署 TDesign 前后端分离项目。
+本文档将指导你如何使用 [1Panel](https://1panel.cn/) 面板部署 Elexvx 前后端分离项目。
 
 ## 环境准备
 
@@ -37,7 +37,7 @@
     cd backend
     mvn clean package -DskipTests
     ```
-    打包完成后，在 `backend/target` 目录下会生成一个 `.jar` 文件 (例如 `tdesign-backend-0.0.1-SNAPSHOT.jar`)。
+    打包完成后，在 `backend/target` 目录下会生成一个 `.jar` 文件 (例如 `elexvx-backend-0.0.1-SNAPSHOT.jar`)。
 
 2.  **上传文件**：
     在 1Panel -> **文件** 中，创建一个目录 `/opt/1panel/apps/tdesign/backend` (示例路径)，将 Jar 包上传上去。
@@ -60,11 +60,11 @@
 
 4.  **创建运行环境**：
     在 1Panel -> **网站** -> **运行环境** (或使用 **进程守护 / Supervisor**)：
-    *   **名称**：TDesign-Backend
+    *   **名称**：Elexvx-Backend
     *   **运行目录**：`/opt/1panel/apps/tdesign/backend`
     *   **启动命令**：
         ```bash
-        java -jar tdesign-backend-0.0.1-SNAPSHOT.jar
+        java -jar elexvx-backend-0.0.1-SNAPSHOT.jar
         ```
     *   **端口**：9999 (默认)
 
@@ -92,10 +92,10 @@
     在 1Panel -> **网站** -> **OpenResty**，点击 **创建网站**：
     *   **类型**：静态网站
     *   **主域名**：你的域名 (或服务器 IP:端口，如 `127.0.0.1:8888`)
-    *   **代号**：tdesign-frontend
+    *   **代号**：elexvx-frontend
 
 3.  **上传静态文件**：
-    进入网站目录 (通常是 `/opt/1panel/apps/openresty/www/sites/tdesign-frontend/index`)。
+    进入网站目录 (通常是 `/opt/1panel/apps/openresty/www/sites/elexvx-frontend/index`)。
     删除原有文件，将本地 `frontend/dist` 目录下的**所有内容**上传到该目录。
 
 4.  **配置反向代理 (关键)**：
@@ -139,10 +139,10 @@
 请在后端容器/应用中至少配置以下变量：
 
 - `SPRING_PROFILES_ACTIVE=prod`
-- `TDESIGN_SECURITY_FIELD_SECRET=<32bytes以上随机密钥>`
-- `TDESIGN_CORS_ALLOWED_ORIGINS=https://finance.example.com,https://admin.example.com`
+- `ELEXVX_SECURITY_FIELD_SECRET=<32bytes以上随机密钥>`
+- `ELEXVX_CORS_ALLOWED_ORIGINS=https://finance.example.com,https://admin.example.com`
 - `FILE_TOKEN_SECRET=<高强度随机密钥>`
-- （可选）`TDESIGN_FILE_TOKEN_TTL_SECONDS=600`
-- （可选）`TDESIGN_UPLOAD_MAX_FILE_SIZE_MB=100`
+- （可选）`ELEXVX_FILE_TOKEN_TTL_SECONDS=600`
+- （可选）`ELEXVX_UPLOAD_MAX_FILE_SIZE_MB=100`
 
-未配置 `TDESIGN_SECURITY_FIELD_SECRET` 或在 `prod` 下未配置 CORS 白名单时，服务会启动失败（Fail Fast）。
+未配置 `ELEXVX_SECURITY_FIELD_SECRET` 或在 `prod` 下未配置 CORS 白名单时，服务会启动失败（Fail Fast）。

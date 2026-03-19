@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.tencent.tdesign.mapper.AuthQueryMapper">
+<mapper namespace="top.elexvx.admin.mapper.AuthQueryMapper">
   <delete id="deleteRoleMenusByMenuIds">
     DELETE FROM role_menus
     WHERE menu_id IN
@@ -18,7 +18,7 @@
   </select>
 
 
-  <select id="findRoleNamesByUserIds" resultType="com.tencent.tdesign.dto.UserIdStringValue">
+  <select id="findRoleNamesByUserIds" resultType="top.elexvx.admin.dto.UserIdStringValue">
     SELECT user_id AS userId, role AS value
     FROM user_roles
     WHERE user_id IN

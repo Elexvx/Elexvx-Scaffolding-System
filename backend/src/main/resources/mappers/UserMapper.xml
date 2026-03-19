@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.tencent.tdesign.mapper.UserMapper">
+<mapper namespace="top.elexvx.admin.mapper.UserMapper">
   <sql id="BaseSelect">
     SELECT id,
       account,
@@ -44,37 +44,37 @@
     FROM users
   </sql>
 
-  <select id="selectById" resultType="com.tencent.tdesign.entity.UserEntity">
+  <select id="selectById" resultType="top.elexvx.admin.entity.UserEntity">
     <include refid="BaseSelect" />
     WHERE id = #{id}
   </select>
 
-  <select id="selectByAccount" resultType="com.tencent.tdesign.entity.UserEntity">
+  <select id="selectByAccount" resultType="top.elexvx.admin.entity.UserEntity">
     <include refid="BaseSelect" />
     WHERE account = #{account}
   </select>
 
-  <select id="selectByMobile" resultType="com.tencent.tdesign.entity.UserEntity">
+  <select id="selectByMobile" resultType="top.elexvx.admin.entity.UserEntity">
     <include refid="BaseSelect" />
     WHERE mobile = #{mobile}
   </select>
 
-  <select id="selectByPhone" resultType="com.tencent.tdesign.entity.UserEntity">
+  <select id="selectByPhone" resultType="top.elexvx.admin.entity.UserEntity">
     <include refid="BaseSelect" />
     WHERE mobile = #{phone}
   </select>
 
-  <select id="selectByEmail" resultType="com.tencent.tdesign.entity.UserEntity">
+  <select id="selectByEmail" resultType="top.elexvx.admin.entity.UserEntity">
     <include refid="BaseSelect" />
     WHERE email = #{email}
   </select>
 
-  <select id="selectAll" resultType="com.tencent.tdesign.entity.UserEntity">
+  <select id="selectAll" resultType="top.elexvx.admin.entity.UserEntity">
     <include refid="BaseSelect" />
     ORDER BY id ASC
   </select>
 
-  <select id="selectByIds" resultType="com.tencent.tdesign.entity.UserEntity">
+  <select id="selectByIds" resultType="top.elexvx.admin.entity.UserEntity">
     <include refid="BaseSelect" />
     WHERE id IN
     <foreach collection="ids" item="id" open="(" close=")" separator=",">
@@ -86,7 +86,7 @@
     SELECT id FROM users ORDER BY id ASC
   </select>
 
-  <select id="selectMissingGuidUsers" resultType="com.tencent.tdesign.entity.UserEntity">
+  <select id="selectMissingGuidUsers" resultType="top.elexvx.admin.entity.UserEntity">
     <include refid="BaseSelect" />
     WHERE guid IS NULL OR guid = ''
     ORDER BY id ASC
@@ -114,7 +114,7 @@
     </foreach>
   </update>
 
-  <select id="selectPage" resultType="com.tencent.tdesign.entity.UserEntity">
+  <select id="selectPage" resultType="top.elexvx.admin.entity.UserEntity">
     <include refid="BaseSelect" />
     <where>
       <if test="keyword != null and keyword != ''">
@@ -214,7 +214,7 @@
     WHERE id_card = #{idCard}
   </select>
 
-  <insert id="insert" parameterType="com.tencent.tdesign.entity.UserEntity" useGeneratedKeys="true" keyProperty="id">
+  <insert id="insert" parameterType="top.elexvx.admin.entity.UserEntity" useGeneratedKeys="true" keyProperty="id">
     INSERT INTO users (
       account,
       guid,
@@ -289,7 +289,7 @@
     )
   </insert>
 
-  <update id="update" parameterType="com.tencent.tdesign.entity.UserEntity">
+  <update id="update" parameterType="top.elexvx.admin.entity.UserEntity">
     UPDATE users
     SET
       account = #{account},

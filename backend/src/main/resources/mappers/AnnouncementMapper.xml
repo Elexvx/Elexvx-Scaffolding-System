@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.tencent.tdesign.mapper.AnnouncementMapper">
+<mapper namespace="top.elexvx.admin.mapper.AnnouncementMapper">
   <sql id="BaseSelect">
     SELECT id,
       title,
@@ -23,12 +23,12 @@
     FROM announcements
   </sql>
 
-  <select id="selectById" resultType="com.tencent.tdesign.entity.Announcement">
+  <select id="selectById" resultType="top.elexvx.admin.entity.Announcement">
     <include refid="BaseSelect" />
     WHERE id = #{id}
   </select>
 
-  <select id="selectPageByStatus" resultType="com.tencent.tdesign.entity.Announcement">
+  <select id="selectPageByStatus" resultType="top.elexvx.admin.entity.Announcement">
     <include refid="BaseSelect" />
     WHERE status IN
     <foreach collection="statuses" item="s" open="(" close=")" separator=",">
@@ -54,7 +54,7 @@
     </foreach>
   </select>
 
-  <select id="selectLatestPublished" resultType="com.tencent.tdesign.entity.Announcement">
+  <select id="selectLatestPublished" resultType="top.elexvx.admin.entity.Announcement">
     <include refid="BaseSelect" />
     WHERE status = 'published'
     ORDER BY publish_at DESC
@@ -68,7 +68,7 @@
     </choose>
   </select>
 
-  <insert id="insert" parameterType="com.tencent.tdesign.entity.Announcement" useGeneratedKeys="true" keyProperty="id">
+  <insert id="insert" parameterType="top.elexvx.admin.entity.Announcement" useGeneratedKeys="true" keyProperty="id">
     INSERT INTO announcements (
       title,
       summary,
@@ -105,7 +105,7 @@
     )
   </insert>
 
-  <update id="update" parameterType="com.tencent.tdesign.entity.Announcement">
+  <update id="update" parameterType="top.elexvx.admin.entity.Announcement">
     UPDATE announcements
     SET
       title = #{title},

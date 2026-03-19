@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.tencent.tdesign.mapper.AreaMapper">
+<mapper namespace="top.elexvx.admin.mapper.AreaMapper">
   <sql id="BaseSelect">
     SELECT id,
       parent_id,
@@ -12,19 +12,19 @@
     FROM areas
   </sql>
 
-  <select id="selectById" resultType="com.tencent.tdesign.entity.AreaEntity">
+  <select id="selectById" resultType="top.elexvx.admin.entity.AreaEntity">
     <include refid="BaseSelect" />
     WHERE id = #{id}
   </select>
 
-  <select id="selectByParentAndName" resultType="com.tencent.tdesign.entity.AreaEntity">
+  <select id="selectByParentAndName" resultType="top.elexvx.admin.entity.AreaEntity">
     <include refid="BaseSelect" />
     WHERE parent_id = #{parentId}
       AND name = #{name}
     ORDER BY id ASC
   </select>
 
-  <select id="selectChildren" resultType="com.tencent.tdesign.vo.AreaNodeRow">
+  <select id="selectChildren" resultType="top.elexvx.admin.vo.AreaNodeRow">
     SELECT a.id,
       a.parent_id AS parentId,
       a.name,

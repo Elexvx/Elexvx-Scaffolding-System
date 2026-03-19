@@ -145,6 +145,7 @@ import { getPermissionStore, useUserStore } from '@/store';
 import { buildDictOptions, resolveLabel } from '@/utils/dict';
 import { hasPerm } from '@/utils/permission';
 import { request } from '@/utils/request';
+import { migrateLocalStorageKey } from '@/utils/storage/compat';
 
 type NodeType = 'DIR' | 'PAGE' | 'BTN';
 type OpenType = 'internal' | 'iframe' | 'external';
@@ -267,7 +268,8 @@ watch(
   { deep: true },
 );
 
-const EXPANDED_STORAGE_KEY = 'tdesign.menu.tree.expanded';
+const EXPANDED_STORAGE_KEY = 'elexvx.menu.tree.expanded';
+const LEGACY_EXPANDED_STORAGE_KEY = 'tdesign.menu.tree.expanded';
 
 const normalizeExpanded = (values: Array<string | number>) => {
   const seen = new Set<string>();
@@ -291,6 +293,7 @@ const collectNodeIds = (nodes: MenuNode[], out: Set<string>) => {
 const readExpandedFromStorage = () => {
   if (typeof window === 'undefined') return [] as Array<string | number>;
   try {
+    migrateLocalStorageKey(EXPANDED_STORAGE_KEY, [LEGACY_EXPANDED_STORAGE_KEY]);
     const raw = window.localStorage.getItem(EXPANDED_STORAGE_KEY);
     if (!raw) return [] as Array<string | number>;
     const parsed = JSON.parse(raw);

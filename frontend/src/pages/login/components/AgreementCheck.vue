@@ -25,6 +25,7 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue';
 
 import { useSettingStore } from '@/store';
 import { sanitizeHtml } from '@/utils/sanitizeHtml';
+import { migrateLocalStorageKey } from '@/utils/storage/compat';
 
 const props = defineProps({
   modelValue: {
@@ -36,8 +37,9 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue']);
 const settingStore = useSettingStore();
 
-const AGREEMENT_ACCEPTED_KEY = 'tdesign.login.agreement.accepted.v2';
+const AGREEMENT_ACCEPTED_KEY = 'elexvx.login.agreement.accepted.v2';
 const AGREEMENT_ACCEPTED_LEGACY_KEY = 'tdesign.login.agreement.accepted';
+const AGREEMENT_ACCEPTED_V2_LEGACY_KEY = 'tdesign.login.agreement.accepted.v2';
 
 const agreementEnabled = computed(() => {
   const user = String(settingStore.userAgreement || '').trim();
@@ -64,6 +66,7 @@ const hasAcceptedAgreement = () => {
   if (!agreementEnabled.value) return true;
   if (typeof window === 'undefined') return false;
   try {
+    migrateLocalStorageKey(AGREEMENT_ACCEPTED_KEY, [AGREEMENT_ACCEPTED_V2_LEGACY_KEY]);
     const accepted = window.localStorage.getItem(AGREEMENT_ACCEPTED_KEY) === agreementSignature.value;
     if (accepted) return true;
     const legacyAccepted = window.localStorage.getItem(AGREEMENT_ACCEPTED_LEGACY_KEY) === '1';

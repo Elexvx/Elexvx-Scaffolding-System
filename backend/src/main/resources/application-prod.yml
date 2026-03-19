@@ -1,8 +1,8 @@
-tdesign:
+elexvx:
   web:
     expose-uploads: false
     cors:
-      allowed-origin-patterns: ${TDESIGN_CORS_ALLOWED_ORIGINS:}
+      allowed-origin-patterns: ${ELEXVX_CORS_ALLOWED_ORIGINS:${TDESIGN_CORS_ALLOWED_ORIGINS:}}
 
 springdoc:
   api-docs:

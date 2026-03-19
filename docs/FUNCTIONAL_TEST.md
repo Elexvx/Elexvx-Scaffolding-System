@@ -42,13 +42,13 @@
 
 ### 3.2 数据初始化
 
-- 建议导入含演示数据脚本（便于快速覆盖更多功能）：[database/README.md](file:///c:/Users/Administrator/Documents/GitHub/Elexvx-Scaffolding-System/database/README.md)
+- 建议导入含演示数据脚本（便于快速覆盖更多功能）：[database/README.md](database/README.md)
   - `database/demo/tdesign_init.sql`（MySQL）
 - 如果只验证结构与空库行为，可导入 `database/schema/tdesign_schema.sql`
 
 ### 3.3 测试账号与权限
 
-- 建议使用初始化脚本中的默认管理员账号登录（通常为 `admin / 123456`，以实际初始化脚本为准；部署文档也有说明 [DEPLOY_1PANEL.md](file:///c:/Users/Administrator/Documents/GitHub/Elexvx-Scaffolding-System/docs/DEPLOY_1PANEL.md#L124-L130)）
+- 建议使用初始化脚本中的默认管理员账号登录（通常为 `admin / 123456`，以实际初始化脚本为准；部署文档也有说明 [DEPLOY_1PANEL.md](docs/DEPLOY_1PANEL.md#L124-L130)）
 - 若默认账号不可用，优先通过数据库脚本确认 `users` 表的账号信息，或在测试库中重置密码再继续用例
 
 ## 4. 用例编写规范
@@ -70,7 +70,7 @@
 
 | 用例ID | 用例名称 | 前置条件 | 测试步骤 | 预期结果 | 优先级 |
 | --- | --- | --- | --- | --- | --- |
-| FT-AUTH-001 | 获取登录验证码（图片） | `tdesign.security.captcha.enabled=true` | 1）GET `/auth/captcha` | 返回 `ApiResponse.success`，包含验证码数据结构，前端可渲染/校验 | P0 |
+| FT-AUTH-001 | 获取登录验证码（图片） | `elexvx.security.captcha.enabled=true` | 1）GET `/auth/captcha` | 返回 `ApiResponse.success`，包含验证码数据结构，前端可渲染/校验 | P0 |
 | FT-AUTH-002 | 获取滑块验证码（AJ Captcha） | AJ Captcha 已启用 | 1）POST `/captcha/get` 2）按组件规范提交校验 POST `/captcha/check` | 服务返回 `ResponseModel`，校验成功后可进入登录流程 | P0 |
 | FT-AUTH-003 | 账号密码登录成功 | 有可用账号（建议 admin） | 1）POST `/auth/login`（填账号/密码/验证码字段按前端要求） | 返回 token；后续带 `Authorization: Bearer <token>` 可访问受保护接口 | P0 |
 | FT-AUTH-004 | 登录失败（密码错误） | 有可用账号 | 1）POST `/auth/login`（错误密码） | 返回业务失败响应；前端提示“账号或密码错误/登录失败”且不写入 token | P0 |
@@ -110,7 +110,7 @@
 | FT-USER-004 | 更新用户（脱敏字段不覆盖） | 具备 `system:SystemUser:update` | 1）PUT `/system/user/{id}`（把手机号/邮箱传为带 `*` 的脱敏值） | 更新成功；真实字段不被覆盖；再次查询保持原值 | P1 |
 | FT-USER-005 | 删除用户（禁止删除自己） | 具备删除权限 | 1）DELETE `/system/user/{selfId}` | 返回失败提示“不允许删除当前登录用户”；用户仍存在 | P0 |
 | FT-USER-006 | 删除用户（正常删除） | 具备删除权限 | 1）DELETE `/system/user/{id}`（非本人） | 删除成功；列表不可见；相关关联清理符合预期 | P0 |
-| FT-USER-007 | 重置用户密码 | 具备更新权限 | 1）POST `/system/user/{id}/reset-password`（默认仅 body 传 password；query 仅在开启 tdesign.security.allow-password-in-query 后兼容） 2）用新密码登录 | 返回成功；新密码可登录 | P1 |
+| FT-USER-007 | 重置用户密码 | 具备更新权限 | 1）POST `/system/user/{id}/reset-password`（默认仅 body 传 password；query 仅在开启 elexvx.security.allow-password-in-query 后兼容） 2）用新密码登录 | 返回成功；新密码可登录 | P1 |
 | FT-USER-008 | 防重复提交生效 | 写接口具备 @RepeatSubmit | 1）5 秒内重复 POST `/system/user` 或 PUT `/system/user/{id}` | 第二次返回 HTTP 429；不产生重复数据 | P1 |
 
 ### 5.4 角色管理（ROLE）
@@ -213,9 +213,9 @@
 
 | 用例ID | 用例名称 | 前置条件 | 测试步骤 | 预期结果 | 优先级 |
 | --- | --- | --- | --- | --- | --- |
-| FT-SEC-001 | 防重复提交通用校验 | 任意带 `@RepeatSubmit` 的写接口 | 1）在 5 秒内重复提交同请求 | 第二次返回 HTTP 429；不产生重复副作用（详见规范文档）[API_SECURITY_SPEC.md](file:///c:/Users/Administrator/Documents/GitHub/Elexvx-Scaffolding-System/docs/API_SECURITY_SPEC.md#L18-L35) | P0 |
+| FT-SEC-001 | 防重复提交通用校验 | 任意带 `@RepeatSubmit` 的写接口 | 1）在 5 秒内重复提交同请求 | 第二次返回 HTTP 429；不产生重复副作用（详见规范文档）[API_SECURITY_SPEC.md](docs/API_SECURITY_SPEC.md#L18-L35) | P0 |
 | FT-SEC-002 | 返回脱敏字段展示 | 有用户手机号/邮箱/身份证等 | 1）GET `/system/user/page` 或 `/auth/profile` | 响应中敏感字段按 `@Sensitive` 规则脱敏 | P1 |
-| FT-SEC-003 | 脱敏输入忽略覆盖（用户管理） | 已存在带真实手机号的用户 | 1）PUT `/system/user/{id}`，手机号传 `138****0000` | 更新成功但真实手机号不变（详见规范）[API_SECURITY_SPEC.md](file:///c:/Users/Administrator/Documents/GitHub/Elexvx-Scaffolding-System/docs/API_SECURITY_SPEC.md#L100-L106) | P1 |
+| FT-SEC-003 | 脱敏输入忽略覆盖（用户管理） | 已存在带真实手机号的用户 | 1）PUT `/system/user/{id}`，手机号传 `138****0000` | 更新成功但真实手机号不变（详见规范）[API_SECURITY_SPEC.md](docs/API_SECURITY_SPEC.md#L100-L106) | P1 |
 | FT-SEC-004 | 敏感词列表查询 | 已登录 | 1）GET `/system/sensitive/words`（keyword 可选） | 返回敏感词列表；筛选生效 | P2 |
 | FT-SEC-005 | 敏感词分页查询 | 已登录 | 1）GET `/system/sensitive/words/page` | 返回分页数据 | P2 |
 | FT-SEC-006 | 新建/删除敏感词 | 已登录 | 1）POST `/system/sensitive/words` 2）DELETE `/system/sensitive/words/{id}` | CRUD 正常；重复词返回合理提示 | P2 |
@@ -228,8 +228,8 @@
 | --- | --- | --- | --- | --- | --- |
 | FT-OPS-001 | 健康检查（含 Redis 状态） | 服务已启动 | 1）GET `/health` | 返回 `redisEnabled/redisAvailable/redisMessage`，字段与配置/实际一致 | P0 |
 | FT-OPS-002 | 服务器监控信息 | 已登录（或按权限配置） | 1）GET `/system/monitor/server` | 返回服务器信息 VO；页面可渲染 | P1 |
-| FT-OPS-003 | Redis 监控开关：启用时可访问 | `tdesign.redis.enabled=true` 且 Redis 可用 | 1）GET `/system/monitor/redis` | 返回 Redis 信息 VO；字段合理 | P1 |
-| FT-OPS-004 | Redis 监控开关：关闭时接口不可用 | `tdesign.redis.enabled=false` | 1）GET `/system/monitor/redis` | 接口不注册或返回 404；前端菜单入口隐藏/不可点 | P1 |
+| FT-OPS-003 | Redis 监控开关：启用时可访问 | `elexvx.redis.enabled=true` 且 Redis 可用 | 1）GET `/system/monitor/redis` | 返回 Redis 信息 VO；字段合理 | P1 |
+| FT-OPS-004 | Redis 监控开关：关闭时接口不可用 | `elexvx.redis.enabled=false` | 1）GET `/system/monitor/redis` | 接口不注册或返回 404；前端菜单入口隐藏/不可点 | P1 |
 | FT-OPS-005 | 在线用户列表（管理员） | admin 角色；存在登录会话 | 1）GET `/system/monitor/online` | 返回分页在线用户；筛选生效 | P0 |
 | FT-OPS-006 | 强制下线在线用户 | admin 角色；存在目标 sessionId | 1）DELETE `/system/monitor/online/{sessionId}` | 返回成功；被踢用户收到失效提示并重新登录 | P0 |
 
@@ -248,6 +248,6 @@
 - 后端启动正常，无报错；Swagger/OpenAPI 可访问（若启用）
 - `server.servlet.context-path=/api` 生效：所有接口以 `/api` 前缀访问
 - 登录成功后，`Authorization: Bearer <token>` 头能访问受保护接口
-- 401/403 错误提示与 [SecurityConfig.java](file:///c:/Users/Administrator/Documents/GitHub/Elexvx-Scaffolding-System/backend/src/main/java/com/tencent/tdesign/config/SecurityConfig.java#L64-L88) 一致
-- 已覆盖带 `@RepeatSubmit` 的写接口重复提交场景（详见 [API_SECURITY_SPEC.md](file:///c:/Users/Administrator/Documents/GitHub/Elexvx-Scaffolding-System/docs/API_SECURITY_SPEC.md#L18-L83)）
+- 401/403 错误提示与 [SecurityConfig.java](backend/src/main/java/top/elexvx/admin/config/SecurityConfig.java#L64-L88) 一致
+- 已覆盖带 `@RepeatSubmit` 的写接口重复提交场景（详见 [API_SECURITY_SPEC.md](docs/API_SECURITY_SPEC.md#L18-L83)）
 - 文件上传得到的 `url` 能通过 `/files/{token}` 访问，并支持 Range

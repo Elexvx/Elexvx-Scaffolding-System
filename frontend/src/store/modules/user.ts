@@ -3,6 +3,7 @@ import { defineStore } from 'pinia';
 import { useNotificationStore, usePermissionStore } from '@/store';
 import type { LoginResponse, UserInfo } from '@/types/interface';
 import { clearTokenStorage, saveRefreshToken, saveToken } from '@/utils/secureToken';
+import { migrateLocalStorageKey } from '@/utils/storage/compat';
 import { clearTokenExpireTimer } from '@/utils/tokenExpire';
 
 /**
@@ -111,10 +112,11 @@ export const useUserStore = defineStore('user', {
   },
   persist: {
     afterRestore: () => {
+      migrateLocalStorageKey('elexvx.user', ['user']);
       const permissionStore = usePermissionStore();
       permissionStore.initRoutes();
     },
-    key: 'user',
+    key: 'elexvx.user',
     paths: ['tokenExpiresAt', 'userInfo'],
     storage: typeof window === 'undefined' ? undefined : localStorage,
   },

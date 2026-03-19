@@ -24,11 +24,13 @@ let tokenExpireWarnTimer: number | null = null;
 let tokenExpireHardTimer: number | null = null;
 const authPages = new Set(['/login', '/register', '/forgot']);
 const isAuthPage = (path?: string) => Boolean(path && authPages.has(path));
-const UNAUTHORIZED_NOTICE_KEY = 'tdesign.auth.invalid.notice';
+const UNAUTHORIZED_NOTICE_KEY = 'elexvx.auth.invalid.notice';
+const LEGACY_UNAUTHORIZED_NOTICE_KEY = 'tdesign.auth.invalid.notice';
 const TOKEN_EXPIRED_NOTICE = '当前登录状态失效，请重新登录';
 
 const saveUnauthorizedNotice = (message: string) => {
   try {
+    migrateSessionStorageKey(UNAUTHORIZED_NOTICE_KEY, [LEGACY_UNAUTHORIZED_NOTICE_KEY]);
     sessionStorage.setItem(UNAUTHORIZED_NOTICE_KEY, message);
   } catch {}
 };
@@ -219,3 +221,4 @@ export function isTokenExpiringSoon(): boolean {
 
   return false;
 }
+import { migrateSessionStorageKey } from '@/utils/storage/compat';

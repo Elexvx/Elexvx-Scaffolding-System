@@ -2,8 +2,8 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.tencent.tdesign.mapper.SensitiveSettingMapper">
-  <select id="selectTop" resultType="com.tencent.tdesign.entity.SensitiveSetting">
+<mapper namespace="top.elexvx.admin.mapper.SensitiveSettingMapper">
+  <select id="selectTop" resultType="top.elexvx.admin.entity.SensitiveSetting">
     SELECT id, enabled, updated_at
     FROM sensitive_settings
     ORDER BY id ASC
@@ -20,12 +20,12 @@
     </choose>
   </select>
 
-  <insert id="insert" parameterType="com.tencent.tdesign.entity.SensitiveSetting" useGeneratedKeys="true" keyProperty="id">
+  <insert id="insert" parameterType="top.elexvx.admin.entity.SensitiveSetting" useGeneratedKeys="true" keyProperty="id">
     INSERT INTO sensitive_settings (enabled, updated_at)
     VALUES (#{enabled}, #{updatedAt})
   </insert>
 
-  <update id="update" parameterType="com.tencent.tdesign.entity.SensitiveSetting">
+  <update id="update" parameterType="top.elexvx.admin.entity.SensitiveSetting">
     UPDATE sensitive_settings
     SET enabled = #{enabled},
       updated_at = #{updatedAt}

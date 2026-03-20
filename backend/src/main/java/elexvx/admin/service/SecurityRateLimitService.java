@@ -3,6 +3,7 @@ package elexvx.admin.service;
 import elexvx.admin.config.properties.ElexvxCoreProperties;
 import elexvx.admin.exception.BusinessException;
 import elexvx.admin.exception.ErrorCodes;
+import elexvx.admin.exception.LoginRateLimitException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -47,12 +48,36 @@ public class SecurityRateLimitService {
 
   public void checkLoginAttempt(String account) {
     String ip = clientIp();
-    requireQuota("sec:login:ip:" + ip, loginPerMinute, Duration.ofMinutes(1), "登录过于频繁，请稍后重试");
-    requireQuota("sec:login:acct:" + normalize(account), loginPerMinute, Duration.ofMinutes(1), "登录过于频繁，请稍后重试");
+    String normalizedAccount = normalize(account);
+    if (loginPerMinute > 0) {
+      long ipCount = increment("sec:login:ip:" + ip, Duration.ofMinutes(1));
+      if (ipCount > loginPerMinute) {
+        log.warn("LOGIN_RATE_LIMITED scope=IP account={} ip={} count={} limit={}", normalizedAccount, ip, ipCount, loginPerMinute);
+        throw LoginRateLimitException.tooManyRequests(account);
+      }
+      long accountCount = increment("sec:login:acct:" + normalizedAccount, Duration.ofMinutes(1));
+      if (accountCount > loginPerMinute) {
+        log.warn(
+          "LOGIN_RATE_LIMITED scope=ACCOUNT account={} ip={} count={} limit={}",
+          normalizedAccount,
+          ip,
+          accountCount,
+          loginPerMinute
+        );
+        throw LoginRateLimitException.tooManyRequests(account);
+      }
+    }
 
-    long failCount = getCount("sec:login:fail:" + ip + ":" + normalize(account));
+    long failCount = getCount("sec:login:fail:" + ip + ":" + normalizedAccount);
     if (failCount >= loginFailThreshold) {
-      throw badRequest("账号或密码错误");
+      log.warn(
+        "LOGIN_RATE_LIMITED account={} ip={} failCount={} threshold={}",
+        normalizedAccount,
+        ip,
+        failCount,
+        loginFailThreshold
+      );
+      throw LoginRateLimitException.tooManyAttempts(account, failCount, loginFailThreshold);
     }
   }
 
@@ -182,7 +207,8 @@ public class SecurityRateLimitService {
     }
     String realIp = request.getHeader("X-Real-IP");
     if (realIp != null && !realIp.isBlank()) return realIp.trim();
-    return request.getRemoteAddr();
+    String remoteAddr = request.getRemoteAddr();
+    return remoteAddr == null || remoteAddr.isBlank() ? "unknown" : remoteAddr;
   }
 
   private String normalize(String value) {

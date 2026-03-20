@@ -706,7 +706,7 @@ SELECT
   'admin',
   'e59c3cd1-3b52-47c7-bf88-fad5b2281827',
   '管理员',
-  '$2a$10$BbVSQCIChdR.4gfwiG1OduJiKE/KpUTbhBXd.7Sr.uwi8eggDpYeu',
+  '$2a$10$7F97m4149CFQxvgfJeozaea2IOgmyySFKAy0Gsg4OMdRcvTCSGH.S',
   1,
   SYSTIMESTAMP,
   SYSTIMESTAMP
@@ -719,5 +719,4 @@ WHERE NOT EXISTS (SELECT 1 FROM user_roles WHERE user_id = 1 AND role = 'admin')
 
 INSERT INTO module_registry (module_key, name, version, enabled, install_state, installed_at) VALUES ('sms', '短信验证', '1.0.0', 1, 'PENDING', NULL);
 INSERT INTO module_registry (module_key, name, version, enabled, install_state, installed_at) VALUES ('email', '邮箱验证', '1.0.0', 1, 'PENDING', NULL);
-
 

@@ -12,8 +12,7 @@ import elexvx.admin.dto.ChangePasswordRequest;
 import elexvx.admin.dto.ForgotPasswordRequest;
 import elexvx.admin.dto.RoleSwitchRequest;
 import elexvx.admin.annotation.RepeatSubmit;
-import elexvx.admin.exception.BusinessException;
-import elexvx.admin.exception.ErrorCodes;
+import elexvx.admin.exception.LoginCredentialException;
 import elexvx.admin.service.AuthService;
 import elexvx.admin.service.SecurityRateLimitService;
 import elexvx.admin.vo.ApiResponse;
@@ -33,9 +32,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
-  private static BusinessException badRequest(String message) {
-    return new BusinessException(ErrorCodes.BAD_REQUEST, message);
-  }
   private final AuthService authService;
   private final SecurityRateLimitService rateLimitService;
 
@@ -51,9 +47,9 @@ public class AuthController {
       LoginResponse response = authService.login(req);
       rateLimitService.clearLoginFailures(req.getAccount());
       return ApiResponse.success(response);
-    } catch (BusinessException ex) {
+    } catch (LoginCredentialException ex) {
       rateLimitService.recordLoginFailure(req.getAccount());
-      throw badRequest("账号或密码错误");
+      throw ex;
     }
   }
 

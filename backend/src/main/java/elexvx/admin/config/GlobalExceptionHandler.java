@@ -3,6 +3,11 @@ package elexvx.admin.config;
 import elexvx.admin.exception.BusinessException;
 import elexvx.admin.exception.ConcurrentLoginException;
 import elexvx.admin.exception.ErrorCodes;
+import elexvx.admin.exception.LoginAccountDisabledException;
+import elexvx.admin.exception.LoginCaptchaException;
+import elexvx.admin.exception.LoginCredentialException;
+import elexvx.admin.exception.LoginFlowException;
+import elexvx.admin.exception.LoginRateLimitException;
 import elexvx.admin.exception.ModuleUnavailableException;
 import elexvx.admin.exception.RepeatSubmitException;
 import elexvx.admin.mapper.MenuItemMapper;
@@ -129,6 +134,26 @@ public class GlobalExceptionHandler {
     log.debug("检测到多设备登录: {}", e.getMessage());
     return ResponseEntity.status(HttpStatus.CONFLICT)
       .body(ApiResponses.conflict("CONCURRENT_LOGIN_CONFLICT", e.getMessage()));
+  }
+
+  @ExceptionHandler(LoginCaptchaException.class)
+  public ResponseEntity<ApiResponse<Void>> handleLoginCaptchaException(LoginCaptchaException e) {
+    return handleLoginFlowException(e, HttpStatus.BAD_REQUEST, "LOGIN_CAPTCHA_INVALID");
+  }
+
+  @ExceptionHandler(LoginCredentialException.class)
+  public ResponseEntity<ApiResponse<Void>> handleLoginCredentialException(LoginCredentialException e) {
+    return handleLoginFlowException(e, HttpStatus.BAD_REQUEST, "LOGIN_CREDENTIAL_INVALID");
+  }
+
+  @ExceptionHandler(LoginRateLimitException.class)
+  public ResponseEntity<ApiResponse<Void>> handleLoginRateLimitException(LoginRateLimitException e) {
+    return handleLoginFlowException(e, HttpStatus.TOO_MANY_REQUESTS, "LOGIN_RATE_LIMITED");
+  }
+
+  @ExceptionHandler(LoginAccountDisabledException.class)
+  public ResponseEntity<ApiResponse<Void>> handleLoginAccountDisabledException(LoginAccountDisabledException e) {
+    return handleLoginFlowException(e, HttpStatus.FORBIDDEN, "LOGIN_ACCOUNT_DISABLED");
   }
 
   @ExceptionHandler(RepeatSubmitException.class)
@@ -267,6 +292,21 @@ public class GlobalExceptionHandler {
     String actionLabel = resolveActionLabel(action);
     String suffix = (actionLabel == null || actionLabel.isBlank()) ? "" : "的" + actionLabel + "操作";
     return "权限不足：页面[" + pageName + "] 权限[" + text + "]未开通" + suffix + "，请联系管理员开通权限后再试";
+  }
+
+  private ResponseEntity<ApiResponse<Void>> handleLoginFlowException(
+    LoginFlowException e,
+    HttpStatus fallbackStatus,
+    String logKey
+  ) {
+    HttpStatus status = HttpStatus.resolve(e.getCode());
+    if (status == null || status.is2xxSuccessful()) {
+      status = fallbackStatus;
+    }
+    String message = e.getMessage() == null || e.getMessage().isBlank() ? e.getUserTip() : e.getMessage();
+    String userTip = e.getUserTip() == null || e.getUserTip().isBlank() ? message : e.getUserTip();
+    log.warn("{} {} message={}", logKey, e.getLogCode(), message);
+    return ResponseEntity.status(status).body(ApiResponses.failure(status.value(), message, userTip));
   }
 
   private String resolvePageTitle(String resource) {

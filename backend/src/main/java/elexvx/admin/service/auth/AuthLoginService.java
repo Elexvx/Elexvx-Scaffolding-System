@@ -4,6 +4,9 @@ import elexvx.admin.entity.UserEntity;
 import elexvx.admin.entity.VerificationSetting;
 import elexvx.admin.exception.BusinessException;
 import elexvx.admin.exception.ErrorCodes;
+import elexvx.admin.exception.LoginAccountDisabledException;
+import elexvx.admin.exception.LoginCaptchaException;
+import elexvx.admin.exception.LoginCredentialException;
 import elexvx.admin.mapper.UserMapper;
 import elexvx.admin.security.AuthContext;
 import elexvx.admin.security.AuthSession;
@@ -27,11 +30,14 @@ import elexvx.admin.vo.SmsSendResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Objects;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.stereotype.Service;
 
 @Service
 public class AuthLoginService {
+  private static final Logger log = LoggerFactory.getLogger(AuthLoginService.class);
   private final UserMapper userMapper;
   private final CaptchaService captchaService;
   private final SecuritySettingService securitySettingService;
@@ -86,18 +92,30 @@ public class AuthLoginService {
     String account = authValidationService.normalizeAccount(req.getAccount());
     String captchaCode = authValidationService.normalizeCode(req.getCaptchaCode());
     Boolean captchaEnabled = securitySettingService.getOrCreate().getCaptchaEnabled();
+    log.info("LOGIN_ENTER account={} captchaEnabled={} clientIp={}", account, captchaEnabled, getClientIp());
     if (Boolean.TRUE.equals(captchaEnabled)) {
+      if (req.getCaptchaId() == null || req.getCaptchaId().isBlank() || captchaCode.isBlank()) {
+        log.warn("LOGIN_CAPTCHA_MISSING account={} clientIp={}", account, getClientIp());
+        throw LoginCaptchaException.missing();
+      }
       boolean ok = captchaService.verify(req.getCaptchaId(), captchaCode);
       if (!ok) {
-        throw badRequest("验证码错误或已过期");
+        log.warn("LOGIN_CAPTCHA_INVALID account={} clientIp={}", account, getClientIp());
+        throw LoginCaptchaException.invalidOrExpired();
       }
     }
     UserEntity user = userMapper.selectByAccount(account);
     if (user == null || !Objects.equals(user.getAccount(), account)) {
-      throw badRequest("账号或密码错误");
+      log.warn("LOGIN_CREDENTIAL_INVALID reason=ACCOUNT_NOT_FOUND account={} clientIp={}", account, getClientIp());
+      throw LoginCredentialException.accountNotFound(account);
     }
     if (!BCrypt.checkpw(req.getPassword(), user.getPasswordHash())) {
-      throw badRequest("账号或密码错误");
+      log.warn("LOGIN_CREDENTIAL_INVALID reason=PASSWORD_MISMATCH account={} clientIp={}", account, getClientIp());
+      throw LoginCredentialException.passwordMismatch(account);
+    }
+    if (user.getStatus() != null && user.getStatus() == 0) {
+      log.warn("LOGIN_ACCOUNT_DISABLED account={} clientIp={}", account, getClientIp());
+      throw LoginAccountDisabledException.disabled(account);
     }
     AuthLoginCommand command = new AuthLoginCommand();
     command.setUser(user);
@@ -187,6 +205,7 @@ public class AuthLoginService {
     AuthSession session = concurrentLoginOrchestrator.buildSession(user, snapshot);
     String token = authTokenService.createToken(user.getId(), session, expiresIn);
     operationLogService.logLogin(user, snapshot.deviceModel(), snapshot.os(), snapshot.browser(), snapshot.ipAddress());
+    log.info("LOGIN_CONFIRM_SUCCESS account={} requestId={} clientIp={} expiresIn={}", user.getAccount(), requestId, snapshot.ipAddress(), expiresIn);
     return AuthLoginResp.success(token, expiresIn);
   }
 
@@ -212,6 +231,12 @@ public class AuthLoginService {
       snapshot
     );
     if (decision.isPending()) {
+      log.info(
+        "LOGIN_PENDING_CONFIRM account={} requestId={} clientIp={}",
+        user.getAccount(),
+        decision.getRequestId(),
+        snapshot.ipAddress()
+      );
       return AuthLoginResp.pending(decision.getRequestId(), decision.getRequestKey());
     }
     ensureUserGuid(user);
@@ -220,6 +245,7 @@ public class AuthLoginService {
     AuthSession session = concurrentLoginOrchestrator.buildSession(user, snapshot);
     String token = authTokenService.createToken(user.getId(), session, expiresIn);
     operationLogService.logLogin(user, snapshot.deviceModel(), snapshot.os(), snapshot.browser(), snapshot.ipAddress());
+    log.info("LOGIN_SUCCESS account={} clientIp={} expiresIn={}", user.getAccount(), snapshot.ipAddress(), expiresIn);
     return AuthLoginResp.success(token, expiresIn);
   }
 
@@ -261,7 +287,7 @@ public class AuthLoginService {
     if ("0:0:0:0:0:0:0:1".equals(ip)) {
       ip = "127.0.0.1";
     }
-    return ip;
+    return ip == null || ip.isBlank() ? "unknown" : ip;
   }
 
   private void ensureUserActive(UserEntity user) {

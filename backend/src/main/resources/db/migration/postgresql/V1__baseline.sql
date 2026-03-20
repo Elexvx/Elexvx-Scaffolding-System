@@ -629,7 +629,7 @@ ON CONFLICT (id) DO NOTHING;
     'admin',
     'e59c3cd1-3b52-47c7-bf88-fad5b2281827',
     '管理员',
-    '$2a$10$BbVSQCIChdR.4gfwiG1OduJiKE/KpUTbhBXd.7Sr.uwi8eggDpYeu',
+    '$2a$10$7F97m4149CFQxvgfJeozaea2IOgmyySFKAy0Gsg4OMdRcvTCSGH.S',
     1,
     NOW(),
     NOW()

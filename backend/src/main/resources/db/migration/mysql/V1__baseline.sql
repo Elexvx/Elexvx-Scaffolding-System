@@ -996,8 +996,8 @@ CREATE TABLE `users`  (
 
 -- ----------------------------
 -- ----------------------------
-  (1, 'admin', '管理员', '$2a$10$BbVSQCIChdR.4gfwiG1OduJiKE/KpUTbhBXd.7Sr.uwi8eggDpYeu', '+86 13800000000', 'admin@qq.com', 'e59c3cd1-3b52-47c7-bf88-fad5b2281827', 1, NOW(), NOW()),
-  (3, 'bob', 'Bob', '$2a$10$BbVSQCIChdR.4gfwiG1OduJiKE/KpUTbhBXd.7Sr.uwi8eggDpYeu', '+86 13923456789', 'bob@tencent.com', '700e0805-c571-4e6a-873b-00899a32ede2', 1, NOW(), NOW());
+  (1, 'admin', '管理员', '$2a$10$7F97m4149CFQxvgfJeozaea2IOgmyySFKAy0Gsg4OMdRcvTCSGH.S', '+86 13800000000', 'admin@qq.com', 'e59c3cd1-3b52-47c7-bf88-fad5b2281827', 1, NOW(), NOW()),
+  (3, 'bob', 'Bob', '$2a$10$7F97m4149CFQxvgfJeozaea2IOgmyySFKAy0Gsg4OMdRcvTCSGH.S', '+86 13923456789', 'bob@tencent.com', '700e0805-c571-4e6a-873b-00899a32ede2', 1, NOW(), NOW());
 
 -- ----------------------------
 -- Table structure for areas

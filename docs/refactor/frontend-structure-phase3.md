@@ -96,3 +96,11 @@
 - `frontend/src/pages/system/dept/index.vue`
 - `frontend/src/pages/system/post/index.vue`
 - `frontend/src/pages/console/file/index.vue`
+
+
+## Phase 4 衔接说明
+
+- 第四轮已继续完成 `announcement/table`、`notification/table`、`system/monitor/redis`、`system/security` 的真迁移。
+- 新增文档：`docs/refactor/frontend-structure-phase4.md`。
+- 对 `announcement/cards`、`system/verification`、`system/storage` 先执行了最小兼容收口，作为后续深拆起点。
+- 后续开发请优先按 Phase 4 中的目录边界继续治理剩余大页面。

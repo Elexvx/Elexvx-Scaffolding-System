@@ -94,3 +94,9 @@
 3. 将列表、表单、弹窗、列定义、schema、映射、权限、状态流逐项下沉到 `components/hooks/schema/constants/utils/types`。
 4. 主组件只保留页面布局、hooks 装配、组件编排与少量胶水逻辑。
 5. 迁移完成后统一执行 `npm --prefix frontend run build` 验证。
+
+
+## Phase 5 衔接说明
+
+- 登录页与 `system/personalize` 的第五轮治理已单独记录在 `docs/refactor/frontend-structure-phase5.md`。
+- 后续继续处理认证页与个性化面板时，以 Phase 5 中的 `views/login + components/hooks/schema/constants/utils/types` 约束为准。

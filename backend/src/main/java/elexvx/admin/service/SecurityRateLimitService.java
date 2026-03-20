@@ -50,22 +50,8 @@ public class SecurityRateLimitService {
     String ip = clientIp();
     String normalizedAccount = normalize(account);
     if (loginPerMinute > 0) {
-      long ipCount = increment("sec:login:ip:" + ip, Duration.ofMinutes(1));
-      if (ipCount > loginPerMinute) {
-        log.warn("LOGIN_RATE_LIMITED scope=IP account={} ip={} count={} limit={}", normalizedAccount, ip, ipCount, loginPerMinute);
-        throw LoginRateLimitException.tooManyRequests(account);
-      }
-      long accountCount = increment("sec:login:acct:" + normalizedAccount, Duration.ofMinutes(1));
-      if (accountCount > loginPerMinute) {
-        log.warn(
-          "LOGIN_RATE_LIMITED scope=ACCOUNT account={} ip={} count={} limit={}",
-          normalizedAccount,
-          ip,
-          accountCount,
-          loginPerMinute
-        );
-        throw LoginRateLimitException.tooManyRequests(account);
-      }
+      checkRateLimit("sec:login:ip:" + ip, account, ip, "IP");
+      checkRateLimit("sec:login:acct:" + normalizedAccount, account, ip, "ACCOUNT");
     }
 
     long failCount = getCount("sec:login:fail:" + ip + ":" + normalizedAccount);
@@ -78,6 +64,21 @@ public class SecurityRateLimitService {
         loginFailThreshold
       );
       throw LoginRateLimitException.tooManyAttempts(account, failCount, loginFailThreshold);
+    }
+  }
+
+  private void checkRateLimit(String key, String account, String ip, String scope) {
+    long count = increment(key, Duration.ofMinutes(1));
+    if (count > loginPerMinute) {
+      log.warn(
+        "LOGIN_RATE_LIMITED scope={} account={} ip={} count={} limit={}",
+        scope,
+        normalize(account),
+        ip,
+        count,
+        loginPerMinute
+      );
+      throw LoginRateLimitException.tooManyRequests(account);
     }
   }
 

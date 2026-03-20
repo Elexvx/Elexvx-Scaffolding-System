@@ -113,7 +113,7 @@ public class AuthLoginService {
       log.warn("LOGIN_CREDENTIAL_INVALID reason=PASSWORD_MISMATCH account={} clientIp={}", account, getClientIp());
       throw LoginCredentialException.passwordMismatch(account);
     }
-    if (user.getStatus() != null && user.getStatus() == 0) {
+    if (user.getStatus() != null && user.getStatus().intValue() == 0) {
       log.warn("LOGIN_ACCOUNT_DISABLED account={} clientIp={}", account, getClientIp());
       throw LoginAccountDisabledException.disabled(account);
     }
@@ -291,7 +291,7 @@ public class AuthLoginService {
   }
 
   private void ensureUserActive(UserEntity user) {
-    if (user.getStatus() != null && user.getStatus() == 0) {
+    if (user.getStatus() != null && user.getStatus().intValue() == 0) {
       throw badRequest("账号已禁用");
     }
   }

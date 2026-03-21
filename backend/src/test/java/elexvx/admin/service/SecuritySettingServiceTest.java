@@ -5,7 +5,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import elexvx.admin.dto.UiSettingRequest;
 import elexvx.admin.entity.SecurityCaptchaSetting;
 import elexvx.admin.entity.SecurityPasswordPolicy;
 import elexvx.admin.entity.SecuritySetting;
@@ -13,6 +12,8 @@ import elexvx.admin.entity.SecurityTokenSetting;
 import elexvx.admin.mapper.SecurityCaptchaSettingMapper;
 import elexvx.admin.mapper.SecurityPasswordPolicyMapper;
 import elexvx.admin.mapper.SecurityTokenSettingMapper;
+import elexvx.admin.model.req.setting.SecurityPolicySettingRequest;
+import elexvx.admin.model.req.setting.SessionPolicySettingRequest;
 import org.junit.jupiter.api.Test;
 
 class SecuritySettingServiceTest {
@@ -54,9 +55,9 @@ class SecuritySettingServiceTest {
     SecuritySettingService service = new SecuritySettingService(tokenMapper, captchaMapper, passwordMapper);
     service.getOrCreate();
 
-    UiSettingRequest req = new UiSettingRequest();
-    req.setAllowUrlTokenParam(true);
-    service.applyRequest(req);
+    SessionPolicySettingRequest sessionReq = new SessionPolicySettingRequest(null, null, null, true);
+    SecurityPolicySettingRequest securityReq = new SecurityPolicySettingRequest(null, null, null, null, null, null, null, null, null, null, null, null);
+    service.applyRequest(sessionReq, securityReq);
     service.getOrCreate();
 
     verify(tokenMapper, times(3)).selectTop();

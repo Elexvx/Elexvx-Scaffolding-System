@@ -1,5 +1,6 @@
 package elexvx.admin.service;
 
+import elexvx.admin.service.menu.MenuFacadeService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,14 +12,14 @@ import org.springframework.stereotype.Component;
 public class MenuMaintenanceRunner implements ApplicationRunner {
   private static final Logger log = LoggerFactory.getLogger(MenuMaintenanceRunner.class);
 
-  private final MenuItemService menuItemService;
+  private final MenuFacadeService menuFacadeService;
   private final boolean enabled;
 
   public MenuMaintenanceRunner(
-    MenuItemService menuItemService,
+    MenuFacadeService menuFacadeService,
     @Value("${elexvx.menu.maintenance.enabled:true}") boolean enabled
   ) {
-    this.menuItemService = menuItemService;
+    this.menuFacadeService = menuFacadeService;
     this.enabled = enabled;
   }
 
@@ -29,11 +30,11 @@ public class MenuMaintenanceRunner implements ApplicationRunner {
       return;
     }
 
-    runTask("ensureOrgManagementMenuSeeded", menuItemService::ensureOrgManagementMenuSeeded);
-    runTask("removeObsoleteWatermarkRoute", menuItemService::removeObsoleteWatermarkRoute);
-    runTask("removeObsoleteTeamRoute", menuItemService::removeObsoleteTeamRoute);
-    runTask("removeObsoleteNotificationRoute", menuItemService::removeObsoleteNotificationRoute);
-    runTask("removeObsoleteModuleAccessRoutes", menuItemService::removeObsoleteModuleAccessRoutes);
+    runTask("ensureOrgManagementMenuSeeded", menuFacadeService::ensureOrgManagementMenuSeeded);
+    runTask("removeObsoleteWatermarkRoute", menuFacadeService::removeObsoleteWatermarkRoute);
+    runTask("removeObsoleteTeamRoute", menuFacadeService::removeObsoleteTeamRoute);
+    runTask("removeObsoleteNotificationRoute", menuFacadeService::removeObsoleteNotificationRoute);
+    runTask("removeObsoleteModuleAccessRoutes", menuFacadeService::removeObsoleteModuleAccessRoutes);
   }
 
   private void runTask(String name, MaintenanceTask task) {

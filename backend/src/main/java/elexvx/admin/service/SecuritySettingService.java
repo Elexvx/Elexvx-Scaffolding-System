@@ -2,7 +2,6 @@ package elexvx.admin.service;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import elexvx.admin.dto.UiSettingRequest;
 import elexvx.admin.entity.SecurityCaptchaSetting;
 import elexvx.admin.entity.SecurityPasswordPolicy;
 import elexvx.admin.entity.SecuritySetting;
@@ -10,6 +9,8 @@ import elexvx.admin.entity.SecurityTokenSetting;
 import elexvx.admin.mapper.SecurityCaptchaSettingMapper;
 import elexvx.admin.mapper.SecurityPasswordPolicyMapper;
 import elexvx.admin.mapper.SecurityTokenSettingMapper;
+import elexvx.admin.model.req.setting.SecurityPolicySettingRequest;
+import elexvx.admin.model.req.setting.SessionPolicySettingRequest;
 import java.time.Duration;
 import org.springframework.stereotype.Service;
 
@@ -36,27 +37,27 @@ public class SecuritySettingService {
     return settingCache.get(CACHE_KEY, key -> loadOrCreate());
   }
 
-  public boolean applyRequest(UiSettingRequest req) {
+  public boolean applyRequest(SessionPolicySettingRequest sessionReq, SecurityPolicySettingRequest securityReq) {
     boolean changed = false;
 
     SecurityTokenSetting token = tokenMapper.selectTop();
     if (token == null)
       token = new SecurityTokenSetting();
     boolean tokenChanged = false;
-    if (req.getSessionTimeoutMinutes() != null) {
-      token.setSessionTimeoutMinutes(req.getSessionTimeoutMinutes());
+    if (sessionReq.sessionTimeoutMinutes() != null) {
+      token.setSessionTimeoutMinutes(sessionReq.sessionTimeoutMinutes());
       tokenChanged = true;
     }
-    if (req.getTokenTimeoutMinutes() != null) {
-      token.setTokenTimeoutMinutes(req.getTokenTimeoutMinutes());
+    if (sessionReq.tokenTimeoutMinutes() != null) {
+      token.setTokenTimeoutMinutes(sessionReq.tokenTimeoutMinutes());
       tokenChanged = true;
     }
-    if (req.getTokenRefreshGraceMinutes() != null) {
-      token.setTokenRefreshGraceMinutes(req.getTokenRefreshGraceMinutes());
+    if (sessionReq.tokenRefreshGraceMinutes() != null) {
+      token.setTokenRefreshGraceMinutes(sessionReq.tokenRefreshGraceMinutes());
       tokenChanged = true;
     }
-    if (req.getAllowUrlTokenParam() != null) {
-      token.setAllowUrlTokenParam(req.getAllowUrlTokenParam());
+    if (sessionReq.allowUrlTokenParam() != null) {
+      token.setAllowUrlTokenParam(sessionReq.allowUrlTokenParam());
       tokenChanged = true;
     }
     if (tokenChanged) {
@@ -68,32 +69,32 @@ public class SecuritySettingService {
     if (captcha == null)
       captcha = new SecurityCaptchaSetting();
     boolean captchaChanged = false;
-    if (req.getCaptchaEnabled() != null) {
-      captcha.setCaptchaEnabled(req.getCaptchaEnabled());
+    if (securityReq.captchaEnabled() != null) {
+      captcha.setCaptchaEnabled(securityReq.captchaEnabled());
       captchaChanged = true;
     }
-    if (req.getCaptchaType() != null) {
-      captcha.setCaptchaType(req.getCaptchaType());
+    if (securityReq.captchaType() != null) {
+      captcha.setCaptchaType(securityReq.captchaType());
       captchaChanged = true;
     }
-    if (req.getDragCaptchaWidth() != null) {
-      captcha.setDragCaptchaWidth(req.getDragCaptchaWidth());
+    if (securityReq.dragCaptchaWidth() != null) {
+      captcha.setDragCaptchaWidth(securityReq.dragCaptchaWidth());
       captchaChanged = true;
     }
-    if (req.getDragCaptchaHeight() != null) {
-      captcha.setDragCaptchaHeight(req.getDragCaptchaHeight());
+    if (securityReq.dragCaptchaHeight() != null) {
+      captcha.setDragCaptchaHeight(securityReq.dragCaptchaHeight());
       captchaChanged = true;
     }
-    if (req.getDragCaptchaThreshold() != null) {
-      captcha.setDragCaptchaThreshold(req.getDragCaptchaThreshold());
+    if (securityReq.dragCaptchaThreshold() != null) {
+      captcha.setDragCaptchaThreshold(securityReq.dragCaptchaThreshold());
       captchaChanged = true;
     }
-    if (req.getImageCaptchaLength() != null) {
-      captcha.setImageCaptchaLength(req.getImageCaptchaLength());
+    if (securityReq.imageCaptchaLength() != null) {
+      captcha.setImageCaptchaLength(securityReq.imageCaptchaLength());
       captchaChanged = true;
     }
-    if (req.getImageCaptchaNoiseLines() != null) {
-      captcha.setImageCaptchaNoiseLines(req.getImageCaptchaNoiseLines());
+    if (securityReq.imageCaptchaNoiseLines() != null) {
+      captcha.setImageCaptchaNoiseLines(securityReq.imageCaptchaNoiseLines());
       captchaChanged = true;
     }
     if (captchaChanged) {
@@ -105,24 +106,24 @@ public class SecuritySettingService {
     if (policy == null)
       policy = new SecurityPasswordPolicy();
     boolean policyChanged = false;
-    if (req.getPasswordMinLength() != null) {
-      policy.setPasswordMinLength(req.getPasswordMinLength());
+    if (securityReq.passwordMinLength() != null) {
+      policy.setPasswordMinLength(securityReq.passwordMinLength());
       policyChanged = true;
     }
-    if (req.getPasswordRequireUppercase() != null) {
-      policy.setPasswordRequireUppercase(req.getPasswordRequireUppercase());
+    if (securityReq.passwordRequireUppercase() != null) {
+      policy.setPasswordRequireUppercase(securityReq.passwordRequireUppercase());
       policyChanged = true;
     }
-    if (req.getPasswordRequireLowercase() != null) {
-      policy.setPasswordRequireLowercase(req.getPasswordRequireLowercase());
+    if (securityReq.passwordRequireLowercase() != null) {
+      policy.setPasswordRequireLowercase(securityReq.passwordRequireLowercase());
       policyChanged = true;
     }
-    if (req.getPasswordRequireSpecial() != null) {
-      policy.setPasswordRequireSpecial(req.getPasswordRequireSpecial());
+    if (securityReq.passwordRequireSpecial() != null) {
+      policy.setPasswordRequireSpecial(securityReq.passwordRequireSpecial());
       policyChanged = true;
     }
-    if (req.getPasswordAllowSequential() != null) {
-      policy.setPasswordAllowSequential(req.getPasswordAllowSequential());
+    if (securityReq.passwordAllowSequential() != null) {
+      policy.setPasswordAllowSequential(securityReq.passwordAllowSequential());
       policyChanged = true;
     }
     if (policyChanged) {

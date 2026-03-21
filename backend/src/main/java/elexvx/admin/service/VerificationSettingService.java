@@ -1,11 +1,11 @@
 package elexvx.admin.service;
 
-import elexvx.admin.dto.UiSettingRequest;
 import elexvx.admin.entity.VerificationEmailSetting;
 import elexvx.admin.entity.VerificationSetting;
 import elexvx.admin.entity.VerificationSmsSetting;
 import elexvx.admin.mapper.VerificationEmailSettingMapper;
 import elexvx.admin.mapper.VerificationSmsSettingMapper;
+import elexvx.admin.model.req.setting.VerificationProviderSettingRequest;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -68,78 +68,78 @@ public class VerificationSettingService {
     return copy;
   }
 
-  public boolean applyRequest(UiSettingRequest req) {
+  public boolean applyRequest(VerificationProviderSettingRequest req) {
     boolean changed = false;
 
     VerificationSmsSetting sms = smsMapper.selectTop();
     if (sms == null) sms = new VerificationSmsSetting();
     boolean smsChanged = false;
-    if (req.getSmsEnabled() != null) {
-      sms.setSmsEnabled(req.getSmsEnabled());
+    if (req.smsEnabled() != null) {
+      sms.setSmsEnabled(req.smsEnabled());
       smsChanged = true;
     }
-    if (req.getSmsProvider() != null) {
-      sms.setSmsProvider(req.getSmsProvider());
+    if (req.smsProvider() != null) {
+      sms.setSmsProvider(req.smsProvider());
       smsChanged = true;
     }
-    if (req.getSmsAliyunEnabled() != null) {
-      sms.setSmsAliyunEnabled(req.getSmsAliyunEnabled());
+    if (req.smsAliyunEnabled() != null) {
+      sms.setSmsAliyunEnabled(req.smsAliyunEnabled());
       smsChanged = true;
     }
-    if (req.getSmsAliyunAccessKeyId() != null) {
-      sms.setSmsAliyunAccessKeyId(cryptoService.encryptIfNeeded(req.getSmsAliyunAccessKeyId()));
+    if (req.smsAliyunAccessKeyId() != null) {
+      sms.setSmsAliyunAccessKeyId(cryptoService.encryptIfNeeded(req.smsAliyunAccessKeyId()));
       smsChanged = true;
     }
-    if (req.getSmsAliyunAccessKeySecret() != null) {
-      sms.setSmsAliyunAccessKeySecret(cryptoService.encryptIfNeeded(req.getSmsAliyunAccessKeySecret()));
+    if (req.smsAliyunAccessKeySecret() != null) {
+      sms.setSmsAliyunAccessKeySecret(cryptoService.encryptIfNeeded(req.smsAliyunAccessKeySecret()));
       smsChanged = true;
     }
-    if (req.getSmsAliyunSignName() != null) {
-      sms.setSmsAliyunSignName(req.getSmsAliyunSignName());
+    if (req.smsAliyunSignName() != null) {
+      sms.setSmsAliyunSignName(req.smsAliyunSignName());
       smsChanged = true;
     }
-    if (req.getSmsAliyunTemplateCode() != null) {
-      sms.setSmsAliyunTemplateCode(req.getSmsAliyunTemplateCode());
+    if (req.smsAliyunTemplateCode() != null) {
+      sms.setSmsAliyunTemplateCode(req.smsAliyunTemplateCode());
       smsChanged = true;
     }
-    if (req.getSmsAliyunRegionId() != null) {
-      sms.setSmsAliyunRegionId(req.getSmsAliyunRegionId());
+    if (req.smsAliyunRegionId() != null) {
+      sms.setSmsAliyunRegionId(req.smsAliyunRegionId());
       smsChanged = true;
     }
-    if (req.getSmsAliyunEndpoint() != null) {
-      sms.setSmsAliyunEndpoint(req.getSmsAliyunEndpoint());
+    if (req.smsAliyunEndpoint() != null) {
+      sms.setSmsAliyunEndpoint(req.smsAliyunEndpoint());
       smsChanged = true;
     }
-    if (req.getSmsTencentEnabled() != null) {
-      sms.setSmsTencentEnabled(req.getSmsTencentEnabled());
+    if (req.smsTencentEnabled() != null) {
+      sms.setSmsTencentEnabled(req.smsTencentEnabled());
       smsChanged = true;
     }
-    if (req.getSmsTencentSecretId() != null) {
-      sms.setSmsTencentSecretId(cryptoService.encryptIfNeeded(req.getSmsTencentSecretId()));
+    if (req.smsTencentSecretId() != null) {
+      sms.setSmsTencentSecretId(cryptoService.encryptIfNeeded(req.smsTencentSecretId()));
       smsChanged = true;
     }
-    if (req.getSmsTencentSecretKey() != null) {
-      sms.setSmsTencentSecretKey(cryptoService.encryptIfNeeded(req.getSmsTencentSecretKey()));
+    if (req.smsTencentSecretKey() != null) {
+      sms.setSmsTencentSecretKey(cryptoService.encryptIfNeeded(req.smsTencentSecretKey()));
       smsChanged = true;
     }
-    if (req.getSmsTencentSignName() != null) {
-      sms.setSmsTencentSignName(req.getSmsTencentSignName());
+    if (req.smsTencentSignName() != null) {
+      sms.setSmsTencentSignName(req.smsTencentSignName());
       smsChanged = true;
     }
-    if (req.getSmsTencentTemplateId() != null) {
-      sms.setSmsTencentTemplateId(req.getSmsTencentTemplateId());
+    if (req.smsTencentTemplateId() != null) {
+      sms.setSmsTencentTemplateId(req.smsTencentTemplateId());
       smsChanged = true;
     }
-    if (req.getSmsTencentRegion() != null) {
-      sms.setSmsTencentRegion(req.getSmsTencentRegion());
+    if (req.smsTencentRegion() != null) {
+      sms.setSmsTencentRegion(req.smsTencentRegion());
       smsChanged = true;
     }
-    if (req.getSmsTencentEndpoint() != null) {
-      sms.setSmsTencentEndpoint(req.getSmsTencentEndpoint());
+    if (req.smsTencentEndpoint() != null) {
+      sms.setSmsTencentEndpoint(req.smsTencentEndpoint());
       smsChanged = true;
     }
-    if (req.getSmsSdkAppId() != null) {
-      sms.setSmsSdkAppId(req.getSmsSdkAppId());
+    if (req.smsSdkAppId() != null) {
+      sms.setSmsSdkAppId(req.smsSdkAppId());
       smsChanged = true;
     }
     if (smsChanged) {
@@ -150,32 +150,32 @@ public class VerificationSettingService {
     VerificationEmailSetting email = emailMapper.selectTop();
     if (email == null) email = new VerificationEmailSetting();
     boolean emailChanged = false;
-    if (req.getEmailEnabled() != null) {
-      email.setEmailEnabled(req.getEmailEnabled());
+    if (req.emailEnabled() != null) {
+      email.setEmailEnabled(req.emailEnabled());
       emailChanged = true;
     }
-    if (req.getEmailHost() != null) {
-      email.setEmailHost(req.getEmailHost());
+    if (req.emailHost() != null) {
+      email.setEmailHost(req.emailHost());
       emailChanged = true;
     }
-    if (req.getEmailPort() != null) {
-      email.setEmailPort(req.getEmailPort());
+    if (req.emailPort() != null) {
+      email.setEmailPort(req.emailPort());
       emailChanged = true;
     }
-    if (req.getEmailUsername() != null) {
-      email.setEmailUsername(req.getEmailUsername());
+    if (req.emailUsername() != null) {
+      email.setEmailUsername(req.emailUsername());
       emailChanged = true;
     }
-    if (req.getEmailPassword() != null) {
-      email.setEmailPassword(cryptoService.encryptIfNeeded(req.getEmailPassword()));
+    if (req.emailPassword() != null) {
+      email.setEmailPassword(cryptoService.encryptIfNeeded(req.emailPassword()));
       emailChanged = true;
     }
-    if (req.getEmailFrom() != null) {
-      email.setEmailFrom(req.getEmailFrom());
+    if (req.emailFrom() != null) {
+      email.setEmailFrom(req.emailFrom());
       emailChanged = true;
     }
-    if (req.getEmailSsl() != null) {
-      email.setEmailSsl(req.getEmailSsl());
+    if (req.emailSsl() != null) {
+      email.setEmailSsl(req.emailSsl());
       emailChanged = true;
     }
     if (emailChanged) {

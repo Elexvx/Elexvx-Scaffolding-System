@@ -5,7 +5,7 @@ import elexvx.admin.dto.MenuItemReorderRequest;
 import elexvx.admin.dto.MenuItemUpdateRequest;
 import elexvx.admin.annotation.PagePerm;
 import elexvx.admin.annotation.RepeatSubmit;
-import elexvx.admin.service.MenuItemService;
+import elexvx.admin.service.menu.MenuFacadeService;
 import elexvx.admin.vo.ApiResponse;
 import elexvx.admin.vo.MenuItemTreeNode;
 import jakarta.validation.Valid;
@@ -23,50 +23,50 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/system/menu")
 public class SystemMenuController {
-  private final MenuItemService menuItemService;
+  private final MenuFacadeService menuFacadeService;
 
-  public SystemMenuController(MenuItemService menuItemService) {
-    this.menuItemService = menuItemService;
+  public SystemMenuController(MenuFacadeService menuFacadeService) {
+    this.menuFacadeService = menuFacadeService;
   }
 
   @GetMapping("/tree")
   @PagePerm(routeName = "SystemMenu", action = "query")
   public ApiResponse<List<MenuItemTreeNode>> tree() {
-    return ApiResponse.success(menuItemService.getAdminTree());
+    return ApiResponse.success(menuFacadeService.getAdminTree());
   }
 
   @PostMapping
   @RepeatSubmit
   @PagePerm(routeName = "SystemMenu", action = "create")
   public ApiResponse<MenuItemTreeNode> create(@RequestBody @Valid MenuItemCreateRequest req) {
-    return ApiResponse.success(menuItemService.create(req));
+    return ApiResponse.success(menuFacadeService.create(req));
   }
 
   @PutMapping("/{id}")
   @RepeatSubmit
   @PagePerm(routeName = "SystemMenu", action = "update")
   public ApiResponse<MenuItemTreeNode> update(@PathVariable long id, @RequestBody @Valid MenuItemUpdateRequest req) {
-    return ApiResponse.success(menuItemService.update(id, req));
+    return ApiResponse.success(menuFacadeService.update(id, req));
   }
 
   @DeleteMapping("/{id}")
   @RepeatSubmit
   @PagePerm(routeName = "SystemMenu", action = "delete")
   public ApiResponse<Boolean> delete(@PathVariable long id, @RequestParam(defaultValue = "false") boolean cascade) {
-    return ApiResponse.success(menuItemService.delete(id, cascade));
+    return ApiResponse.success(menuFacadeService.delete(id, cascade));
   }
 
   @PutMapping("/reorder")
   @RepeatSubmit
   @PagePerm(routeName = "SystemMenu", action = "update")
   public ApiResponse<Boolean> reorder(@RequestBody @Valid MenuItemReorderRequest req) {
-    return ApiResponse.success(menuItemService.reorder(req));
+    return ApiResponse.success(menuFacadeService.reorder(req));
   }
 
   @PostMapping("/seed-default")
   @RepeatSubmit
   @PagePerm(routeName = "SystemMenu", action = "create")
   public ApiResponse<Integer> seedDefault(@RequestParam(defaultValue = "false") boolean overwrite) {
-    return ApiResponse.success(menuItemService.seedDefaultSidebarMenus(overwrite));
+    return ApiResponse.success(menuFacadeService.seedDefaultSidebarMenus(overwrite));
   }
 }

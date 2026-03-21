@@ -267,8 +267,8 @@ public class UiSettingController {
   public ApiResponse<UiSettingResponse> save(@RequestBody @Valid UiSettingRequest req) {
     PermissionUtil.checkAny("system:SystemVerification:update", "system:SystemPersonalize:update", "system:SystemSecurity:update");
     uiSettingService.save(req);
-    verificationSettingService.applyRequest(req);
-    securitySettingService.applyRequest(req);
+    verificationSettingService.applyRequest(req.toVerificationProviderSettingRequest());
+    securitySettingService.applyRequest(req.toSessionPolicySettingRequest(), req.toSecurityPolicySettingRequest());
     operationLogService.log("UPDATE", "系统设置", "更新系统个性化设置");
     return get();
   }

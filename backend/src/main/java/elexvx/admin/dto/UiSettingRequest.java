@@ -1,5 +1,16 @@
 package elexvx.admin.dto;
 
+import elexvx.admin.model.req.setting.SecurityPolicySettingRequest;
+import elexvx.admin.model.req.setting.SessionPolicySettingRequest;
+import elexvx.admin.model.req.setting.UiBrandSettingRequest;
+import elexvx.admin.model.req.setting.UiFooterSettingRequest;
+import elexvx.admin.model.req.setting.UiLayoutSettingRequest;
+import elexvx.admin.model.req.setting.UiLegalSettingRequest;
+import elexvx.admin.model.req.setting.UiLoginSettingRequest;
+import elexvx.admin.model.req.setting.UiSystemSettingRequest;
+import elexvx.admin.model.req.setting.UiThemeSettingRequest;
+import elexvx.admin.model.req.setting.VerificationProviderSettingRequest;
+
 public class UiSettingRequest {
   private String footerCompany;
   private String footerIcp;
@@ -83,6 +94,16 @@ public class UiSettingRequest {
   private Boolean passwordRequireLowercase;
   private Boolean passwordRequireSpecial;
   private Boolean passwordAllowSequential;
+  private UiBrandSettingRequest brandSetting;
+  private UiLayoutSettingRequest layoutSetting;
+  private UiThemeSettingRequest themeSetting;
+  private UiFooterSettingRequest footerSetting;
+  private UiLoginSettingRequest loginSetting;
+  private UiLegalSettingRequest legalSetting;
+  private UiSystemSettingRequest systemSetting;
+  private VerificationProviderSettingRequest verificationSetting;
+  private SessionPolicySettingRequest sessionPolicySetting;
+  private SecurityPolicySettingRequest securityPolicySetting;
 
   public String getFooterCompany() {
     return footerCompany;
@@ -738,5 +759,225 @@ public class UiSettingRequest {
 
   public void setPasswordAllowSequential(Boolean passwordAllowSequential) {
     this.passwordAllowSequential = passwordAllowSequential;
+  }
+
+  public UiBrandSettingRequest getBrandSetting() {
+    return brandSetting;
+  }
+
+  public void setBrandSetting(UiBrandSettingRequest brandSetting) {
+    this.brandSetting = brandSetting;
+  }
+
+  public UiLayoutSettingRequest getLayoutSetting() {
+    return layoutSetting;
+  }
+
+  public void setLayoutSetting(UiLayoutSettingRequest layoutSetting) {
+    this.layoutSetting = layoutSetting;
+  }
+
+  public UiThemeSettingRequest getThemeSetting() {
+    return themeSetting;
+  }
+
+  public void setThemeSetting(UiThemeSettingRequest themeSetting) {
+    this.themeSetting = themeSetting;
+  }
+
+  public UiFooterSettingRequest getFooterSetting() {
+    return footerSetting;
+  }
+
+  public void setFooterSetting(UiFooterSettingRequest footerSetting) {
+    this.footerSetting = footerSetting;
+  }
+
+  public UiLoginSettingRequest getLoginSetting() {
+    return loginSetting;
+  }
+
+  public void setLoginSetting(UiLoginSettingRequest loginSetting) {
+    this.loginSetting = loginSetting;
+  }
+
+  public UiLegalSettingRequest getLegalSetting() {
+    return legalSetting;
+  }
+
+  public void setLegalSetting(UiLegalSettingRequest legalSetting) {
+    this.legalSetting = legalSetting;
+  }
+
+  public UiSystemSettingRequest getSystemSetting() {
+    return systemSetting;
+  }
+
+  public void setSystemSetting(UiSystemSettingRequest systemSetting) {
+    this.systemSetting = systemSetting;
+  }
+
+  public VerificationProviderSettingRequest getVerificationSetting() {
+    return verificationSetting;
+  }
+
+  public void setVerificationSetting(VerificationProviderSettingRequest verificationSetting) {
+    this.verificationSetting = verificationSetting;
+  }
+
+  public SessionPolicySettingRequest getSessionPolicySetting() {
+    return sessionPolicySetting;
+  }
+
+  public void setSessionPolicySetting(SessionPolicySettingRequest sessionPolicySetting) {
+    this.sessionPolicySetting = sessionPolicySetting;
+  }
+
+  public SecurityPolicySettingRequest getSecurityPolicySetting() {
+    return securityPolicySetting;
+  }
+
+  public void setSecurityPolicySetting(SecurityPolicySettingRequest securityPolicySetting) {
+    this.securityPolicySetting = securityPolicySetting;
+  }
+
+  public UiBrandSettingRequest toBrandSettingRequest() {
+    UiBrandSettingRequest nested = this.brandSetting;
+    return new UiBrandSettingRequest(
+      pick(nested == null ? null : nested.websiteName(), websiteName),
+      pick(nested == null ? null : nested.appVersion(), appVersion),
+      pick(nested == null ? null : nested.logoExpandedUrl(), logoExpandedUrl),
+      pick(nested == null ? null : nested.logoCollapsedUrl(), logoCollapsedUrl),
+      pick(nested == null ? null : nested.faviconUrl(), faviconUrl),
+      pick(nested == null ? null : nested.qrCodeUrl(), qrCodeUrl)
+    );
+  }
+
+  public UiLayoutSettingRequest toLayoutSettingRequest() {
+    UiLayoutSettingRequest nested = this.layoutSetting;
+    return new UiLayoutSettingRequest(
+      pick(nested == null ? null : nested.defaultHome(), defaultHome),
+      pick(nested == null ? null : nested.showFooter(), showFooter),
+      pick(nested == null ? null : nested.isSidebarCompact(), isSidebarCompact),
+      pick(nested == null ? null : nested.showBreadcrumb(), showBreadcrumb),
+      pick(nested == null ? null : nested.menuAutoCollapsed(), menuAutoCollapsed),
+      pick(nested == null ? null : nested.layout(), layout),
+      pick(nested == null ? null : nested.splitMenu(), splitMenu),
+      pick(nested == null ? null : nested.sideMode(), sideMode),
+      pick(nested == null ? null : nested.isFooterAside(), isFooterAside),
+      pick(nested == null ? null : nested.isSidebarFixed(), isSidebarFixed),
+      pick(nested == null ? null : nested.isHeaderFixed(), isHeaderFixed),
+      pick(nested == null ? null : nested.isUseTabsRouter(), isUseTabsRouter),
+      pick(nested == null ? null : nested.showHeader(), showHeader),
+      pick(nested == null ? null : nested.headerGithubUrl(), headerGithubUrl),
+      pick(nested == null ? null : nested.headerHelpUrl(), headerHelpUrl)
+    );
+  }
+
+  public UiThemeSettingRequest toThemeSettingRequest() {
+    UiThemeSettingRequest nested = this.themeSetting;
+    return new UiThemeSettingRequest(
+      pick(nested == null ? null : nested.autoTheme(), autoTheme),
+      pick(nested == null ? null : nested.lightStartTime(), lightStartTime),
+      pick(nested == null ? null : nested.darkStartTime(), darkStartTime),
+      pick(nested == null ? null : nested.mode(), mode),
+      pick(nested == null ? null : nested.brandTheme(), brandTheme)
+    );
+  }
+
+  public UiFooterSettingRequest toFooterSettingRequest() {
+    UiFooterSettingRequest nested = this.footerSetting;
+    return new UiFooterSettingRequest(
+      pick(nested == null ? null : nested.footerCompany(), footerCompany),
+      pick(nested == null ? null : nested.footerIcp(), footerIcp),
+      pick(nested == null ? null : nested.copyrightStartYear(), copyrightStartYear)
+    );
+  }
+
+  public UiLoginSettingRequest toLoginSettingRequest() {
+    UiLoginSettingRequest nested = this.loginSetting;
+    return new UiLoginSettingRequest(
+      pick(nested == null ? null : nested.loginBgUrl(), loginBgUrl),
+      pick(nested == null ? null : nested.allowMultiDeviceLogin(), allowMultiDeviceLogin)
+    );
+  }
+
+  public UiLegalSettingRequest toLegalSettingRequest() {
+    UiLegalSettingRequest nested = this.legalSetting;
+    return new UiLegalSettingRequest(
+      pick(nested == null ? null : nested.userAgreement(), userAgreement),
+      pick(nested == null ? null : nested.privacyAgreement(), privacyAgreement)
+    );
+  }
+
+  public UiSystemSettingRequest toSystemSettingRequest() {
+    UiSystemSettingRequest nested = this.systemSetting;
+    return new UiSystemSettingRequest(
+      pick(nested == null ? null : nested.logRetentionDays(), logRetentionDays),
+      pick(nested == null ? null : nested.maintenanceEnabled(), maintenanceEnabled),
+      pick(nested == null ? null : nested.maintenanceMessage(), maintenanceMessage)
+    );
+  }
+
+  public VerificationProviderSettingRequest toVerificationProviderSettingRequest() {
+    VerificationProviderSettingRequest nested = this.verificationSetting;
+    return new VerificationProviderSettingRequest(
+      pick(nested == null ? null : nested.smsEnabled(), smsEnabled),
+      pick(nested == null ? null : nested.smsProvider(), smsProvider),
+      pick(nested == null ? null : nested.smsAliyunEnabled(), smsAliyunEnabled),
+      pick(nested == null ? null : nested.smsAliyunAccessKeyId(), smsAliyunAccessKeyId),
+      pick(nested == null ? null : nested.smsAliyunAccessKeySecret(), smsAliyunAccessKeySecret),
+      pick(nested == null ? null : nested.smsAliyunSignName(), smsAliyunSignName),
+      pick(nested == null ? null : nested.smsAliyunTemplateCode(), smsAliyunTemplateCode),
+      pick(nested == null ? null : nested.smsAliyunRegionId(), smsAliyunRegionId),
+      pick(nested == null ? null : nested.smsAliyunEndpoint(), smsAliyunEndpoint),
+      pick(nested == null ? null : nested.smsTencentEnabled(), smsTencentEnabled),
+      pick(nested == null ? null : nested.smsTencentSecretId(), smsTencentSecretId),
+      pick(nested == null ? null : nested.smsTencentSecretKey(), smsTencentSecretKey),
+      pick(nested == null ? null : nested.smsTencentSignName(), smsTencentSignName),
+      pick(nested == null ? null : nested.smsTencentTemplateId(), smsTencentTemplateId),
+      pick(nested == null ? null : nested.smsTencentRegion(), smsTencentRegion),
+      pick(nested == null ? null : nested.smsTencentEndpoint(), smsTencentEndpoint),
+      pick(nested == null ? null : nested.smsSdkAppId(), smsSdkAppId),
+      pick(nested == null ? null : nested.emailEnabled(), emailEnabled),
+      pick(nested == null ? null : nested.emailHost(), emailHost),
+      pick(nested == null ? null : nested.emailPort(), emailPort),
+      pick(nested == null ? null : nested.emailUsername(), emailUsername),
+      pick(nested == null ? null : nested.emailPassword(), emailPassword),
+      pick(nested == null ? null : nested.emailFrom(), emailFrom),
+      pick(nested == null ? null : nested.emailSsl(), emailSsl)
+    );
+  }
+
+  public SessionPolicySettingRequest toSessionPolicySettingRequest() {
+    SessionPolicySettingRequest nested = this.sessionPolicySetting;
+    return new SessionPolicySettingRequest(
+      pick(nested == null ? null : nested.sessionTimeoutMinutes(), sessionTimeoutMinutes),
+      pick(nested == null ? null : nested.tokenTimeoutMinutes(), tokenTimeoutMinutes),
+      pick(nested == null ? null : nested.tokenRefreshGraceMinutes(), tokenRefreshGraceMinutes),
+      pick(nested == null ? null : nested.allowUrlTokenParam(), allowUrlTokenParam)
+    );
+  }
+
+  public SecurityPolicySettingRequest toSecurityPolicySettingRequest() {
+    SecurityPolicySettingRequest nested = this.securityPolicySetting;
+    return new SecurityPolicySettingRequest(
+      pick(nested == null ? null : nested.captchaEnabled(), captchaEnabled),
+      pick(nested == null ? null : nested.captchaType(), captchaType),
+      pick(nested == null ? null : nested.dragCaptchaWidth(), dragCaptchaWidth),
+      pick(nested == null ? null : nested.dragCaptchaHeight(), dragCaptchaHeight),
+      pick(nested == null ? null : nested.dragCaptchaThreshold(), dragCaptchaThreshold),
+      pick(nested == null ? null : nested.imageCaptchaLength(), imageCaptchaLength),
+      pick(nested == null ? null : nested.imageCaptchaNoiseLines(), imageCaptchaNoiseLines),
+      pick(nested == null ? null : nested.passwordMinLength(), passwordMinLength),
+      pick(nested == null ? null : nested.passwordRequireUppercase(), passwordRequireUppercase),
+      pick(nested == null ? null : nested.passwordRequireLowercase(), passwordRequireLowercase),
+      pick(nested == null ? null : nested.passwordRequireSpecial(), passwordRequireSpecial),
+      pick(nested == null ? null : nested.passwordAllowSequential(), passwordAllowSequential)
+    );
+  }
+
+  private static <T> T pick(T primary, T fallback) {
+    return primary != null ? primary : fallback;
   }
 }

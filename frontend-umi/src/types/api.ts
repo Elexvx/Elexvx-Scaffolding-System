@@ -13,9 +13,11 @@ export interface PageQuery {
   [key: string]: unknown;
 }
 
-export interface PageResult<T> {
+export interface NormalizedPageResult<T> {
+  data: T[];
   total: number;
-  records: T[];
+  page: number;
+  size: number;
 }
 
 export interface OptionItem {

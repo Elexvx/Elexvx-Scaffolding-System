@@ -15,6 +15,7 @@ function flattenPermissions(menus: AppMenuItem[]) {
   const stack = [...menus];
   while (stack.length > 0) {
     const current = stack.pop()!;
+    current.permissionCodes?.forEach((permission) => set.add(permission));
     if (current.permCode) {
       set.add(current.permCode);
     }
@@ -28,9 +29,12 @@ function flattenPermissions(menus: AppMenuItem[]) {
 export default function access(initialState: InitialState) {
   const menuPermissionSet = flattenPermissions(initialState?.menus ?? []);
   const userPermissionSet = new Set(initialState?.permissions ?? []);
-  const hasPermission = (perm: string) => {
-    if (!perm) {
+  const hasPermission = (perm?: string | string[]): boolean => {
+    if (!perm || (Array.isArray(perm) && perm.length === 0)) {
       return true;
+    }
+    if (Array.isArray(perm)) {
+      return perm.some((item) => hasPermission(item));
     }
     return userPermissionSet.has(perm) || menuPermissionSet.has(perm);
   };

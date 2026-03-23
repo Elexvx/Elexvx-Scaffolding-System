@@ -1,10 +1,10 @@
-import { request } from '@umijs/max';
+import { request } from 'umi';
 
 import type { CurrentUser, LoginPayload, LoginResponse } from '@/types/auth';
 import { unwrapApiEnvelope } from '@/utils/request';
 
 export async function loginByPassword(data: LoginPayload) {
-  const payload = await request('/api/auth/login', {
+  const payload = await request('/auth/login', {
     method: 'POST',
     data,
   });
@@ -12,12 +12,12 @@ export async function loginByPassword(data: LoginPayload) {
 }
 
 export async function getCurrentUser() {
-  const payload = await request('/api/auth/user');
+  const payload = await request('/auth/user');
   return unwrapApiEnvelope<CurrentUser>(payload);
 }
 
 export async function logout() {
-  await request('/api/auth/logout', {
+  await request('/auth/logout', {
     method: 'POST',
   });
 }

@@ -1,4 +1,4 @@
-import { defineConfig } from '@umijs/max';
+import { defineConfig } from 'umi';
 
 export default defineConfig({
   npmClient: 'npm',
@@ -14,20 +14,14 @@ export default defineConfig({
     '@': '/src',
   },
   routes: [
-    { path: '/login', component: '@/pages/auth/login' },
-    { path: '/403', component: '@/layouts/errors/Forbidden' },
-    { path: '/404', component: '@/layouts/errors/NotFound' },
-    { path: '/500', component: '@/layouts/errors/ServerError' },
-    {
-      path: '/',
-      component: '@/layouts/AppLayout',
-      routes: [
-        { path: '/', redirect: '/dashboard' },
-        { path: '/dashboard', component: '@/pages/dashboard', access: 'canViewDashboard' },
-        { path: '/account/center', component: '@/pages/account/center', access: 'canAccessAccountCenter' },
-        { path: '/*', component: '@/pages/dynamic' },
-      ],
-    },
+    { path: '/login', component: '@/pages/auth/login', layout: false },
+    { path: '/403', component: '@/layouts/errors/Forbidden', layout: false },
+    { path: '/404', component: '@/layouts/errors/NotFound', layout: false },
+    { path: '/500', component: '@/layouts/errors/ServerError', layout: false },
+    { path: '/', redirect: '/dashboard' },
+    { path: '/dashboard', component: '@/pages/dashboard', access: 'canViewDashboard' },
+    { path: '/account/center', component: '@/pages/account/center', access: 'canAccessAccountCenter' },
+    { path: '/*', component: '@/pages/dynamic' },
   ],
   proxy: {
     '/api': {

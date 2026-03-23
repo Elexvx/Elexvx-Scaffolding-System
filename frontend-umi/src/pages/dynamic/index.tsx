@@ -1,4 +1,4 @@
-import { Navigate, useAccess, useLocation, useModel } from '@umijs/max';
+import { Navigate, useAccess, useLocation, useModel } from 'umi';
 import { Result } from 'antd';
 
 import type { AppMenuItem } from '@/types/menu';
@@ -23,14 +23,15 @@ export default function DynamicPage() {
   const access = useAccess();
   const { initialState } = useModel('@@initialState');
   const allMenus = flattenMenus(initialState?.menus ?? []);
-  const menu = allMenus.find((item) => item.path === pathname);
+  const menu = allMenus.find((item) => item.path === pathname || `${item.path}/index` === pathname || item.redirect === pathname);
   if (!menu) {
     return <Navigate to="/404" />;
   }
-  if (menu.permCode && !access.hasPermission(menu.permCode)) {
+  if (menu.permissionCodes?.length && !access.hasPermission(menu.permissionCodes)) {
     return <Navigate to="/403" />;
   }
   const candidates = [
+    menu.routeName || '',
     menu.componentKey || '',
     `${pathname.replace(/^\//, '')}/index`,
     pathname.replace(/^\//, ''),

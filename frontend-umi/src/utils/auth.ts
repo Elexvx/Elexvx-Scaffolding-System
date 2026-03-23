@@ -1,9 +1,10 @@
-import { history, request } from '@umijs/max';
+import { history } from 'umi';
 
+import { logout } from '@/services/auth/auth';
 import { clearAuthStorage } from '@/utils/token';
 
 export async function logoutAndRedirect() {
   clearAuthStorage();
-  await request('/api/auth/logout', { method: 'POST' }).catch(() => undefined);
+  await logout().catch(() => undefined);
   history.push('/login');
 }

@@ -1,4 +1,4 @@
-import { useModel } from '@umijs/max';
+import { useModel } from 'umi';
 import { Descriptions } from 'antd';
 
 import { PageScaffold } from '@/components/core/PageScaffold';

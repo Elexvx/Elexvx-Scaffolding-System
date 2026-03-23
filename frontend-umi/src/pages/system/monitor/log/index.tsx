@@ -7,8 +7,9 @@ import type { OperationLogRow } from '@/types/system';
 
 const columns: ProColumns<OperationLogRow>[] = [
   { title: '模块', dataIndex: 'module' },
-  { title: '操作人', dataIndex: 'operator' },
+  { title: '账号', dataIndex: 'account' },
   { title: '动作', dataIndex: 'action' },
+  { title: '详情', dataIndex: 'detail', ellipsis: true },
   { title: '时间', dataIndex: 'createdAt', valueType: 'dateTime' },
 ];
 
@@ -19,11 +20,11 @@ export default function LogMonitorPage() {
         rowKey="id"
         columns={columns}
         request={async (params) => {
-          const result = await queryLogs({ ...params });
-          return { ...result, success: true };
+          const result = await queryLogs(params);
+          return { data: result.data, total: result.total, success: true };
         }}
         cardTitle={(item) => `${item.module || '系统日志'} #${item.id}`}
-        cardDescription={(item) => `${item.operator || '-'} ｜ ${item.createdAt || '-'}`}
+        cardDescription={(item) => `${item.account || '-'} ｜ ${item.createdAt || '-'}`}
       />
     </PageScaffold>
   );

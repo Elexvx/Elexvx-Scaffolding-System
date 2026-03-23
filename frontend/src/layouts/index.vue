@@ -2,7 +2,7 @@
   <div :class="`${prefix}-wrapper`">
     <template v-if="setting.layout.value === 'side'">
       <t-layout key="side" :class="mainLayoutCls">
-        <t-aside><layout-side-nav /></t-aside>
+        <t-aside :width="settingStore.isSidebarCompact ? 'var(--td-starter-side-compact-width)' : 'var(--td-starter-side-width)'"><layout-side-nav /></t-aside>
         <t-layout :class="`${prefix}-main-layout`">
           <t-header v-if="settingStore.showHeader" :class="headerCls"><layout-header /></t-header>
           <t-content :class="`${prefix}-main-content`"><layout-content /></t-content>

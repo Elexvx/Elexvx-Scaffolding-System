@@ -160,9 +160,14 @@ const menuCls = computed(() => {
   ];
 });
 const menuTheme = computed(() => theme.value as ModeType);
+const SIDEBAR_EXPAND_MIN_WIDTH = 1200;
 
 // 切换语言
 const changeCollapsed = () => {
+  if (settingStore.isSidebarCompact && typeof window !== 'undefined' && window.innerWidth < SIDEBAR_EXPAND_MIN_WIDTH) {
+    MessagePlugin.warning('当前窗口宽度较小，请保持侧边栏折叠');
+    return;
+  }
   settingStore.updateConfig({
     isSidebarCompact: !settingStore.isSidebarCompact,
   });

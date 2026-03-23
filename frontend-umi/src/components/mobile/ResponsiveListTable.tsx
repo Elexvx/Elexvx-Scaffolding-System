@@ -21,6 +21,8 @@ export function ResponsiveListTable<T extends object>({
   const screens = Grid.useBreakpoint();
   const { message } = App.useApp();
   const isMobile = !screens.md;
+  const tablet = screens.md && !screens.lg;
+  const compactColumns = tablet ? columns.filter((column, index) => index < 4 || column.valueType === 'option') : columns;
 
   if (isMobile) {
     return (
@@ -47,5 +49,14 @@ export function ResponsiveListTable<T extends object>({
     );
   }
 
-  return <ProTable<T> rowKey={rowKey} columns={columns} request={request} search={false} />;
+  return (
+    <ProTable<T>
+      rowKey={rowKey}
+      columns={compactColumns}
+      request={request}
+      search={false}
+      scroll={{ x: 960 }}
+      pagination={{ showSizeChanger: true }}
+    />
+  );
 }

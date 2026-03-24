@@ -4,6 +4,17 @@ All notable changes to `@elexvx/admin-frontend-umi` will be documented in this f
 
 The format is inspired by Keep a Changelog, and this project follows Semantic Versioning.
 
+## [0.2.0] - 2026-03-24
+
+### Added
+- Added formal migrated pages for dictionary, module management, sensitive words, watermark settings, online-user monitor, Redis monitor, and server monitor.
+- Added service adapters and domain types for the newly migrated system/monitor capabilities.
+- Added a full old-to-new page migration mapping table in `MIGRATION.md`, including merged, pending, and deprecated entries.
+
+### Changed
+- Extended dynamic component registry so backend real menus can resolve all newly migrated formal pages.
+- Expanded merged-route aliases (`announcement`, `message/send`, `notification/table`, `system/config` family, `user`) to keep compatibility with legacy menu resources.
+
 ## [0.1.0] - 2026-03-23
 
 ### Added

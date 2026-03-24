@@ -10,15 +10,29 @@ const builtInDownloads = [
   { name: '健康检查', url: '/api/actuator/health' },
 ];
 
+const builtInDownloadUrlSet = new Set(builtInDownloads.map((item) => item.url));
+
+const isValidDownloadUrl = (url: string) => {
+  return builtInDownloadUrlSet.has(url) || url.startsWith('/api/');
+};
+
 export default function ConsoleDownloadPage() {
   const { message } = App.useApp();
 
   const triggerDownload = (url: string) => {
-    if (!url) {
+    const normalizedUrl = url.trim();
+
+    if (!normalizedUrl) {
       message.warning('请输入下载地址');
       return;
     }
-    window.open(url, '_blank', 'noopener,noreferrer');
+
+    if (!isValidDownloadUrl(normalizedUrl)) {
+      message.error('无效的下载地址');
+      return;
+    }
+
+    window.open(normalizedUrl, '_blank', 'noopener,noreferrer');
   };
 
   return (

@@ -27,8 +27,33 @@ function resolveRequestStatus(error: unknown) {
   if (!error || typeof error !== 'object') {
     return undefined;
   }
-  const maybeResponse = (error as { response?: { status?: number } }).response;
-  return maybeResponse?.status;
+  const maybeResponse = (
+    error as {
+      response?: { status?: number };
+      info?: { response?: { status?: number } };
+      status?: number;
+      statusCode?: number;
+      data?: { status?: number; statusCode?: number };
+      message?: string;
+    }
+  );
+  const status =
+    maybeResponse.response?.status ??
+    maybeResponse.info?.response?.status ??
+    maybeResponse.status ??
+    maybeResponse.statusCode ??
+    maybeResponse.data?.status ??
+    maybeResponse.data?.statusCode;
+  if (typeof status === 'number') {
+    return status;
+  }
+  if (typeof maybeResponse.message === 'string') {
+    const matched = maybeResponse.message.match(/\b(4\d{2}|5\d{2})\b/);
+    if (matched) {
+      return Number(matched[1]);
+    }
+  }
+  return undefined;
 }
 
 export default function LoginPage() {
@@ -216,7 +241,6 @@ export default function LoginPage() {
         initialValues={{ account: 'admin' }}
         actions={
           <Space direction="vertical" size={12} style={{ width: '100%' }}>
-            <Alert type="info" showIcon message="Elexvx 轻量品牌保留：仅在登录与基础框架中体现。" />
             {captchaLoadFailed ? (
               <Alert
                 type="warning"

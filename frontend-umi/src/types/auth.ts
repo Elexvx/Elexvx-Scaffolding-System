@@ -5,6 +5,9 @@ export interface LoginPayload {
   email?: string;
   verifyCode?: string;
   captcha?: string;
+  captchaId?: string;
+  captchaCode?: string;
+  force?: boolean;
 }
 
 export interface LoginResponse {
@@ -13,6 +16,19 @@ export interface LoginResponse {
   expiresIn?: number;
   status?: string;
   accessToken?: string;
+  requestId?: string;
+  requestKey?: string;
+}
+
+export interface LoginCaptchaResponse {
+  id?: string;
+  image?: string;
+  expiresIn?: number;
+  type?: 'image' | 'drag';
+  width?: number;
+  height?: number;
+  threshold?: number;
+  enabled?: boolean;
 }
 
 export interface CurrentUser {

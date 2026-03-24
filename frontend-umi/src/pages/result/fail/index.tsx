@@ -1,4 +1,4 @@
-import { history } from 'umi';
+import { history } from '@umijs/max';
 import { Button, Result } from 'antd';
 
 export default function FailResultPage() {

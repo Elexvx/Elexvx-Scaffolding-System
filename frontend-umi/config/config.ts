@@ -1,4 +1,4 @@
-import { defineConfig } from 'umi';
+import { defineConfig } from '@umijs/max';
 
 export default defineConfig({
   npmClient: 'npm',
@@ -43,7 +43,7 @@ export default defineConfig({
   ],
   proxy: {
     '/api': {
-      target: 'http://localhost:8080',
+      target: 'http://localhost:9999',
       changeOrigin: true,
     },
   },

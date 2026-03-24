@@ -1,4 +1,4 @@
-import { Navigate, useAccess, useLocation, useModel } from 'umi';
+import { Navigate, useAccess, useLocation, useModel } from '@umijs/max';
 import { Result } from 'antd';
 
 import type { AppMenuItem } from '@/types/menu';

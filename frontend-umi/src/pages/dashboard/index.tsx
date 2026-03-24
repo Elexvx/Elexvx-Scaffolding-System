@@ -1,5 +1,5 @@
 import { StatisticCard } from '@ant-design/pro-components';
-import { useModel } from 'umi';
+import { useModel } from '@umijs/max';
 import { Card, Col, Row } from 'antd';
 
 import { CapabilityPlaceholders } from '@/components/core/CapabilityPlaceholders';

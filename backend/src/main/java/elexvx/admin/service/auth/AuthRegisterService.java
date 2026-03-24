@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +31,7 @@ public class AuthRegisterService {
   private final PasswordPolicyService passwordPolicyService;
   private final AuthValidationService authValidationService;
   private final AuthQueryDao authQueryDao;
+  private final boolean captchaFeatureEnabled;
 
   public AuthRegisterService(
     UserMapper userMapper,
@@ -37,7 +39,8 @@ public class AuthRegisterService {
     CaptchaService captchaService,
     PasswordPolicyService passwordPolicyService,
     AuthValidationService authValidationService,
-    AuthQueryDao authQueryDao
+    AuthQueryDao authQueryDao,
+    @Value("${elexvx.security.captcha.enabled:true}") boolean captchaFeatureEnabled
   ) {
     this.userMapper = userMapper;
     this.securitySettingService = securitySettingService;
@@ -45,12 +48,13 @@ public class AuthRegisterService {
     this.passwordPolicyService = passwordPolicyService;
     this.authValidationService = authValidationService;
     this.authQueryDao = authQueryDao;
+    this.captchaFeatureEnabled = captchaFeatureEnabled;
   }
 
   @Transactional
   public boolean register(AuthRegisterReq req) {
-    Boolean captchaEnabled = securitySettingService.getOrCreate().getCaptchaEnabled();
-    if (Boolean.TRUE.equals(captchaEnabled)) {
+    boolean captchaEnabled = captchaFeatureEnabled && Boolean.TRUE.equals(securitySettingService.getOrCreate().getCaptchaEnabled());
+    if (captchaEnabled) {
       if (req.getCaptchaId() == null || req.getCaptchaId().isBlank() || req.getCaptchaCode() == null || req.getCaptchaCode().isBlank()) {
         throw badRequest("请输入验证码");
       }

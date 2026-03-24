@@ -3,7 +3,7 @@
  * 首次编写时间：2026-03-24
  * Copyright (c) Elexvx. All rights reserved.
  */
-import { useModel } from 'umi';
+import { useModel } from '@umijs/max';
 
 import type { AppMenuItem } from '@/types/menu';
 

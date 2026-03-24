@@ -3,8 +3,8 @@
  * 首次编写时间：2026-03-24
  * Copyright (c) Elexvx. All rights reserved.
  */
-import type { RequestConfig, RunTimeLayoutConfig } from 'umi';
-import { history } from 'umi';
+import type { RequestConfig, RunTimeLayoutConfig } from '@umijs/max';
+import { history } from '@umijs/max';
 import { App, ConfigProvider, Skeleton, message, Result } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
 import type { ReactNode } from 'react';

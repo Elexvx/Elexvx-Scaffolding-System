@@ -1,4 +1,4 @@
-import { history } from 'umi';
+import { history } from '@umijs/max';
 
 import { logout } from '@/services/auth/auth';
 import { clearAuthStorage } from '@/utils/token';

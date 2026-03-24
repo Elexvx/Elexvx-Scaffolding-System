@@ -1,4 +1,7 @@
 elexvx:
+  security:
+    captcha:
+      enabled: false
   web:
     expose-uploads: true
     cors:

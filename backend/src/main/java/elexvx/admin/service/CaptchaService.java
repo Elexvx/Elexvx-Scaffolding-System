@@ -13,6 +13,7 @@ import java.util.Base64;
 import java.util.Random;
 import java.util.UUID;
 import javax.imageio.ImageIO;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service("tdesignCaptchaService")
@@ -43,19 +44,22 @@ public class CaptchaService {
   private final Random random = new Random();
   private final SecuritySettingService securitySettingService;
   private final com.anji.captcha.service.CaptchaService ajCaptchaService;
+  private final boolean captchaFeatureEnabled;
 
   public CaptchaService(
       SecuritySettingService securitySettingService,
       com.anji.captcha.service.CaptchaService ajCaptchaService,
-      VerificationCacheService verificationCacheService) {
+      VerificationCacheService verificationCacheService,
+      @Value("${elexvx.security.captcha.enabled:true}") boolean captchaFeatureEnabled) {
     this.securitySettingService = securitySettingService;
     this.ajCaptchaService = ajCaptchaService;
     this.store = verificationCacheService.captchaCache();
+    this.captchaFeatureEnabled = captchaFeatureEnabled;
   }
 
   public CaptchaResult generate() {
     SecuritySetting setting = securitySettingService.getOrCreate();
-    if (Boolean.FALSE.equals(setting.getCaptchaEnabled())) {
+    if (!captchaFeatureEnabled || Boolean.FALSE.equals(setting.getCaptchaEnabled())) {
       CaptchaResult result = new CaptchaResult();
       result.setEnabled(false);
       return result;

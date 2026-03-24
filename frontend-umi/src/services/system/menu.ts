@@ -1,4 +1,4 @@
-import { request } from 'umi';
+import { request } from '@umijs/max';
 
 import type { AppMenuItem, BackendMenuItem, BackendMenuTitleMap } from '@/types/menu';
 import { unwrapApiEnvelope } from '@/utils/request';

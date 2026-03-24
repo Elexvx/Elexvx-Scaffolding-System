@@ -1,4 +1,4 @@
-import { request } from 'umi';
+import { request } from '@umijs/max';
 
 import type { PageQuery } from '@/types/api';
 import type {

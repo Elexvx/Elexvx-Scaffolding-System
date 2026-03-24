@@ -4,7 +4,7 @@
  * 说明：核心权限交互组件，供页面级与按钮级权限控制复用
  * Copyright (c) Elexvx. All rights reserved.
  */
-import { useAccess } from 'umi';
+import { useAccess } from '@umijs/max';
 import { Button } from 'antd';
 import type { ButtonProps } from 'antd';
 

@@ -1,6 +1,6 @@
-import { request } from 'umi';
+import { request } from '@umijs/max';
 
-import type { CurrentUser, LoginPayload, LoginResponse } from '@/types/auth';
+import type { CurrentUser, LoginCaptchaResponse, LoginPayload, LoginResponse } from '@/types/auth';
 import { unwrapApiEnvelope } from '@/utils/request';
 
 export async function loginByPassword(data: LoginPayload) {
@@ -9,6 +9,11 @@ export async function loginByPassword(data: LoginPayload) {
     data,
   });
   return unwrapApiEnvelope<LoginResponse>(payload);
+}
+
+export async function getLoginCaptcha() {
+  const payload = await request('/auth/captcha');
+  return unwrapApiEnvelope<LoginCaptchaResponse>(payload);
 }
 
 export async function getCurrentUser() {

@@ -4,6 +4,20 @@ All notable changes to `@elexvx/admin-frontend-umi` will be documented in this f
 
 The format is inspired by Keep a Changelog, and this project follows Semantic Versioning.
 
+## [0.3.0] - 2026-03-24
+
+### Added
+- Added missing migrated routes/pages for `announcement/cards`, `announcement/table`, `message/send`, `notification/table`, `console/download`, and `user/index`.
+- Added complete result pages: `browser-incompatible`, `fail`, `maintenance`, `network-error`, and `success` under `src/pages/result/*`.
+- Added example capability pages for `example/goods` and `example/order` to keep demo routes available.
+- Added full migration matrix in `MIGRATION.md` covering all pages from `frontend/src/pages`.
+
+### Changed
+- Expanded dynamic `componentRegistry` with complete menu key aliases including `MessageSend`, `AnnouncementCards`, `SystemDict`, `SystemModules`, `SystemMonitorOnlineUser`, `SystemMonitorRedis`, `SystemMonitorServer`, `SystemPersonalize`, `SystemSecurity`, `SystemStorage`, `SystemVerification`, and `SystemWatermark`.
+- Reworked system config page into sectioned mode (personalize / verification / security / storage) while preserving merged-route compatibility.
+- Updated Umi route config to include explicit compatibility routes for migrated legacy paths.
+- Bumped package version to `0.3.0`.
+
 ## [0.2.0] - 2026-03-24
 
 ### Added

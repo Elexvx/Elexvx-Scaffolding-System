@@ -6,31 +6,48 @@
 import type { ComponentType } from 'react';
 
 import AccountCenterPage from '@/pages/account/center';
+import AnnouncementCardsPage from '@/pages/announcement/cards';
+import AnnouncementTablePage from '@/pages/announcement/table';
+import ConsoleDownloadPage from '@/pages/console/download';
 import DashboardPage from '@/pages/dashboard';
-import AnnouncementPage from '@/pages/system/announcement';
+import ExampleGoodsPage from '@/pages/example/goods';
+import ExampleOrderPage from '@/pages/example/order';
+import MessageSendPage from '@/pages/message/send';
+import NotificationTablePage from '@/pages/notification/table';
+import BrowserIncompatiblePage from '@/pages/result/browser-incompatible';
+import FailResultPage from '@/pages/result/fail';
+import MaintenanceResultPage from '@/pages/result/maintenance';
+import NetworkErrorResultPage from '@/pages/result/network-error';
+import SuccessResultPage from '@/pages/result/success';
 import DictPage from '@/pages/system/dict';
-import SystemConfigPage from '@/pages/system/config';
+import SystemLogPage from '@/pages/system/log';
+import MenuPage from '@/pages/system/menu';
 import ModulesPage from '@/pages/system/modules';
 import OnlineUserPage from '@/pages/system/monitor/online-user';
-import LogMonitorPage from '@/pages/system/monitor/log';
 import RedisMonitorPage from '@/pages/system/monitor/redis';
 import ServerMonitorPage from '@/pages/system/monitor/server';
-import MenuPage from '@/pages/system/menu';
-import MessagePage from '@/pages/system/message';
-import NotificationPage from '@/pages/system/notification';
 import OrgPage from '@/pages/system/org';
+import SystemPersonalizePage from '@/pages/system/personalize';
 import RolePage from '@/pages/system/role';
+import SystemSecurityPage from '@/pages/system/security';
 import SensitivePage from '@/pages/system/sensitive';
+import SystemStoragePage from '@/pages/system/storage';
 import UserPage from '@/pages/system/user';
+import SystemVerificationPage from '@/pages/system/verification';
 import WatermarkPage from '@/pages/system/watermark';
+import UserIndexPage from '@/pages/user';
 
 export const componentRegistry: Record<string, ComponentType> = {
   DashboardPage,
   'dashboard/index': DashboardPage,
   'dashboard/workbench': DashboardPage,
-  UserIndex: AccountCenterPage,
-  'user/index': AccountCenterPage,
+
+  UserIndex: UserIndexPage,
+  'user/index': UserIndexPage,
+  UserProfile: AccountCenterPage,
+  user: AccountCenterPage,
   'account/center': AccountCenterPage,
+
   SystemUser: UserPage,
   'system/user/index': UserPage,
   SystemRole: RolePage,
@@ -39,9 +56,9 @@ export const componentRegistry: Record<string, ComponentType> = {
   'system/org/index': OrgPage,
   SystemMenu: MenuPage,
   'system/menu/index': MenuPage,
-  SystemLog: LogMonitorPage,
-  'system/log/index': LogMonitorPage,
-  'system/monitor/log/index': LogMonitorPage,
+  SystemLog: SystemLogPage,
+  'system/log/index': SystemLogPage,
+  'system/monitor/log/index': SystemLogPage,
   SystemDict: DictPage,
   'system/dict/index': DictPage,
   SystemModules: ModulesPage,
@@ -50,31 +67,56 @@ export const componentRegistry: Record<string, ComponentType> = {
   'system/sensitive/index': SensitivePage,
   SystemWatermark: WatermarkPage,
   'system/watermark/index': WatermarkPage,
+
+  SystemMonitorOnlineUser: OnlineUserPage,
   SystemOnlineUser: OnlineUserPage,
   'system/monitor/online-user/index': OnlineUserPage,
+  SystemMonitorRedis: RedisMonitorPage,
   SystemRedis: RedisMonitorPage,
   'system/monitor/redis/index': RedisMonitorPage,
+  SystemMonitorServer: ServerMonitorPage,
   SystemServer: ServerMonitorPage,
   'system/monitor/server/index': ServerMonitorPage,
-  SystemPersonalize: SystemConfigPage,
-  SystemVerification: SystemConfigPage,
-  SystemSecurity: SystemConfigPage,
-  SystemStorage: SystemConfigPage,
-  'system/personalize/index': SystemConfigPage,
-  'system/verification/index': SystemConfigPage,
-  'system/security/index': SystemConfigPage,
-  'system/storage/index': SystemConfigPage,
-  AnnouncementTable: AnnouncementPage,
-  AnnouncementCards: AnnouncementPage,
-  'announcement/table/index': AnnouncementPage,
-  'announcement/cards/index': AnnouncementPage,
-  NotificationTable: NotificationPage,
-  'notification/table/index': NotificationPage,
-  'system/notification/index': NotificationPage,
-  Message: MessagePage,
-  MessageSend: MessagePage,
-  'message/send/index': MessagePage,
-  'system/message/index': MessagePage,
-  UserProfile: AccountCenterPage,
-  user: AccountCenterPage,
+
+  SystemPersonalize: SystemPersonalizePage,
+  'system/personalize/index': SystemPersonalizePage,
+  SystemVerification: SystemVerificationPage,
+  'system/verification/index': SystemVerificationPage,
+  SystemSecurity: SystemSecurityPage,
+  'system/security/index': SystemSecurityPage,
+  SystemStorage: SystemStoragePage,
+  'system/storage/index': SystemStoragePage,
+
+  AnnouncementCards: AnnouncementCardsPage,
+  'announcement/cards/index': AnnouncementCardsPage,
+  AnnouncementTable: AnnouncementTablePage,
+  'announcement/table/index': AnnouncementTablePage,
+
+  NotificationTable: NotificationTablePage,
+  'notification/table/index': NotificationTablePage,
+  'system/notification/index': NotificationTablePage,
+
+  Message: MessageSendPage,
+  MessageSend: MessageSendPage,
+  'message/send/index': MessageSendPage,
+  'system/message/index': MessageSendPage,
+
+  ConsoleDownload: ConsoleDownloadPage,
+  'console/download/index': ConsoleDownloadPage,
+
+  ExampleGoods: ExampleGoodsPage,
+  'example/goods/index': ExampleGoodsPage,
+  ExampleOrder: ExampleOrderPage,
+  'example/order/index': ExampleOrderPage,
+
+  ResultBrowserIncompatible: BrowserIncompatiblePage,
+  ResultFail: FailResultPage,
+  ResultMaintenance: MaintenanceResultPage,
+  ResultNetworkError: NetworkErrorResultPage,
+  ResultSuccess: SuccessResultPage,
+  'result/browser-incompatible/index': BrowserIncompatiblePage,
+  'result/fail/index': FailResultPage,
+  'result/maintenance/index': MaintenanceResultPage,
+  'result/network-error/index': NetworkErrorResultPage,
+  'result/success/index': SuccessResultPage,
 };

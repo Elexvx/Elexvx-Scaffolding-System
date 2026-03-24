@@ -25,6 +25,8 @@
 - 用户管理、角色管理、菜单管理、组织管理
 - 公告管理、消息管理、通知管理
 - 系统配置页、操作日志页
+- 字典管理、模块管理、敏感词管理、水印配置
+- 监控页：在线用户、Redis 监控、服务器监控
 
 ## 5. 占位能力
 
@@ -81,9 +83,49 @@
 
 原因：保持仓库干净、降低噪音、便于二次开发，仅在关键基础设施表达归属。
 
-## 8. 后续迁移建议
+## 8. 旧前端页面 -> 新前端页面映射表
 
-- 继续迁移监控、模块管理、敏感词、存储配置、安全设置等页面到统一模板。
-- 补齐富文本、水印、会话监听的完整 UI 与交互。
-- 将筛选抽屉、移动端操作收纳能力推广到所有列表页。
+> 口径：以 `frontend/src/pages` 为准，正式业务页优先迁移；`example/*` 与大多数 `result/*` 归类为非正式业务页。
+
+| 旧页面路径 | 新页面路径 | 迁移状态 | 备注 |
+| --- | --- | --- | --- |
+| `login/index.vue` | `src/pages/auth/login/index.tsx` | 已迁移 | 登录主流程一对一迁移。 |
+| `console/download/index.vue` | - | 待迁移 | 下载中心能力尚未进入本轮。 |
+| `announcement/cards/index.vue` | `src/pages/system/announcement/index.tsx` | 已合并 | 与 `announcement/table` 合并为统一公告页。 |
+| `announcement/table/index.vue` | `src/pages/system/announcement/index.tsx` | 已合并 | 卡片/表格模式统一承接。 |
+| `message/send/index.vue` | `src/pages/system/message/index.tsx` | 已合并 | 发送与列表能力先合并在消息页落点。 |
+| `notification/table/index.vue` | `src/pages/system/notification/index.tsx` | 已合并 | 通知列表统一迁入通知页。 |
+| `system/menu/index.vue` | `src/pages/system/menu/index.tsx` | 已迁移 | 一对一迁移。 |
+| `system/org/index.vue` | `src/pages/system/org/index.tsx` | 已迁移 | 一对一迁移。 |
+| `system/role/index.vue` | `src/pages/system/role/index.tsx` | 已迁移 | 一对一迁移。 |
+| `system/user/index.vue` | `src/pages/system/user/index.tsx` | 已迁移 | 一对一迁移。 |
+| `system/dict/index.vue` | `src/pages/system/dict/index.tsx` | 已迁移 | 新增正式字典管理页。 |
+| `system/modules/index.vue` | `src/pages/system/modules/index.tsx` | 已迁移 | 新增正式模块管理页。 |
+| `system/sensitive/index.vue` | `src/pages/system/sensitive/index.tsx` | 已迁移 | 新增正式敏感词管理页。 |
+| `system/watermark/index.vue` | `src/pages/system/watermark/index.tsx` | 已迁移 | 新增独立水印配置页。 |
+| `system/monitor/online-user/index.vue` | `src/pages/system/monitor/online-user/index.tsx` | 已迁移 | 新增在线用户监控页。 |
+| `system/monitor/redis/index.vue` | `src/pages/system/monitor/redis/index.tsx` | 已迁移 | 新增 Redis 监控页。 |
+| `system/monitor/server/index.vue` | `src/pages/system/monitor/server/index.tsx` | 已迁移 | 新增服务器监控页。 |
+| `system/log/index.vue` | `src/pages/system/monitor/log/index.tsx` | 已合并 | 日志页统一落点到 monitor/log。 |
+| `system/personalize/index.vue` | `src/pages/system/config/index.tsx` | 已合并 | 个性化配置合并到系统配置页。 |
+| `system/security/index.vue` | `src/pages/system/config/index.tsx` | 已合并 | 安全配置合并到系统配置页。 |
+| `system/storage/index.vue` | `src/pages/system/config/index.tsx` | 已合并 | 存储配置合并到系统配置页。 |
+| `system/verification/index.vue` | `src/pages/system/config/index.tsx` | 已合并 | 验证配置合并到系统配置页。 |
+| `user/index.vue` | `src/pages/account/center/index.tsx` | 已合并 | 用户中心落点到个人中心页。 |
+| `example/goods/index.vue` | - | 废弃 | 模板示例页，不进入正式菜单。 |
+| `example/order/index.vue` | - | 废弃 | 模板示例页，不进入正式菜单。 |
+| `result/403/index.vue` | `src/layouts/errors/Forbidden.tsx` | 已迁移 | 保留必要异常页能力。 |
+| `result/404/index.vue` | `src/layouts/errors/NotFound.tsx` | 已迁移 | 保留必要异常页能力。 |
+| `result/500/index.vue` | `src/layouts/errors/ServerError.tsx` | 已迁移 | 保留必要异常页能力。 |
+| `result/browser-incompatible/index.vue` | - | 废弃 | 纯结果页，当前不纳入正式迁移范围。 |
+| `result/fail/index.vue` | - | 废弃 | 纯结果页，当前不纳入正式迁移范围。 |
+| `result/maintenance/index.vue` | - | 废弃 | 纯结果页，当前不纳入正式迁移范围。 |
+| `result/network-error/index.vue` | - | 废弃 | 纯结果页，当前不纳入正式迁移范围。 |
+| `result/success/index.vue` | - | 废弃 | 纯结果页，当前不纳入正式迁移范围。 |
+
+## 9. 后续迁移建议
+
+- 继续补齐 `console/download` 下载中心正式能力。
+- 将系统配置合并页中的个性化 / 验证 / 安全 / 存储拆分为可选子页（按权限决定是否独立展示）。
+- 补齐水印、Redis、服务器监控的编辑与图表化交互。
 - 增加接口契约测试与页面级回归测试。

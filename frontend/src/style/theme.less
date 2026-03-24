@@ -1,0 +1,181 @@
+@import (reference) './variables.less';
+
+// =============================================================================
+// Global Style Specification / 全局样式规范
+// =============================================================================
+// Description: This file serves as a static storage for global styles, making it
+// easy for others to modify and maintain.
+// 描述：此文件作为全局样式的静态存储，方便后续其他人修改和维护。
+// =============================================================================
+
+// 1. Radius Standardization / 圆角规范
+// -----------------------------------------------------------------------------
+// Definitions based on the provided specification image
+@radius-small: 2px;         // Suitable for internal scenes of basic components / 适用于基础组件内部场景
+@radius-default: 3px;       // Suitable for all basic components / 适用于所有基础组件
+@radius-medium: 6px;        // Suitable for popup types and card types / 适用于弹出类型和卡片类型组件
+@radius-large: 9px;         // Suitable for dialog types / 适用于对话框类型组件
+@radius-extra-large: 12px;  // Suitable for extra large display types / 适用于超大型展示型组件
+@radius-circle: 50%;        // Suitable for circular components / 适用于圆形组件
+
+:root {
+  // Map Less variables to CSS variables for runtime usage
+  --td-radius-small: @radius-small;
+  --td-radius-default: @radius-default;
+  --td-radius-medium: @radius-medium;
+  --td-radius-large: @radius-large;
+  --td-radius-extraLarge: @radius-extra-large;
+  --td-radius-circle: @radius-circle;
+}
+
+// 2. Responsive Grid System / 响应式栅格系统
+// -----------------------------------------------------------------------------
+// Requirement: Horizontal and vertical gutters must be responsive
+// 需求：Grid 栅格，需要水平和垂直 gutter 均为响应式
+
+// Define responsive gutter variables
+:root {
+  --grid-gutter-x: 24px;
+  --grid-gutter-y: 24px;
+}
+
+// Adjust gutters based on breakpoints
+@media (max-width: @screen-lg-max) { // < 1400px (Desktop)
+  :root {
+    --grid-gutter-x: 16px;
+    --grid-gutter-y: 16px;
+  }
+}
+
+@media (max-width: @screen-md-max) { // < 1200px (Laptop)
+  :root {
+    --grid-gutter-x: 16px;
+    --grid-gutter-y: 16px;
+  }
+}
+
+@media (max-width: @screen-sm-max) { // < 768px (Tablet/Mobile)
+  :root {
+    --grid-gutter-x: 12px;
+    --grid-gutter-y: 12px;
+  }
+}
+
+// Override Row and Col to use these responsive gutters
+// Note: !important is used to override inline styles set by the component's JS logic
+.t-row {
+  margin-left: calc(var(--grid-gutter-x) / -2) !important;
+  margin-right: calc(var(--grid-gutter-x) / -2) !important;
+  row-gap: var(--grid-gutter-y) !important;
+}
+
+.t-col {
+  padding-left: calc(var(--grid-gutter-x) / 2) !important;
+  padding-right: calc(var(--grid-gutter-x) / 2) !important;
+}
+
+// 3. Global Component Responsiveness / 全局组件响应式布局
+// -----------------------------------------------------------------------------
+// Requirement: Responsive layout needs to be applied to all global components
+// 需求：响应式布局需要应用到全局所有组件上
+
+// Ensure main layout containers adapt to screen sizes
+// (Extends functionality in responsive.less)
+
+// Example: Ensure images and inputs don't overflow their containers on small screens
+img, video, canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+// Standard container padding adjustments (if not covered by responsive.less)
+.t-layout {
+  // Ensure layout wrapper handles overflow correctly
+  overflow-x: hidden;
+}
+
+// Add more global responsive rules here as needed
+
+// 4. Spacing and Alignment / 间距与排列
+// -----------------------------------------------------------------------------
+// Requirement:
+// 1. Buttons and inputs need consistent horizontal and vertical spacing (Large).
+// 2. Buttons must have automatic line breaking capability.
+// 需求：
+// 1. 全局的按钮、输入框都需要横向、纵向整齐排列，间距为large
+// 2. 全局的按钮都具备自动换行的能力，break-line
+
+@space-large: 24px; // Define 'large' spacing value / 定义 'large' 间距值
+
+:root {
+  --td-space-large: @space-large;
+}
+
+// Apply spacing to adjacent buttons (Horizontal)
+// 为相邻按钮应用横向间距
+.t-button + .t-button {
+  margin-left: var(--td-space-large);
+}
+
+// Apply spacing to adjacent inputs (Horizontal) - if they are direct siblings
+// 为相邻输入框应用横向间距
+.t-input + .t-input,
+.t-select + .t-select,
+.t-input + .t-button,
+.t-button + .t-input {
+  margin-left: var(--td-space-large);
+}
+
+// Vertical spacing for wrapped elements or block layout
+// 换行元素或块级布局的纵向间距
+// Note: This is a general rule. Specific layouts might handle this with grid gaps.
+// 注意：这是一个通用规则。特定布局可能使用 grid gap 处理。
+
+// Button Auto-wrap / 按钮自动换行
+// Requirement: Global buttons must be able to break lines
+// 需求：全局的按钮都具备自动换行的能力
+.t-button {
+  white-space: normal;      // Allow text wrapping / 允许文本换行
+  height: auto;             // Adjust height to content / 高度随内容自适应
+  min-height: 32px;         // Maintain minimum height / 保持最小高度 (default size)
+  overflow-wrap: break-word; // Break long words if necessary / 必要时打断长单词
+  
+  // Ensure padding is sufficient for multi-line text
+  padding-top: 4px;
+  padding-bottom: 4px;
+  
+  // Flex layout within button (icon + text) needs to handle wrapping too
+  .t-button__text {
+    white-space: normal;
+    overflow-wrap: break-word;
+  }
+}
+
+// Container helper for spacing (Optional but recommended)
+// 推荐使用的间距容器辅助类
+.t-space-large {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--td-space-large);
+  
+  // Reset margins for children if using gap
+  > .t-button,
+  > .t-input {
+    margin-left: 0;
+    margin-bottom: 0;
+  }
+}
+
+.tdesign-table-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 0;
+  color: var(--td-text-color-secondary);
+}
+
+.tdesign-table-empty img {
+  width: 120px;
+  margin-bottom: 12px;
+}

@@ -151,7 +151,6 @@ elexvx:
   redis:
     enabled: true # 是否启用 Redis 相关能力
     clear-on-startup: true
-    allow-clear-on-startup-in-prod: false
     host: 127.0.0.1 # Redis 服务器地址
     port: 6379 # Redis 服务器端口
     password: "" # Redis 密码（没有可留空）

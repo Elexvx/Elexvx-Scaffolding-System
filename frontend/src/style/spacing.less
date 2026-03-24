@@ -1,0 +1,112 @@
+@import './variables.less';
+
+// Global spacing helpers to keep form and button gaps consistent with design tokens
+
+:root {
+  --td-starter-gap-sm: var(--td-comp-margin-s);
+  --td-starter-gap-md: var(--td-comp-margin-m);
+  --td-starter-gap-lg: var(--td-comp-margin-xl);
+  --td-starter-form-min-width: 320px;
+  --td-starter-form-help-min-height: var(--td-line-height-body-small);
+  --td-starter-form-help-gap: var(--td-comp-margin-xxs);
+}
+
+.@{starter-prefix}-responsive-form {
+  --starter-form-column-gap: var(--td-starter-gap-lg);
+  --starter-form-row-gap: var(--td-starter-gap-md);
+  --starter-form-min-width: var(--td-starter-form-min-width);
+  --starter-form-help-min-height: var(--td-starter-form-help-min-height);
+  --starter-form-help-gap: var(--td-starter-form-help-gap);
+}
+
+.@{starter-prefix}-responsive-form .t-form__item {
+  margin-bottom: 0;
+}
+
+.t-form__item {
+  align-items: center;
+}
+
+.t-form__item--label-top {
+  align-items: flex-start;
+}
+
+.@{starter-prefix}-responsive-form .t-form__controls,
+.@{starter-prefix}-responsive-form .t-form__controls-content {
+  width: 100%;
+}
+
+.@{starter-prefix}-responsive-form .t-form__controls {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  min-height: calc(
+    var(--td-comp-margin-xxxl) + var(--starter-form-help-gap) + var(--starter-form-help-min-height)
+  );
+}
+
+.@{starter-prefix}-responsive-form .t-form__help,
+.@{starter-prefix}-responsive-form .t-input__help {
+  min-height: var(--starter-form-help-min-height);
+  margin-top: var(--starter-form-help-gap);
+}
+
+@supports selector(:has(*)) {
+  .@{starter-prefix}-responsive-form .t-form__controls {
+    min-height: unset;
+  }
+
+  .@{starter-prefix}-responsive-form .t-form__controls::after {
+    content: '';
+    display: block;
+    min-height: var(--starter-form-help-min-height);
+    margin-top: var(--starter-form-help-gap);
+  }
+
+  .@{starter-prefix}-responsive-form .t-form__controls:has(.t-form__help)::after,
+  .@{starter-prefix}-responsive-form .t-form__controls:has(.t-input__help)::after {
+    display: none;
+  }
+}
+
+.@{starter-prefix}-responsive-form .t-row {
+  margin-left: calc(var(--starter-form-column-gap) / -2) !important;
+  margin-right: calc(var(--starter-form-column-gap) / -2) !important;
+  row-gap: var(--starter-form-row-gap) !important;
+}
+
+.@{starter-prefix}-responsive-form .t-row > .t-col {
+  padding-left: calc(var(--starter-form-column-gap) / 2) !important;
+  padding-right: calc(var(--starter-form-column-gap) / 2) !important;
+  min-width: 0;
+}
+
+
+.@{starter-prefix}-responsive-form .t-row > .t-col.t-col-24,
+.@{starter-prefix}-responsive-form .t-row > .t-col.t-col-xs-24,
+.@{starter-prefix}-responsive-form .t-row > .t-col.t-col-sm-24,
+.@{starter-prefix}-responsive-form .t-row > .t-col.t-col-md-24,
+.@{starter-prefix}-responsive-form .t-row > .t-col.t-col-lg-24,
+.@{starter-prefix}-responsive-form .t-row > .t-col.t-col-xl-24,
+.@{starter-prefix}-responsive-form .t-row > .t-col.t-col-xxl-24 {
+  display: block;
+  flex: 0 0 100%;
+  max-width: 100%;
+}
+
+.@{starter-prefix}-action-bar {
+  --starter-action-gap: var(--td-starter-gap-sm);
+
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--starter-action-gap);
+  align-items: center;
+}
+
+.@{starter-prefix}-action-bar .t-button {
+  margin: 0;
+}
+
+.@{starter-prefix}-action-bar .t-button + .t-button {
+  margin-left: 0;
+}

@@ -8,7 +8,6 @@ import org.springframework.stereotype.Component;
 public class RedisProperties {
   private boolean enabled = false;
   private boolean clearOnStartup = false;
-  private boolean allowClearOnStartupInProd = false;
   private String host = "localhost";
   private int port = 6379;
   private String password = "";
@@ -29,14 +28,6 @@ public class RedisProperties {
 
   public void setClearOnStartup(boolean clearOnStartup) {
     this.clearOnStartup = clearOnStartup;
-  }
-
-  public boolean isAllowClearOnStartupInProd() {
-    return allowClearOnStartupInProd;
-  }
-
-  public void setAllowClearOnStartupInProd(boolean allowClearOnStartupInProd) {
-    this.allowClearOnStartupInProd = allowClearOnStartupInProd;
   }
 
   public String getHost() {

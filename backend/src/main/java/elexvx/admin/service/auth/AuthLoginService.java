@@ -32,7 +32,6 @@ import java.util.Objects;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.stereotype.Service;
 
@@ -54,7 +53,6 @@ public class AuthLoginService {
   private final AuthContext authContext;
   private final PermissionFacade permissionFacade;
   private final HttpServletRequest request;
-  private final boolean captchaFeatureEnabled;
 
   public AuthLoginService(
     UserMapper userMapper,
@@ -71,8 +69,7 @@ public class AuthLoginService {
     OperationLogService operationLogService,
     AuthContext authContext,
     PermissionFacade permissionFacade,
-    HttpServletRequest request,
-    @Value("${elexvx.security.captcha.enabled:true}") boolean captchaFeatureEnabled
+    HttpServletRequest request
   ) {
     this.userMapper = userMapper;
     this.captchaService = captchaService;
@@ -89,15 +86,14 @@ public class AuthLoginService {
     this.authContext = authContext;
     this.permissionFacade = permissionFacade;
     this.request = request;
-    this.captchaFeatureEnabled = captchaFeatureEnabled;
   }
 
   public AuthLoginResp loginByAccount(AuthLoginReq req) {
     String account = authValidationService.normalizeAccount(req.getAccount());
     String captchaCode = authValidationService.normalizeCode(req.getCaptchaCode());
-    boolean captchaEnabled = captchaFeatureEnabled && Boolean.TRUE.equals(securitySettingService.getOrCreate().getCaptchaEnabled());
+    Boolean captchaEnabled = securitySettingService.getOrCreate().getCaptchaEnabled();
     log.info("LOGIN_ENTER account={} captchaEnabled={} clientIp={}", account, captchaEnabled, getClientIp());
-    if (captchaEnabled) {
+    if (Boolean.TRUE.equals(captchaEnabled)) {
       if (req.getCaptchaId() == null || req.getCaptchaId().isBlank() || captchaCode.isBlank()) {
         log.warn("LOGIN_CAPTCHA_MISSING account={} clientIp={}", account, getClientIp());
         throw LoginCaptchaException.missing();
